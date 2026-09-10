@@ -1,0 +1,26 @@
+[misc]
+  # 終了時に一時ファイルを削除
+  clean_on_exit = true
+
+[build]
+  root = "."
+  include_ext = ["go", "tpl", "tmpl", "html", "js", "ts", "css"]
+  pre_cmd = ["bun run --cwd frontend build"]
+  include_file = ["frontend/package.json", ".env", ".air.toml"]
+  include_dir = []
+  exclude_file = ["static/css/output.css"]
+  exclude_dir = ["static/vendor", "frontend/node_modules", "tmp"]
+  cmd = "go build -o tmp/main cmd/app/main.go"
+  kill_delay = 0
+  poll = true
+  poll_interval = 500
+  return = false
+  return_delay = 0
+  stop_on_error = false
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"

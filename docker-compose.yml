@@ -1,0 +1,62 @@
+services:
+    app:
+        container_name: "solvi"
+        build:
+            context: .
+            dockerfile: docker/app/Dockerfile
+        develop:
+            watch:
+                - action: rebuild
+                  path: .
+        ports:
+            - "${PORT}:1323"
+        volumes:
+            - .:/app # ローカル↔コンテナのファイル同期
+            - go_modules:/go/pkg/mod # Go モジュールキャッシュを永続化
+        env_file:
+            - .env
+        working_dir: /app
+        depends_on:
+            - postgresql
+            - dynamodb
+        command: ["air"]
+
+    postgresql:
+        container_name: "solvi-db"
+        build:
+            context: .
+            dockerfile: docker/database/postgresql/Dockerfile
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_DB: ${PSQL_DB_NAME:-solvidb}
+            POSTGRES_USER: ${PSQL_USER:-postgres}
+            POSTGRES_PASSWORD: ${PSQL_PASSWORD:-password}
+        volumes:
+            - postgres_data:/var/lib/postgresql
+
+    dynamodb:
+        container_name: "solvi-dynamodb"
+        build:
+            context: .
+            dockerfile: docker/database/dynamodb/Dockerfile
+        ports:
+            - "8000:8000"
+        command:
+            [
+                "-jar",
+                "DynamoDBLocal.jar",
+                "-sharedDb",
+                "-dbPath",
+                "/home/dynamodblocal/data",
+            ]
+        volumes:
+            - dynamodb_data:/home/dynamodblocal/data
+
+volumes:
+    go_modules:
+        name: solvi-app-volume
+    postgres_data:
+        name: solvi-postgresql-volume
+    dynamodb_data:
+        name: solvi-dynamodb-volume

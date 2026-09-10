@@ -1,0 +1,17 @@
+node_modules
+.env
+
+# Generated files
+static/css/output.css
+static/vendor/
+tmp/
+
+doc/*
+doc/*.gitkeep
+
+scripts/tmp/
+
+!.gitkeep
+*.log
+uploads/*
+!uploads/.gitkeep
