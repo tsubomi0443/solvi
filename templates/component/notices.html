@@ -1,0 +1,17 @@
+{{define "notices"}}
+<div class="pointer-events-none fixed inset-x-0 top-0 z-50 flex flex-col items-center gap-2 p-4" x-data>
+    <template x-for="n in $store.appNotice.items" :key="n.id">
+        <div class="pointer-events-auto transition-all duration-200" :class="n.widthClass"
+            x-show="!n.leaving" x-transition.opacity :class="n.leaving ? 'opacity-0' : 'opacity-100'">
+            <div :class="$store.appNotice.alertClass(n)" class="flex items-start gap-2">
+                <i :data-lucide="n.icon" class="h-5 w-5 shrink-0"></i>
+                <span class="flex-1 text-sm" x-text="n.message"></span>
+                <button type="button" class="btn btn-ghost btn-xs btn-square" x-show="n.dismissible"
+                    @click="$store.appNotice.dismiss(n.id)">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+        </div>
+    </template>
+</div>
+{{end}}

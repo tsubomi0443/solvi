@@ -1,0 +1,49 @@
+{{define "login.html"}}
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+
+<head>
+    {{template "head" dict "Title" "ログイン - Solvi" "PageScript" "/static/js/login/login.js"}}
+</head>
+
+<body class="min-h-screen bg-base-200 font-sans antialiased" x-data="solviLogin" x-init="init()">
+    {{template "notices" .}}
+    <main class="grid min-h-screen place-items-center p-6">
+        <div class="w-full max-w-md rounded-2xl border border-base-300 bg-base-100 p-8 shadow-sm">
+            <div class="mb-8 text-center">
+                <div class="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-rose-900 text-white">
+                    <i data-lucide="message-circle-question" class="h-6 w-6"></i>
+                </div>
+                <h1 class="text-xl font-semibold">Solvi</h1>
+                <p class="mt-1 text-sm text-base-content/60">人事・総務 FAQ サポート</p>
+            </div>
+            <form @submit.prevent="doLogin()" class="space-y-4">
+                <label class="form-control w-full">
+                    <span class="label-text">認証方式</span>
+                    <select class="select select-bordered w-full" x-model="method">
+                        <option value="ldap">LDAP（社員）</option>
+                        <option value="basic">Basic（管理者）</option>
+                    </select>
+                </label>
+                <label class="form-control w-full">
+                    <span class="label-text">メールアドレス</span>
+                    <input type="email" class="input input-bordered w-full" x-model="email" autocomplete="username">
+                </label>
+                <label class="form-control w-full">
+                    <span class="label-text">パスワード</span>
+                    <input type="password" class="input input-bordered w-full" x-model="password" required
+                        autocomplete="current-password">
+                </label>
+                <button type="submit"
+                    class="btn w-full border-rose-900 bg-rose-900 text-white hover:border-rose-950 hover:bg-rose-950"
+                    :disabled="loading">
+                    <span x-show="!loading">ログイン</span>
+                    <span x-show="loading" class="loading loading-spinner loading-sm"></span>
+                </button>
+            </form>
+        </div>
+    </main>
+</body>
+
+</html>
+{{end}}

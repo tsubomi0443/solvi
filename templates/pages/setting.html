@@ -1,0 +1,38 @@
+{{define "setting.html"}}
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+{{template "head" dict "Title" "プロフィール - Solvi" "PageScript" "/static/js/setting/setting.js"}}
+</head>
+<body class="bg-base-200 font-sans antialiased" x-data="solviSetting" x-init="init()">
+{{template "notices" .}}
+<script type="application/json" id="user-json">{{.UserJSON}}</script>
+<div class="flex min-h-screen">
+    {{template "sidebar" .}}
+    <div class="flex min-w-0 flex-1 flex-col">
+        {{template "header" dict "Breadcrumb" "プロフィール" "User" .User}}
+        <main class="flex-1 p-4 md:p-6">
+            <form @submit.prevent="save()" class="mx-auto max-w-lg space-y-4 rounded-2xl border border-base-300 bg-base-100 p-6">
+                <label class="form-control w-full">
+                    <span class="label-text">名前</span>
+                    <input type="text" class="input input-bordered w-full" x-model="form.name" required>
+                </label>
+                <label class="form-control w-full">
+                    <span class="label-text">メールアドレス</span>
+                    <input type="email" class="input input-bordered w-full" x-model="form.email" required>
+                </label>
+                <label class="form-control w-full">
+                    <span class="label-text">アイコン</span>
+                    <input type="file" class="file-input file-input-bordered w-full" accept="image/*" @change="onIconChange($event)">
+                </label>
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="btn btn-ghost btn-sm" @click="deleteIcon()" x-show="form.icon">アイコン削除</button>
+                    <button type="submit" class="btn border-rose-900 bg-rose-900 text-white" :disabled="loading">保存</button>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+</body>
+</html>
+{{end}}

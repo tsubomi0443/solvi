@@ -1,0 +1,11 @@
+{{define "head"}}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>{{if .Title}}{{.Title}}{{else}}Solvi{{end}}</title>
+<link href="/static/css/output.css" rel="stylesheet">
+<script src="/static/vendor/lucide.min.js"></script>
+<script type="module" src="/static/js/store.js"></script>
+<script type="module" src="/static/js/notice.js"></script>
+{{if .PageScript}}<script type="module" src="{{.PageScript}}"></script>{{end}}
+<script defer src="/static/vendor/alpine.min.js"></script>
+{{end}}

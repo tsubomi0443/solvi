@@ -1,0 +1,60 @@
+{{define "tags.html"}}
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+{{template "head" dict "Title" "タグ管理 - Solvi" "PageScript" "/static/js/questions/tags.js"}}
+</head>
+<body class="bg-base-200 font-sans antialiased" x-data="solviTags" x-init="init()">
+{{template "notices" .}}
+<script type="application/json" id="tags-json">{{.TagsJSON}}</script>
+<div class="flex min-h-screen">
+    {{template "sidebar" .}}
+    <div class="flex min-w-0 flex-1 flex-col">
+        {{template "header" dict "Breadcrumb" "タグ管理" "User" .User}}
+        <main class="flex-1 p-4 md:p-6">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <input type="search" class="input input-bordered w-full max-w-xs" placeholder="タグ名で検索" x-model="filter">
+            </div>
+            <div class="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>タグ名</th>
+                            <th>使用数</th>
+                            <th class="text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="tag in filteredTags()" :key="tag.name">
+                            <tr>
+                                <td>
+                                    <template x-if="editing === tag.name">
+                                        <input type="text" class="input input-bordered input-sm" x-model="editName">
+                                    </template>
+                                    <template x-if="editing !== tag.name">
+                                        <span x-text="tag.name"></span>
+                                    </template>
+                                </td>
+                                <td x-text="tag.count"></td>
+                                <td class="text-right">
+                                    <template x-if="editing === tag.name">
+                                        <button type="button" class="btn btn-ghost btn-xs" @click="saveRename(tag.name)">保存</button>
+                                        <button type="button" class="btn btn-ghost btn-xs" @click="editing = ''">取消</button>
+                                    </template>
+                                    <template x-if="editing !== tag.name">
+                                        <button type="button" class="btn btn-ghost btn-xs" @click="startEdit(tag.name)">編集</button>
+                                        <button type="button" class="btn btn-ghost btn-xs text-error" @click="deleteTag(tag.name)">削除</button>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-6 text-center text-sm text-base-content/50" x-show="filteredTags().length === 0">タグがありません</p>
+        </main>
+    </div>
+</div>
+</body>
+</html>
+{{end}}

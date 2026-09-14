@@ -1,0 +1,46 @@
+{{define "management_users.html"}}
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+{{template "head" dict "Title" "ユーザ管理 - Solvi" "PageScript" "/static/js/management/users.js"}}
+</head>
+<body class="bg-base-200 font-sans antialiased" x-data="solviManagementUsers" x-init="init()">
+{{template "notices" .}}
+<script type="application/json" id="users-json">{{.UsersJSON}}</script>
+<div class="flex min-h-screen">
+    {{template "sidebar" .}}
+    <div class="flex min-w-0 flex-1 flex-col">
+        {{template "header" dict "Breadcrumb" "ユーザ管理" "User" .User}}
+        <main class="flex-1 p-4 md:p-6">
+            <div class="overflow-x-auto rounded-2xl border border-base-300 bg-base-100">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>名前</th>
+                            <th>メール</th>
+                            <th>部署</th>
+                            <th>サポーター</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="u in users" :key="u.uuid">
+                            <tr>
+                                <td x-text="u.name"></td>
+                                <td x-text="u.email"></td>
+                                <td x-text="u.departmentName"></td>
+                                <td>
+                                    <input type="checkbox" class="toggle toggle-sm toggle-success"
+                                        :checked="u.isSupporter"
+                                        @change="toggleSupporter(u)">
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</div>
+</body>
+</html>
+{{end}}

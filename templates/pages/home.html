@@ -1,0 +1,57 @@
+{{define "home.html"}}
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+
+<head>
+    {{template "head" dict "Title" "質問一覧 - Solvi" "PageScript" "/static/js/questions/home.js"}}
+</head>
+
+<body class="bg-base-200 font-sans antialiased" x-data="solviHome" x-init="init()">
+    {{template "notices" .}}
+    <script type="application/json" id="questions-json">{{.QuestionsJSON}}</script>
+    <script>window.solviSSEEnabled = true; window.solviIsSupporter = "{{.IsSupporter}}";</script>
+    <div class="flex min-h-screen">
+        {{template "sidebar" .}}
+        <div class="flex min-w-0 flex-1 flex-col">
+            {{template "header" dict "Breadcrumb" "質問一覧" "User" .User}}
+            <main class="flex-1 p-4 md:p-6">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <input type="search" class="input input-bordered w-full max-w-xs" placeholder="キーワードで絞り込み"
+                        x-model="filter">
+                    <a href="/questions/new"
+                        class="btn border-rose-900 bg-rose-900 text-white hover:border-rose-950 hover:bg-rose-950">
+                        <i data-lucide="plus" class="h-4 w-4"></i> 新規質問
+                    </a>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <template x-for="q in filteredQuestions()" :key="q.uuid">
+                        <a :href="'/questions/' + q.uuid"
+                            class="card border border-base-300 bg-base-100 shadow-sm transition hover:shadow-md">
+                            <div class="card-body gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <h2 class="card-title text-base" x-text="q.title"></h2>
+                                    <span class="badge badge-sm" :class="statusBadge(q.supportStatus)"
+                                        x-text="statusLabel(q.supportStatus)"></span>
+                                </div>
+                                <p class="text-xs text-base-content/60" x-show="isSupporter"
+                                    x-text="q.questionUserName"></p>
+                                <div class="flex flex-wrap gap-1">
+                                    <template x-for="tag in (q.tags || [])" :key="tag">
+                                        <span class="badge badge-outline badge-sm" x-text="tag"></span>
+                                    </template>
+                                </div>
+                                <p class="text-xs text-warning" x-show="q.isRequireHumanSupport">人的対応が必要</p>
+                            </div>
+                        </a>
+                    </template>
+                </div>
+                <p class="mt-8 text-center text-sm text-base-content/50" x-show="filteredQuestions().length === 0">
+                    質問がありません</p>
+            </main>
+        </div>
+    </div>
+    <script type="module" src="/static/js/sse.js"></script>
+</body>
+
+</html>
+{{end}}

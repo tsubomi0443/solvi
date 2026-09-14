@@ -1,0 +1,44 @@
+{{define "question_new.html"}}
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+{{template "head" dict "Title" "新規質問 - Solvi" "PageScript" "/static/js/questions/new.js"}}
+</head>
+<body class="bg-base-200 font-sans antialiased" x-data="solviQuestionNew" x-init="init()">
+{{template "notices" .}}
+<div class="flex min-h-screen">
+    {{template "sidebar" .}}
+    <div class="flex min-w-0 flex-1 flex-col">
+        {{template "header" dict "Breadcrumb" "新規質問" "User" .User}}
+        <main class="flex-1 p-4 md:p-6">
+            <form @submit.prevent="submit()" class="mx-auto max-w-2xl space-y-4 rounded-2xl border border-base-300 bg-base-100 p-6">
+                <label class="form-control w-full">
+                    <span class="label-text">タイトル</span>
+                    <input type="text" class="input input-bordered w-full" x-model="form.title" required>
+                </label>
+                <label class="form-control w-full">
+                    <span class="label-text">質問内容</span>
+                    <textarea class="textarea textarea-bordered min-h-40 w-full" x-model="form.content" required></textarea>
+                </label>
+                <label class="form-control w-full">
+                    <span class="label-text">タグ（カンマ区切り）</span>
+                    <input type="text" class="input input-bordered w-full" x-model="form.tagsText" placeholder="例: 給与, 勤怠">
+                </label>
+                <label class="label cursor-pointer justify-start gap-3">
+                    <input type="checkbox" class="checkbox checkbox-sm" x-model="form.isRequireHumanSupport">
+                    <span class="label-text">人的対応を希望する</span>
+                </label>
+                <div class="flex justify-end gap-2">
+                    <a href="/" class="btn btn-ghost">キャンセル</a>
+                    <button type="submit" class="btn border-rose-900 bg-rose-900 text-white" :disabled="loading">
+                        <span x-show="!loading">質問を送信</span>
+                        <span x-show="loading" class="loading loading-spinner loading-sm"></span>
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+</body>
+</html>
+{{end}}

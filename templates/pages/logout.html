@@ -1,0 +1,17 @@
+{{define "logout.html"}}
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+{{template "head" dict "Title" "ログアウト - Solvi"}}
+</head>
+<body class="grid min-h-screen place-items-center bg-base-200 font-sans antialiased">
+<div class="text-center">
+    <p class="text-lg">ログアウトしました</p>
+    <p class="mt-2 text-sm text-base-content/60">3秒後にログイン画面へ移動します…</p>
+</div>
+<script>
+setTimeout(() => { location.href = '/login'; }, 3000);
+</script>
+</body>
+</html>
+{{end}}
