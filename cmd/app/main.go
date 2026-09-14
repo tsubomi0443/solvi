@@ -73,8 +73,6 @@ func init() {
 	slog.Info("Use processor limit", "maxProc", maxProc)
 }
 
-const DATA_ROOT = "uploads"
-
 func main() {
 	defer func() {
 		if err := accessLogFile.Close(); err != nil {
@@ -86,7 +84,7 @@ func main() {
 		}
 	}()
 
-	if err := os.MkdirAll(DATA_ROOT, 0755); err != nil {
+	if err := os.MkdirAll(config.GetUploadDir(), 0755); err != nil {
 		slog.Error("failed to create uploads dir", "err", err)
 		os.Exit(1)
 	}
@@ -136,7 +134,7 @@ func main() {
 	deps := handler.Deps{
 		Auth:       authuc.NewAuthUsecase(ldapClient, userRepo),
 		Question:   questionUC,
-		Setting:    setuc.NewSettingUsecase(userRepo, DATA_ROOT),
+		Setting:    setuc.NewSettingUsecase(userRepo, config.GetUploadDir()),
 		Management: mnguc.NewManagementUsecase(userRepo),
 		Tag:        taguc.NewTagUsecase(tagRepo),
 		Hub:        hub,

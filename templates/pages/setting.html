@@ -1,38 +1,64 @@
 {{define "setting.html"}}
 <!DOCTYPE html>
 <html lang="ja" data-theme="light">
+
 <head>
-{{template "head" dict "Title" "プロフィール - Solvi" "PageScript" "/static/js/setting/setting.js"}}
+    {{template "head" dict "Title" "プロフィール - Solvi" "PageScript" "/static/js/setting/setting.js"}}
 </head>
+
 <body class="bg-base-200 font-sans antialiased" x-data="solviSetting" x-init="init()">
-{{template "notices" .}}
-<script type="application/json" id="user-json">{{.UserJSON}}</script>
-<div class="flex min-h-screen">
-    {{template "sidebar" .}}
-    <div class="flex min-w-0 flex-1 flex-col">
-        {{template "header" dict "Breadcrumb" "プロフィール" "User" .User}}
-        <main class="flex-1 p-4 md:p-6">
-            <form @submit.prevent="save()" class="mx-auto max-w-lg space-y-4 rounded-2xl border border-base-300 bg-base-100 p-6">
-                <label class="form-control w-full">
-                    <span class="label-text">名前</span>
-                    <input type="text" class="input input-bordered w-full" x-model="form.name" required>
-                </label>
-                <label class="form-control w-full">
-                    <span class="label-text">メールアドレス</span>
-                    <input type="email" class="input input-bordered w-full" x-model="form.email" required>
-                </label>
-                <label class="form-control w-full">
-                    <span class="label-text">アイコン</span>
-                    <input type="file" class="file-input file-input-bordered w-full" accept="image/*" @change="onIconChange($event)">
-                </label>
-                <div class="flex justify-end gap-2">
-                    <button type="button" class="btn btn-ghost btn-sm" @click="deleteIcon()" x-show="form.icon">アイコン削除</button>
-                    <button type="submit" class="btn border-rose-900 bg-rose-900 text-white" :disabled="loading">保存</button>
+    {{template "notices" .}}
+    <script type="application/json" id="user-json">{{.UserJSON}}</script>
+    <div class="flex min-h-screen">
+        {{template "sidebar" .}}
+        <div class="flex min-w-0 flex-1 flex-col">
+            {{template "header" dict "Breadcrumb" "プロフィール" "User" .User}}
+            <main class="flex-1 p-4 md:p-6">
+                <div
+                    class="mx-auto flex max-w-lg flex-col items-center gap-6 rounded-2xl border border-base-300 bg-base-100 p-8 shadow-sm">
+                    <div class="text-center">
+                        <h1 class="text-lg font-semibold text-base-content">プロフィール画像</h1>
+                        <p class="mt-1 text-sm text-base-content/60">アイコンをクリックして変更できます</p>
+                    </div>
+
+                    <label
+                        class="group relative block w-44 cursor-pointer focus-within:outline-none focus-within:ring-2 focus-within:ring-rose-900/40 focus-within:ring-offset-2 focus-within:ring-offset-base-100"
+                        :class="{ 'pointer-events-none': loading }">
+                        <input type="file" class="sr-only" accept="image/*" @change="onIconChange($event)"
+                            :disabled="loading">
+
+                        <div class="mask mask-squircle relative aspect-square w-full overflow-hidden bg-base-200">
+                            <img x-show="form.icon" x-bind:src="'/uploads/' + form.icon" alt="{{.User.Name}}"
+                                class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+
+                            <div x-show="!form.icon"
+                                class="absolute inset-0 grid place-items-center bg-rose-900 text-4xl font-semibold text-white">
+                                <span x-text="form.name ? form.name.charAt(0) : '?'"></span>
+                            </div>
+
+                            <div
+                                class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50 text-white opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+                                <i data-lucide="camera" class="h-6 w-6"></i>
+                                <span class="text-sm font-medium">アイコンを変更</span>
+                            </div>
+
+                            <div x-show="loading"
+                                class="absolute inset-0 flex items-center justify-center bg-base-100/80 backdrop-blur-sm">
+                                <span class="loading loading-spinner loading-md text-rose-900"></span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <button type="button" class="btn btn-ghost btn-sm text-error hover:bg-error/10"
+                        @click="deleteIcon()" x-show="form.icon" :disabled="loading">
+                        <i data-lucide="trash-2" class="h-4 w-4"></i>
+                        アイコン削除
+                    </button>
                 </div>
-            </form>
-        </main>
+            </main>
+        </div>
     </div>
-</div>
 </body>
+
 </html>
 {{end}}

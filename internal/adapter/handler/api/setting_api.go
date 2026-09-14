@@ -24,6 +24,12 @@ func (h *Handler) UpdateSetting(c *echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
+func (h *Handler) GetIcon(c *echo.Context) error {
+	// claims := authctx.Claims(c)
+	// claims.
+	return c.JSON(http.StatusOK, nil)
+}
+
 func (h *Handler) UploadIcon(c *echo.Context) error {
 	claims := authctx.Claims(c)
 	file, err := c.FormFile("icon")

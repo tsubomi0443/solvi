@@ -12,7 +12,7 @@
     <script type="application/json" id="user-json">{{.UserJSON}}</script>
     <script>
         window.solviSSEEnabled = true;
-        window.solviIsSupporter = {{ .IsSupporter }};
+        window.solviIsSupporter = "{{ .IsSupporter }}";
     </script>
     <div class="flex min-h-screen">
         {{template "sidebar" .}}

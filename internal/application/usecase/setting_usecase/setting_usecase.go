@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"solvi/internal/application/converter"
-	"solvi/internal/application/model/output_model"
+	outputmodel "solvi/internal/application/model/output_model"
 	repo "solvi/internal/domain/interface/repository"
 
 	"github.com/google/uuid"

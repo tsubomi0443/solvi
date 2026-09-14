@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -35,12 +36,22 @@ func (h *Handler) CreateQuestion(c *echo.Context) error {
 		Title                 string   `json:"title"`
 		Content               string   `json:"content"`
 		Tags                  []string `json:"tags"`
+		AnswerDueText         *string  `json:"answerDue"`
 		IsRequireHumanSupport bool     `json:"isRequireHumanSupport"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 	}
-	detail, err := h.deps.Question.Create(claims.UserID, req.Title, req.Content, req.Tags, req.IsRequireHumanSupport)
+	slog.Info("Requestのバインド結果中身", slog.Any("data", req))
+	var answerDue time.Time
+	if req.AnswerDueText != nil {
+		var err error
+		answerDue, err = time.Parse("2006-01-02", *req.AnswerDueText)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid due format"})
+		}
+	}
+	detail, err := h.deps.Question.Create(claims.UserID, req.Title, req.Content, req.Tags, &answerDue, req.IsRequireHumanSupport)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

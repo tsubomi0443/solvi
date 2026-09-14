@@ -104,6 +104,7 @@ func shouldBeSupporter(department string) bool {
 func issueToken(user *entity.User) (string, error) {
 	claims := auth.CustomClaims{
 		UserID:      user.ID,
+		UUID:        user.UUID.String(),
 		Email:       user.Email,
 		Name:        user.Name,
 		IsSupporter: user.IsSupporter,

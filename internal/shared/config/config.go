@@ -8,18 +8,19 @@ import (
 )
 
 const (
-	E_PORT   = "PORT"
-	FONT     = "FONT"
-	JWT_KEY  = "JWK_KEY"
-	PEPPER   = "PEPPER"
-	MODE_IS  = "MODE"
-	HOST     = "PSQL_HOST"
-	D_PORT   = "PSQL_PORT"
-	USER     = "PSQL_USER"
-	PASSWORD = "PSQL_PASSWORD"
-	DB_NAME  = "PSQL_DB_NAME"
-	SSL_MODE = "PSQL_SSLMODE"
-	LOG_PATH = "LOG"
+	E_PORT       = "PORT"
+	FONT         = "FONT"
+	JWT_KEY      = "JWK_KEY"
+	PEPPER       = "PEPPER"
+	MODE_IS      = "MODE"
+	HOST         = "PSQL_HOST"
+	D_PORT       = "PSQL_PORT"
+	USER         = "PSQL_USER"
+	PASSWORD     = "PSQL_PASSWORD"
+	DB_NAME      = "PSQL_DB_NAME"
+	SSL_MODE     = "PSQL_SSLMODE"
+	LOG_PATH     = "LOG"
+	UPLOADS_PATH = "UPLOADS"
 
 	COGNITO_DOMAIN = "COGNITO_DOMAIN"
 	IDP            = "IDP"
@@ -45,6 +46,14 @@ const (
 	AWS_BEDROCK_AGENT_ALIAS_ID   = "AWS_BEDROCK_AGENT_ALIAS_ID"
 	AWS_LL_MODEL_ARN             = "AWS_LL_MODEL_ARN"
 )
+
+func GetUploadDir() string {
+	_uploads := os.Getenv(UPLOADS_PATH)
+	if _uploads == "" {
+		return "uploads"
+	}
+	return _uploads
+}
 
 // GetDSN は環境変数から PostgreSQL 接続文字列を組み立てる（.env.example 参照）。
 //

@@ -8,5 +8,6 @@ import (
 
 func (h *Handler) QuestionNewPage(c *echo.Context) error {
 	data := h.baseData(c, "new")
+	data["isHumanSupportRequired"] = true
 	return c.Render(http.StatusOK, "question_new.html", data)
 }

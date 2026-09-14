@@ -60,12 +60,13 @@ func (uc *QuestionUsecase) Get(actorID uint, isSupporter bool, uuid string) (*ou
 	return new(converter.QuestionEntityToDetail(q, isSupporter)), nil
 }
 
-func (uc *QuestionUsecase) Create(actorID uint, title, content string, tags []string, requireHuman bool) (*outputmodel.QuestionDetailOutput, error) {
+func (uc *QuestionUsecase) Create(actorID uint, title, content string, tags []string, answerDue *time.Time, requireHuman bool) (*outputmodel.QuestionDetailOutput, error) {
 	q := &entity.Question{
 		Title:                 title,
 		IsRequireHumanSupport: requireHuman,
 		SupportStatus:         valueobject.SupportStatusPending,
 		QuestionUserID:        actorID,
+		AnswerDue:             answerDue,
 		Contents:              []entity.QuestionContent{{Content: content, QuestionUserID: actorID}},
 	}
 	for _, t := range tags {

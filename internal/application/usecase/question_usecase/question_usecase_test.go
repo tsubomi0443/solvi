@@ -2,11 +2,12 @@ package question_usecase_test
 
 import (
 	"testing"
+	"time"
 
 	quc "solvi/internal/application/usecase/question_usecase"
+	"solvi/internal/domain/entity"
 	bedrockext "solvi/internal/domain/interface/external"
 	repomock "solvi/internal/domain/interface/repository/mock"
-	"solvi/internal/domain/entity"
 	"solvi/internal/domain/valueobject"
 
 	"github.com/google/uuid"
@@ -80,7 +81,8 @@ func TestCreate_PersistsQuestion(t *testing.T) {
 	uRepo.EXPECT().GetByEmail(gomock.Any()).Return(nil, gorm.ErrRecordNotFound).AnyTimes()
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, stubBedrock{}, nil)
-	out, err := uc.Create(5, "title", "body", []string{"給与"}, false)
+	tt := time.Date(2006, 1, 2, 3, 4, 5, 0, time.Local)
+	out, err := uc.Create(5, "title", "body", []string{"給与"}, &tt, false)
 	if err != nil {
 		t.Fatal(err)
 	}

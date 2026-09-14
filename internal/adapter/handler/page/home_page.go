@@ -1,7 +1,6 @@
 package page
 
 import (
-	"log/slog"
 	"net/http"
 
 	"solvi/internal/adapter/handler/authctx"
@@ -18,6 +17,5 @@ func (h *Handler) HomePage(c *echo.Context) error {
 	data := h.baseData(c, "home")
 	data["Questions"] = items
 	data["QuestionsJSON"] = mustJSON(items)
-	slog.Info("home-data", slog.Any("data", data))
 	return c.Render(http.StatusOK, "home.html", data)
 }

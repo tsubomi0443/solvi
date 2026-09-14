@@ -15,16 +15,140 @@
         <div class="flex min-w-0 flex-1 flex-col">
             {{template "header" dict "Breadcrumb" "質問一覧" "User" .User}}
             <main class="flex-1 p-4 md:p-6">
-                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <input type="search" class="input input-bordered w-full max-w-xs" placeholder="キーワードで絞り込み"
-                        x-model="filter">
-                    <a href="/questions/new"
-                        class="btn border-rose-900 bg-rose-900 text-white hover:border-rose-950 hover:bg-rose-950">
-                        <i data-lucide="plus" class="h-4 w-4"></i> 新規質問
-                    </a>
+                <div class="mb-4 flex flex-wrap justify-end gap-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="join">
+                            <button type="button" class="btn btn-sm join-item"
+                                :class="viewMode === 'table' ? 'btn-active' : 'btn-outline'"
+                                @click="setViewMode('table')">表</button>
+                            <button type="button" class="btn btn-sm join-item"
+                                :class="viewMode === 'card' ? 'btn-active' : 'btn-outline'"
+                                @click="setViewMode('card')">カード</button>
+                        </div>
+                        <a href="/questions/new"
+                            class="btn border-rose-900 bg-rose-900 text-white hover:border-rose-950 hover:bg-rose-950">
+                            <i data-lucide="plus" class="h-4 w-4"></i> 新規質問
+                        </a>
+                    </div>
                 </div>
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <template x-for="q in filteredQuestions()" :key="q.uuid">
+
+                <div
+                    class="flex flex-row justify-around mb-4 flex-wrap items-end gap-3 rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
+                    <div class="flex-1">
+                        <input type="search" class="input input-bordered w-full min-w-full max-w-xs"
+                            placeholder="キーワードで絞り込み" x-model="filter">
+                    </div>
+                    <div class="flex justify-end w-2/3 flex-row items-end gap-3">
+                        <div class="form-control min-w-[8rem]">
+                            <label class="label py-1">
+                                <span class="label-text text-xs">期限ソート</span>
+                            </label>
+                            <select class="select select-bordered select-sm w-full" x-model="sortDir">
+                                <option value="asc">昇順</option>
+                                <option value="desc">降順</option>
+                            </select>
+                        </div>
+                        <div class="form-control min-w-[8rem]">
+                            <label class="label py-1">
+                                <span class="label-text text-xs">ステータス</span>
+                            </label>
+                            <div class="dropdown">
+                                <div tabindex="0" role="button"
+                                    class="select select-bordered select-sm flex w-full min-w-[8rem] items-center justify-between">
+                                    <span
+                                        x-text="selectedStatuses.length ? selectedStatuses.length + '件選択' : 'すべて'"></span>
+                                </div>
+                                <ul tabindex="0"
+                                    class="dropdown-content menu z-10 mt-1 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+                                    <template x-for="opt in statusOptions" :key="opt.value">
+                                        <li>
+                                            <label class="flex cursor-pointer items-center gap-2 px-2 py-1">
+                                                <input type="checkbox" class="checkbox checkbox-sm"
+                                                    :checked="selectedStatuses.includes(opt.value)"
+                                                    @change="toggleStatus(opt.value)">
+                                                <span class="text-sm" x-text="opt.label"></span>
+                                            </label>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="form-control min-w-[8rem]">
+                            <label class="label py-1">
+                                <span class="label-text text-xs">対応種別</span>
+                            </label>
+                            <select class="select select-bordered select-sm w-full" x-model="supportKind">
+                                <option value="all">すべて</option>
+                                <option value="human">人対応のみ</option>
+                                <option value="ai">AI対応のみ</option>
+                            </select>
+                        </div>
+                        <div class="form-control min-w-[8rem]" x-show="availableTags().length > 0">
+                            <label class="label py-1">
+                                <span class="label-text text-xs">タグ</span>
+                            </label>
+                            <div class="dropdown">
+                                <div tabindex="0" role="button"
+                                    class="select select-bordered select-sm flex w-full min-w-[8rem] items-center justify-between">
+                                    <span x-text="selectedTags.length ? selectedTags.length + '件選択' : 'すべて'"></span>
+                                </div>
+                                <ul tabindex="0"
+                                    class="dropdown-content menu z-10 mt-1 w-52 max-h-60 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow">
+                                    <template x-for="tag in availableTags()" :key="tag">
+                                        <li>
+                                            <label class="flex cursor-pointer items-center gap-2 px-2 py-1">
+                                                <input type="checkbox" class="checkbox checkbox-sm"
+                                                    :checked="selectedTags.includes(tag)" @change="toggleTag(tag)">
+                                                <span class="text-sm" x-text="tag"></span>
+                                            </label>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="viewMode === 'table'"
+                    class="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>件名</th>
+                                <th>質問者</th>
+                                <th>期日</th>
+                                <th>ステータス</th>
+                                <th>タグ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="q in visibleQuestions()" :key="q.uuid">
+                                <tr class="cursor-pointer hover:bg-base-200/60"
+                                    @click="location.href = '/questions/' + q.uuid">
+                                    <td class="max-w-[16rem] font-medium">
+                                        <span class="line-clamp-2" x-text="q.title"></span>
+                                    </td>
+                                    <td class="whitespace-nowrap text-sm" x-text="q.questionUserName || '質問者名'"></td>
+                                    <td class="whitespace-nowrap text-sm" x-text="formatDue(q.answerDue)"></td>
+                                    <td class="whitespace-nowrap">
+                                        <span class="badge badge-sm" :class="statusBadge(q.supportStatus)"
+                                            x-text="statusLabel(q.supportStatus)"></span>
+                                    </td>
+                                    <td>
+                                        <div class="flex flex-wrap gap-1">
+                                            <template x-for="tag in (q.tags || [])" :key="tag">
+                                                <span class="badge badge-outline badge-sm" x-text="tag"></span>
+                                            </template>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div x-show="viewMode === 'card'" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <template x-for="q in visibleQuestions()" :key="q.uuid">
                         <a :href="'/questions/' + q.uuid"
                             class="card border border-base-300 bg-base-100 shadow-sm transition hover:shadow-md">
                             <div class="card-body gap-2">
@@ -35,6 +159,7 @@
                                 </div>
                                 <p class="text-xs text-base-content/60" x-show="isSupporter"
                                     x-text="q.questionUserName"></p>
+                                <p class="text-xs text-base-content/60" x-text="formatDue(q.answerDue)"></p>
                                 <div class="flex flex-wrap gap-1">
                                     <template x-for="tag in (q.tags || [])" :key="tag">
                                         <span class="badge badge-outline badge-sm" x-text="tag"></span>
@@ -45,7 +170,8 @@
                         </a>
                     </template>
                 </div>
-                <p class="mt-8 text-center text-sm text-base-content/50" x-show="filteredQuestions().length === 0">
+
+                <p class="mt-8 text-center text-sm text-base-content/50" x-show="visibleQuestions().length === 0">
                     質問がありません</p>
             </main>
         </div>
