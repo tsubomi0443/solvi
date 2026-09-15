@@ -30,8 +30,14 @@ document.addEventListener("alpine:init", () => {
         editTitle: "",
         editStatus: "",
         editAnswerDue: "",
+        editRequireHuman: false,
+        newTag: "",
         statusOptions: STATUS_OPTIONS,
         savingMeta: false,
+        showScrollToBottom: false,
+        chatAtBottom: true,
+        lastTimelineCount: 0,
+        userIconMap: {},
 
         init() {
             const qEl = document.getElementById("question-json");
@@ -58,12 +64,56 @@ document.addEventListener("alpine:init", () => {
                         this.fetchQuestion();
                 });
             });
+            this.$nextTick(() => {
+                this.lastTimelineCount = this.chatTimelineItems().length;
+                this.scrollChatToBottom(false);
+                if (typeof lucide !== "undefined") lucide.createIcons();
+            });
+        },
+
+        onChatScroll() {
+            const el = this.$refs.chatBox;
+            if (!el) return;
+            const threshold = 80;
+            this.chatAtBottom =
+                el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+            if (this.chatAtBottom) {
+                this.showScrollToBottom = false;
+            }
+        },
+
+        scrollChatToBottom(smooth = true) {
+            const el = this.$refs.chatBox;
+            if (!el) return;
+            el.scrollTo({
+                top: el.scrollHeight,
+                behavior: smooth ? "smooth" : "auto",
+            });
+            this.showScrollToBottom = false;
+            this.chatAtBottom = true;
+        },
+
+        afterChatUpdate(wasAtBottom) {
+            this.$nextTick(() => {
+                const count = this.chatTimelineItems().length;
+                const hasNew = count > this.lastTimelineCount;
+                this.lastTimelineCount = count;
+                if (hasNew && !wasAtBottom) {
+                    this.showScrollToBottom = true;
+                } else if (wasAtBottom) {
+                    this.scrollChatToBottom(false);
+                }
+                if (typeof lucide !== "undefined") lucide.createIcons();
+            });
         },
 
         syncMetaFields() {
             this.editTitle = this.question.title || "";
             this.editStatus = this.question.supportStatus || "pending";
             this.editAnswerDue = this.toDateInputValue(this.question.answerDue);
+            this.editRequireHuman = Boolean(
+                this.question.isRequireHumanSupport,
+            );
         },
 
         initial(name) {
@@ -90,6 +140,31 @@ document.addEventListener("alpine:init", () => {
             return items.sort(
                 (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
             );
+        },
+
+        async chatTimelineUserIcon(uuid) {
+            if (uuid in this.userIconMap) {
+                return this.userIconMap[uuid];
+            }
+
+            this.userIconMap[uuid] = (async () => {
+                try {
+                    const res = await fetch(`/api/v1/user/icon/${uuid}`, {
+                        method: "GET",
+                    });
+                    if (!res.ok) {
+                        throw new Error("ユーザアイコンの取得に失敗しました");
+                    }
+                    const data = await res.json();
+                    return data["icon"];
+                } catch (err) {
+                    delete this.userIconMap[uuid];
+                    console.error(err);
+                    throw err;
+                }
+            })();
+
+            return this.userIconMap[uuid];
         },
 
         refersForAnswer(answer) {
@@ -148,13 +223,12 @@ document.addEventListener("alpine:init", () => {
         },
 
         async fetchQuestion() {
+            const wasAtBottom = this.chatAtBottom;
             const res = await fetch(`/api/v1/questions/${this.question.uuid}`);
             if (!res.ok) return;
             this.question = Question.fromJSON(await res.json());
             this.syncMetaFields();
-            this.$nextTick(() => {
-                if (typeof lucide !== "undefined") lucide.createIcons();
-            });
+            this.afterChatUpdate(wasAtBottom);
         },
 
         async updateQuestion(payload) {
@@ -213,6 +287,37 @@ document.addEventListener("alpine:init", () => {
             await this.updateQuestion({ answerDue: this.editAnswerDue });
         },
 
+        async saveRequireHuman() {
+            if (
+                this.editRequireHuman ===
+                Boolean(this.question.isRequireHumanSupport)
+            )
+                return;
+            await this.updateQuestion({
+                isRequireHumanSupport: this.editRequireHuman,
+            });
+        },
+
+        async saveTags(tags) {
+            await this.updateQuestion({ tags });
+        },
+
+        async addTag() {
+            const tag = this.newTag.trim();
+            if (!tag) return;
+            if ((this.question.tags || []).includes(tag)) {
+                this.newTag = "";
+                return;
+            }
+            this.newTag = "";
+            await this.saveTags([...(this.question.tags || []), tag]);
+        },
+
+        async removeTag(tag) {
+            const tags = (this.question.tags || []).filter((t) => t !== tag);
+            await this.saveTags(tags);
+        },
+
         async appendContent() {
             const res = await fetch(
                 `/api/v1/questions/${this.question.uuid}/contents`,
@@ -231,6 +336,7 @@ document.addEventListener("alpine:init", () => {
             }
             this.composerText = "";
             await this.fetchQuestion();
+            this.scrollChatToBottom();
         },
 
         async addAnswer() {
@@ -254,6 +360,7 @@ document.addEventListener("alpine:init", () => {
             }
             this.composerText = "";
             await this.fetchQuestion();
+            this.scrollChatToBottom();
         },
 
         async addMemo() {
@@ -274,6 +381,7 @@ document.addEventListener("alpine:init", () => {
             }
             this.composerText = "";
             await this.fetchQuestion();
+            this.scrollChatToBottom();
         },
 
         statusLabel,

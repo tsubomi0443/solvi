@@ -176,7 +176,17 @@ func (uc *QuestionUsecase) Update(actorID uint, isSupporter bool, uuid string, t
 		return fmt.Errorf("完了できません")
 	}
 	if !isSupporter {
-		return fmt.Errorf("権限がありません")
+		if q.QuestionUserID != actorID {
+			return fmt.Errorf("権限がありません")
+		}
+		if title != nil || status != nil || due != nil || tags != nil {
+			return fmt.Errorf("権限がありません")
+		}
+		if requireHuman == nil {
+			return fmt.Errorf("権限がありません")
+		}
+		q.IsRequireHumanSupport = *requireHuman
+		return uc.questionRepo.Update(q)
 	}
 	if title != nil {
 		trimmed := strings.TrimSpace(*title)

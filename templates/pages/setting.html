@@ -28,7 +28,7 @@
                             :disabled="loading">
 
                         <div class="mask mask-squircle relative aspect-square w-full overflow-hidden bg-base-200">
-                            <img x-show="form.icon" x-bind:src="'/uploads/' + form.icon" alt="{{.User.Name}}"
+                            <img x-show="form.icon" :src="'/uploads/' + form.icon" alt="{{.User.Name}}"
                                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
 
                             <div x-show="!form.icon"

@@ -74,3 +74,11 @@ func (uc *SettingUsecase) GetProfile(userID uint) (outputmodel.UserOutput, error
 	}
 	return converter.UserEntityToOutput(user), nil
 }
+
+func (uc *SettingUsecase) GetProfileByUUID(uuid string) (outputmodel.UserOutput, error) {
+	user, err := uc.userRepo.GetByUUID(uuid)
+	if err != nil {
+		return outputmodel.UserOutput{}, fmt.Errorf("ユーザが見つかりません")
+	}
+	return converter.UserEntityToOutput(user), nil
+}

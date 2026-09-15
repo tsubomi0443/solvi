@@ -49,7 +49,6 @@ func RegisterRoutes(e *echo.Echo, deps Deps, accessLog io.Writer) {
 	e.GET("/logout", ph.LogoutPage)
 
 	auth := e.Group("", JWTConfig())
-	apiAuth := e.Group("/api/v1", APIJWTConfig())
 
 	auth.GET("/", ph.HomePage)
 	auth.GET("/questions/new", ph.QuestionNewPage)
@@ -59,7 +58,9 @@ func RegisterRoutes(e *echo.Echo, deps Deps, accessLog io.Writer) {
 	auth.GET("/management/users", ph.ManagementUsersPage, AdminOnly)
 	auth.GET("/sse", sh.Stream)
 
+	apiAuth := e.Group("/api/v1", APIJWTConfig())
 	apiAuth.POST("/logout", ah.Logout)
+	apiAuth.GET("/user/icon/:uuid", ah.GetUserIcon)
 	apiAuth.GET("/questions", ah.ListQuestions)
 	apiAuth.GET("/questions/:uuid", ah.GetQuestion)
 	apiAuth.POST("/questions", ah.CreateQuestion)

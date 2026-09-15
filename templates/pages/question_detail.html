@@ -14,45 +14,65 @@
         window.solviSSEEnabled = true;
         window.solviIsSupporter = "{{ .IsSupporter }}";
     </script>
-    <div class="flex min-h-screen">
+    <div class="flex h-screen overflow-hidden">
         {{template "sidebar" .}}
-        <div class="flex min-w-0 flex-1 flex-col">
+        <div class="flex min-w-0 flex-1 min-h-0 flex-col">
             {{template "header" dict "Breadcrumb" "質問詳細" "User" .User}}
-            <main class="flex-1 p-4 md:p-6">
-                <div class="mb-4">
+            <main class="flex flex-1 min-h-0 flex-col overflow-hidden p-4 md:p-6">
+                <div class="mb-4 shrink-0">
                     <a href="/" class="btn btn-ghost btn-sm gap-2">
                         <i data-lucide="arrow-left" class="h-4 w-4"></i>一覧に戻る
                     </a>
                 </div>
-                <div class="flex flex-1 min-h-0 flex-col gap-6 lg:flex-row">
+                <div class="flex flex-1 min-h-0 flex-col gap-6 overflow-hidden lg:flex-row">
                     <!-- チャットパネル -->
                     <div
-                        class="flex min-h-[32rem] flex-1 flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-                        <div class="flex flex-1 flex-col gap-4 overflow-y-auto bg-base-200/40 p-6" x-ref="chatBox">
-                            <template x-for="item in chatTimelineItems()" :key="item.uuid + '-' + item.kind">
-                                <template x-if="isShown(item)">
-                                    <div class="chat" :class="isSelfItem(item) ? 'chat-end' : 'chat-start'">
-                                        <div class="chat-image avatar">
-                                            <div class="grid h-10 w-10 place-items-center rounded-full bg-rose-900 text-xs font-semibold text-white"
-                                                x-text="initial(item.userName)"></div>
-                                        </div>
-                                        <div class="chat-header text-xs opacity-60">
-                                            <span x-text="item.userName"></span>
-                                            <time class="ml-2" x-text="formatDate(item.createdAt)"></time>
-                                        </div>
-                                        <div class="chat-bubble whitespace-pre-wrap text-sm leading-relaxed"
-                                            :class="chatBubbleClass(item.kind)" x-text="item.content"></div>
-                                        <template x-if="item.refers && item.refers.length">
-                                            <div class="chat-footer w-full max-w-md">
-                                                <template x-for="r in item.refers" :key="r.url">
-                                                    <a :href="r.url" class="link link-primary text-xs" target="_blank"
-                                                        rel="noopener" x-text="r.name"></a>
+                        class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                        <div class="relative flex min-h-0 flex-1 flex-col">
+                            <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-base-200/40 p-6"
+                                x-ref="chatBox" @scroll="onChatScroll()">
+                                <template x-for="item in chatTimelineItems()" :key="item.uuid + '-' + item.kind">
+                                    <template x-if="isShown(item)">
+                                        <div class="chat" :class="isSelfItem(item) ? 'chat-end' : 'chat-start'">
+                                            <div class="chat-image avatar" x-data="{ icon: '' }"
+                                                x-init="icon = await chatTimelineUserIcon(item.userUuid)">
+                                                <template x-if=" !icon">
+                                                    <div
+                                                        class="h-10 w-10 place-items-center rounded-full bg-rose-900 text-xs font-semibold text-white text-center content-center">
+                                                        <span x-text="initial(item.userName)"></span>
+                                                    </div>
+                                                </template>
+                                                <template x-if="icon">
+                                                    <div
+                                                        class="w-8 h-8 rounded-full ring ring-offset-base-100 ring-offset-2">
+                                                        <img :src="icon" :alt="item.userName" class="object-cover">
+                                                    </div>
                                                 </template>
                                             </div>
-                                        </template>
-                                    </div>
+                                            <div class="chat-header text-xs opacity-60">
+                                                <span x-text="item.userName"></span>
+                                                <time class="ml-2" x-text="formatDate(item.createdAt)"></time>
+                                            </div>
+                                            <div class="chat-bubble whitespace-pre-wrap text-sm leading-relaxed"
+                                                :class="chatBubbleClass(item.kind)" x-text="item.content"></div>
+                                            <template x-if="item.refers && item.refers.length">
+                                                <div class="chat-footer w-full max-w-md">
+                                                    <template x-for="r in item.refers" :key="r.url">
+                                                        <a :href="r.url" class="link link-primary text-xs"
+                                                            target="_blank" rel="noopener" x-text="r.name"></a>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
                                 </template>
-                            </template>
+                            </div>
+                            <button type="button" x-show="showScrollToBottom" x-transition.opacity
+                                @click="scrollChatToBottom()"
+                                class="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 btn btn-circle btn-sm border border-base-300 bg-base-100 shadow-lg opacity-90 hover:opacity-100 hover:shadow-xl"
+                                aria-label="最新メッセージへ">
+                                <i data-lucide="arrow-down" class="h-4 w-4"></i>
+                            </button>
                         </div>
                         <div class="shrink-0 border-t border-base-300 p-4">
                             <textarea class="textarea textarea-bordered mb-3 w-full text-sm" rows="3"
@@ -72,7 +92,7 @@
                         </div>
                     </div>
                     <!-- 右サイドメタ -->
-                    <div class="w-full shrink-0 space-y-4 lg:w-80">
+                    <div class="w-full shrink-0 space-y-4 overflow-y-auto lg:w-80 lg:max-h-full">
                         <div class="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm space-y-4">
                             <template x-if="isSupporter">
                                 <div class="space-y-4">
@@ -101,15 +121,33 @@
                             </template>
                             <div>
                                 <p class="mb-1 text-xs font-semibold text-base-content/60">タグ</p>
-                                <div class="flex flex-wrap gap-1">
+                                <div class="mb-2 flex flex-wrap gap-1">
                                     <template x-for="tag in (question.tags || [])" :key="tag">
-                                        <span class="badge badge-outline badge-sm" x-text="tag"></span>
+                                        <span class="badge badge-outline badge-sm gap-1 pr-1">
+                                            <span x-text="tag"></span>
+                                            <button type="button" class="rounded-full px-0.5 hover:text-error"
+                                                x-show="isSupporter" @click="removeTag(tag)" :disabled="savingMeta"
+                                                aria-label="タグを削除">×</button>
+                                        </span>
                                     </template>
+                                    <span class="text-xs text-base-content/50"
+                                        x-show="!(question.tags || []).length">なし</span>
                                 </div>
+                                <template x-if="isSupporter">
+                                    <div class="flex gap-2">
+                                        <input type="text" class="input input-bordered input-sm min-w-0 flex-1"
+                                            x-model="newTag" placeholder="タグを追加" @keydown.enter.prevent="addTag()"
+                                            :disabled="savingMeta">
+                                        <button type="button" class="btn btn-outline btn-sm shrink-0" @click="addTag()"
+                                            :disabled="savingMeta || !newTag.trim()">追加</button>
+                                    </div>
+                                </template>
                             </div>
-                            <div x-show="question.isRequireHumanSupport">
-                                <span class="badge badge-warning badge-sm">人的対応が必要</span>
-                            </div>
+                            <label class="label cursor-pointer justify-start gap-3 px-0">
+                                <input type="checkbox" class="checkbox checkbox-sm" x-model="editRequireHuman"
+                                    @change="saveRequireHuman()" :disabled="savingMeta">
+                                <span class="label-text text-sm">人による対応を希望する</span>
+                            </label>
                             <template x-if="isSupporter">
                                 <label class="form-control w-full">
                                     <span class="label-text text-xs font-semibold text-base-content/60">回答期日</span>
@@ -139,7 +177,9 @@
         </div>
     </div>
     <script type="module" src="/static/js/sse.js"></script>
+
 </body>
+
 
 
 </html>

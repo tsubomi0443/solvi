@@ -114,8 +114,7 @@ export class Question {
             title: dto.title ?? "",
             supportStatus: dto.supportStatus ?? "",
             // TODO: AI機能実装後に修正
-            //// isRequireHumanSupport: Boolean(dto.isRequireHumanSupport),
-            isRequireHumanSupport: true,
+            isRequireHumanSupport: Boolean(dto.isRequireHumanSupport),
             answerDue: dto.answerDue ?? "",
             questionUserUuid: dto.questionUserUuid ?? "",
             questionUserName: dto.questionUserName ?? "",
