@@ -160,7 +160,7 @@ func (uc *QuestionUsecase) AddMemo(actorID uint, uuid, content string) error {
 	return uc.questionRepo.AddMemo(&entity.QuestionMemo{Content: content, QuestionID: q.ID, MemoUserID: actorID})
 }
 
-func (uc *QuestionUsecase) Update(actorID uint, isSupporter bool, uuid string, status *string, due *time.Time, tags []string, requireHuman *bool, complete bool) error {
+func (uc *QuestionUsecase) Update(actorID uint, isSupporter bool, uuid string, title *string, status *string, due *time.Time, tags []string, requireHuman *bool, complete bool) error {
 	q, err := uc.questionRepo.GetByUUID(uuid)
 	if err != nil {
 		return err
@@ -178,10 +178,24 @@ func (uc *QuestionUsecase) Update(actorID uint, isSupporter bool, uuid string, s
 	if !isSupporter {
 		return fmt.Errorf("権限がありません")
 	}
+	if title != nil {
+		trimmed := strings.TrimSpace(*title)
+		if trimmed == "" {
+			return fmt.Errorf("タイトルは必須です")
+		}
+		q.Title = trimmed
+	}
 	if status != nil {
 		parsed, err := valueobject.ParseSupportStatus(supportStatusToInt(*status))
 		if err != nil {
 			return err
+		}
+		if parsed == valueobject.SupportStatusDone && q.SupportStatus != valueobject.SupportStatusDone {
+			q.SupportStatus = parsed
+			if err := uc.questionRepo.Update(q); err != nil {
+				return err
+			}
+			return uc.createSummary(q)
 		}
 		q.SupportStatus = parsed
 	}

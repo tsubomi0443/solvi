@@ -90,3 +90,99 @@ func TestCreate_PersistsQuestion(t *testing.T) {
 		t.Fatalf("unexpected detail: %+v", out)
 	}
 }
+
+func TestUpdate_SupporterUpdatesTitle(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "old", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusPending,
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *entity.Question) error {
+		if updated.Title != "new title" {
+			t.Fatalf("title=%q", updated.Title)
+		}
+		return nil
+	})
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	title := "new title"
+	if err := uc.Update(1, true, qid.String(), &title, nil, nil, nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdate_SupporterUpdatesAnswerDue(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusPending,
+	}
+	due := time.Date(2026, 9, 14, 23, 59, 59, 0, time.FixedZone("Asia/Tokyo", 9*60*60))
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *entity.Question) error {
+		if updated.AnswerDue == nil || !updated.AnswerDue.Equal(due) {
+			t.Fatalf("due=%v", updated.AnswerDue)
+		}
+		return nil
+	})
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.Update(1, true, qid.String(), nil, nil, &due, nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdate_SupporterReopensDoneQuestion(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusDone,
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *entity.Question) error {
+		if updated.SupportStatus != valueobject.SupportStatusPending {
+			t.Fatalf("status=%v", updated.SupportStatus)
+		}
+		return nil
+	})
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	status := "pending"
+	if err := uc.Update(1, true, qid.String(), nil, &status, nil, nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdate_SupporterCompletesViaStatus(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusSupporting,
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil).Times(2)
+	qRepo.EXPECT().Update(gomock.Any()).Return(nil)
+	qRepo.EXPECT().CreateSummary(gomock.Any(), gomock.Any()).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	status := "done"
+	if err := uc.Update(1, true, qid.String(), nil, &status, nil, nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+}

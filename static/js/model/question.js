@@ -2,11 +2,13 @@ export class Timeline {
     constructor({
         uuid = "",
         content = "",
+        userUuid = "",
         userName = "",
         createdAt = "",
     } = {}) {
         this.uuid = uuid;
         this.content = content;
+        this.userUuid = userUuid;
         this.userName = userName;
         this.createdAt = createdAt;
     }
@@ -16,6 +18,7 @@ export class Timeline {
         return new Timeline({
             uuid: dto.uuid ?? "",
             content: dto.content ?? "",
+            userUuid: dto.userUuid ?? "",
             userName: dto.userName ?? "",
             createdAt: dto.createdAt ?? "",
         });
@@ -44,6 +47,7 @@ export class QuestionListItem {
         supportStatus = "",
         isRequireHumanSupport = false,
         questionUserName = "",
+        questionUserDepartment = "",
         answerDue = "",
         tags = [],
     } = {}) {
@@ -52,6 +56,7 @@ export class QuestionListItem {
         this.supportStatus = supportStatus;
         this.isRequireHumanSupport = isRequireHumanSupport;
         this.questionUserName = questionUserName;
+        this.questionUserDepartment = questionUserDepartment;
         this.answerDue = answerDue;
         this.tags = tags;
     }
@@ -64,6 +69,7 @@ export class QuestionListItem {
             supportStatus: dto.supportStatus ?? "",
             isRequireHumanSupport: Boolean(dto.isRequireHumanSupport),
             questionUserName: dto.questionUserName ?? "",
+            questionUserDepartment: dto.questionUserDepartment ?? "",
             answerDue: dto.answerDue ?? "",
             tags: Array.isArray(dto.tags) ? dto.tags.slice() : [],
         });
@@ -79,6 +85,7 @@ export class Question {
         answerDue = "",
         questionUserUuid = "",
         questionUserName = "",
+        questionUserDepartment = "",
         tags = [],
         contents = [],
         answers = [],
@@ -92,6 +99,7 @@ export class Question {
         this.answerDue = answerDue;
         this.questionUserUuid = questionUserUuid;
         this.questionUserName = questionUserName;
+        this.questionUserDepartment = questionUserDepartment;
         this.tags = tags;
         this.contents = contents;
         this.answers = answers;
@@ -111,6 +119,7 @@ export class Question {
             answerDue: dto.answerDue ?? "",
             questionUserUuid: dto.questionUserUuid ?? "",
             questionUserName: dto.questionUserName ?? "",
+            questionUserDepartment: dto.questionUserDepartment ?? "",
             tags: Array.isArray(dto.tags) ? dto.tags.slice() : [],
             contents: (dto.contents || []).map((item) =>
                 Timeline.fromJSON(item),

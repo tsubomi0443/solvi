@@ -155,7 +155,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         formatDue(iso) {
-            if (!iso) return "—";
+            if (!iso) return "期限未設定";
             const date = new Date(iso);
             if (Number.isNaN(date.getTime())) return "期限未設定";
             return date.toLocaleDateString("ja-JP", {
