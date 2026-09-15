@@ -115,8 +115,8 @@
                         <thead>
                             <tr>
                                 <th>件名</th>
-                                <th>質問者</th>
-                                <th>部署</th>
+                                <th :class="isSupporter ? '': 'hidden'">質問者</th>
+                                <th :class="isSupporter ? '': 'hidden'">部署</th>
                                 <th>期日</th>
                                 <th>ステータス</th>
                                 <th>タグ</th>
@@ -129,8 +129,10 @@
                                     <td class="max-w-[16rem] font-medium">
                                         <span class="line-clamp-2" x-text="q.title"></span>
                                     </td>
-                                    <td class="whitespace-nowrap text-sm" x-text="q.questionUserName || '質問者名'"></td>
-                                    <td class="whitespace-nowrap text-sm" x-text="q.questionUserDepartment || '部署名'">
+                                    <td class="whitespace-nowrap text-sm" :class="isSupporter ? '': 'hidden'"
+                                        x-text="q.questionUserName || '質問者名'"></td>
+                                    <td class="whitespace-nowrap text-sm" :class="isSupporter ? '': 'hidden'"
+                                        x-text="q.questionUserDepartment || '部署名'">
                                     </td>
                                     <td class="whitespace-nowrap text-sm" x-text="formatDue(q.answerDue)"></td>
                                     <td class="whitespace-nowrap">
@@ -139,6 +141,8 @@
                                     </td>
                                     <td>
                                         <div class="flex flex-wrap gap-1">
+                                            <p class="badge badge-outline badge-sm badge-warning"
+                                                x-show="q.isRequireHumanSupport && isSupporter">人的対応が必要</p>
                                             <template x-for="tag in (q.tags || [])" :key="tag">
                                                 <span class="badge badge-outline badge-sm" x-text="tag"></span>
                                             </template>
@@ -163,12 +167,13 @@
                                 <p class="text-xs text-base-content/60" x-show="isSupporter"
                                     x-text="q.questionUserName"></p>
                                 <p class="text-xs text-base-content/60" x-text="formatDue(q.answerDue)"></p>
+                                <p class="text-xs text-warning" x-show="q.isRequireHumanSupport"
+                                    :text="isSupporter ? '人的対応が必要':'担当者による回答を希望'">人的対応が必要</p>
                                 <div class="flex flex-wrap gap-1">
                                     <template x-for="tag in (q.tags || [])" :key="tag">
                                         <span class="badge badge-outline badge-sm" x-text="tag"></span>
                                     </template>
                                 </div>
-                                <p class="text-xs text-warning" x-show="q.isRequireHumanSupport">人的対応が必要</p>
                             </div>
                         </a>
                     </template>

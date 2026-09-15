@@ -115,11 +115,6 @@
                         </div>
                         <div class="shrink-0 border-t border-base-300 p-4">
                             <div class="mb-3 flex flex-wrap items-center gap-2">
-                                <button type="button" class="btn btn-sm btn-outline gap-1" x-show="isSupporter"
-                                    @click="openReferModal()">
-                                    <i data-lucide="plus" class="h-4 w-4"></i>
-                                    参考情報の追加
-                                </button>
                                 <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleReferList()">
                                     <i data-lucide="list" class="h-4 w-4"></i>
                                     参照情報一覧
@@ -146,17 +141,25 @@
                             </div>
                             <textarea class="textarea textarea-bordered mb-3 w-full text-sm" rows="3"
                                 x-model="composerText" placeholder="メッセージを入力..."></textarea>
-                            <div class="flex flex-wrap justify-end gap-2">
-                                <button type="button" class="btn btn-sm btn-outline" x-show="!isSupporter"
-                                    @click="appendContent()" :disabled="!composerText.trim()">追記</button>
-                                <template x-if="isSupporter">
-                                    <div class="flex gap-2">
-                                        <button type="button" class="btn btn-sm btn-outline" @click="addMemo()"
-                                            :disabled="!composerText.trim()">メモ登録</button>
-                                        <button type="button" class="btn btn-sm border-rose-900 bg-rose-900 text-white"
-                                            @click="addAnswer()" :disabled="!composerText.trim()">回答送信</button>
-                                    </div>
-                                </template>
+                            <div class="flex flex-wrap justify-between gap-2">
+                                <button type="button" class="btn btn-sm btn-outline gap-1" x-show="isSupporter"
+                                    @click="openReferModal()">
+                                    <i data-lucide="plus" class="h-4 w-4"></i>
+                                    参考情報の追加
+                                </button>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline" x-show="!isSupporter"
+                                        @click="appendContent()" :disabled="!composerText.trim()">追記</button>
+                                    <template x-if="isSupporter">
+                                        <div class="flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline" @click="addMemo()"
+                                                :disabled="!composerText.trim()">メモ登録</button>
+                                            <button type="button"
+                                                class="btn btn-sm border-rose-900 bg-rose-900 text-white"
+                                                @click="addAnswer()" :disabled="!composerText.trim()">回答送信</button>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
                         </div>
                     </div>
