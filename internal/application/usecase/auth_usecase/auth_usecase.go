@@ -108,7 +108,7 @@ func issueToken(user *entity.User) (string, error) {
 		Email:       user.Email,
 		Name:        user.Name,
 		IsSupporter: user.IsSupporter,
-		IsAdmin:     user.IsAdmin(),
+		IsAdmin:     user.IsAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

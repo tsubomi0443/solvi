@@ -38,7 +38,7 @@ func New(deps Deps) *Handler {
 func (h *Handler) baseData(c *echo.Context, active string) map[string]interface{} {
 	claims := authctx.Claims(c)
 	nav := []NavItem{
-		{Href: "/", Label: navHomeLabel(claims.IsSupporter), Icon: "message-circle-question", Active: active == "home"},
+		{Href: "/", Label: navHomeLabel(claims.IsSupporter || claims.IsAdmin), Icon: "message-circle-question", Active: active == "home"},
 		{Href: "/setting", Label: "プロフィール", Icon: "user", Active: active == "setting"},
 	}
 	if claims.IsSupporter {
@@ -53,6 +53,7 @@ func (h *Handler) baseData(c *echo.Context, active string) map[string]interface{
 		"User":        user,
 		"IsSupporter": claims.IsSupporter,
 		"IsAdmin":     claims.IsAdmin,
+		"CanViewAll":  claims.IsSupporter || claims.IsAdmin,
 	}
 }
 

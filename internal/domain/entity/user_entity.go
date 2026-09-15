@@ -16,8 +16,5 @@ type User struct {
 	IconBlob              []byte    `gorm:"-"`
 	IsSupporter           bool      `gorm:"not null;default:false"`
 	IsSupporterOverridden bool      `gorm:"not null;default:false"`
-}
-
-func (u *User) IsAdmin() bool {
-	return u.Password != nil && *u.Password != ""
+	IsAdmin               bool      `gorm:"not null;default:false"`
 }

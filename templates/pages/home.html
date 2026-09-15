@@ -9,7 +9,7 @@
 <body class="bg-base-200 font-sans antialiased" x-data="solviHome" x-init="init()">
     {{template "notices" .}}
     <script type="application/json" id="questions-json">{{.QuestionsJSON}}</script>
-    <script>window.solviSSEEnabled = true; window.solviIsSupporter = "{{.IsSupporter}}";</script>
+    <script>window.solviSSEEnabled = true; window.solviIsSupporter = "{{.IsSupporter}}"; window.solviIsAdmin = "{{.IsAdmin}}"; window.solviCanViewAll = "{{.CanViewAll}}";</script>
     <div class="flex h-screen overflow-hidden">
         {{template "sidebar" .}}
         <div class="flex min-w-0 flex-1 min-h-0 flex-col">

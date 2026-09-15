@@ -26,8 +26,12 @@ func NewQuestionUsecase(q repo.QuestionRepository, u repo.UserRepository, b ext.
 	return &QuestionUsecase{questionRepo: q, userRepo: u, bedrock: b, onAIAnswer: onAIAnswer}
 }
 
-func (uc *QuestionUsecase) List(actorID uint, isSupporter bool) ([]outputmodel.QuestionListItemOutput, error) {
-	if isSupporter {
+func canViewAllQuestions(isSupporter, isAdmin bool) bool {
+	return isSupporter || isAdmin
+}
+
+func (uc *QuestionUsecase) List(actorID uint, isSupporter, isAdmin bool) ([]outputmodel.QuestionListItemOutput, error) {
+	if canViewAllQuestions(isSupporter, isAdmin) {
 		qs, err := uc.questionRepo.ListAll()
 		if err != nil {
 			return nil, err
@@ -49,15 +53,15 @@ func mapList(qs []entity.Question) []outputmodel.QuestionListItemOutput {
 	return out
 }
 
-func (uc *QuestionUsecase) Get(actorID uint, isSupporter bool, uuid string) (*outputmodel.QuestionDetailOutput, error) {
+func (uc *QuestionUsecase) Get(actorID uint, isSupporter, isAdmin bool, uuid string) (*outputmodel.QuestionDetailOutput, error) {
 	q, err := uc.questionRepo.GetByUUID(uuid)
 	if err != nil {
 		return nil, err
 	}
-	if !isSupporter && q.QuestionUserID != actorID {
+	if !canViewAllQuestions(isSupporter, isAdmin) && q.QuestionUserID != actorID {
 		return nil, fmt.Errorf("閲覧権限がありません")
 	}
-	return new(converter.QuestionEntityToDetail(q, isSupporter)), nil
+	return new(converter.QuestionEntityToDetail(q, canViewAllQuestions(isSupporter, isAdmin))), nil
 }
 
 func (uc *QuestionUsecase) Create(actorID uint, title, content string, tags []string, answerDue *time.Time, requireHuman bool) (*outputmodel.QuestionDetailOutput, error) {
@@ -160,7 +164,65 @@ func (uc *QuestionUsecase) AddMemo(actorID uint, uuid, content string) error {
 	return uc.questionRepo.AddMemo(&entity.QuestionMemo{Content: content, QuestionID: q.ID, MemoUserID: actorID})
 }
 
-func (uc *QuestionUsecase) Update(actorID uint, isSupporter bool, uuid string, title *string, status *string, due *time.Time, tags []string, requireHuman *bool, complete bool) error {
+func (uc *QuestionUsecase) DeleteAnswer(actorID uint, isSupporter, isAdmin bool, questionUUID, answerUUID string) error {
+	if !isSupporter && !isAdmin {
+		return fmt.Errorf("権限がありません")
+	}
+	q, err := uc.questionRepo.GetByUUID(questionUUID)
+	if err != nil {
+		return err
+	}
+	var target *entity.QuestionAnswer
+	for i := range q.Answers {
+		if q.Answers[i].UUID.String() == answerUUID {
+			target = &q.Answers[i]
+			break
+		}
+	}
+	if target == nil {
+		return fmt.Errorf("回答が見つかりません")
+	}
+	if !isAdmin && target.AnswerUserID != actorID {
+		return fmt.Errorf("権限がありません")
+	}
+	return uc.questionRepo.SoftDeleteAnswerByUUID(answerUUID)
+}
+
+func (uc *QuestionUsecase) DeleteMemo(actorID uint, isSupporter, isAdmin bool, questionUUID, memoUUID string) error {
+	if !isSupporter && !isAdmin {
+		return fmt.Errorf("権限がありません")
+	}
+	q, err := uc.questionRepo.GetByUUID(questionUUID)
+	if err != nil {
+		return err
+	}
+	var target *entity.QuestionMemo
+	for i := range q.Memos {
+		if q.Memos[i].UUID.String() == memoUUID {
+			target = &q.Memos[i]
+			break
+		}
+	}
+	if target == nil {
+		return fmt.Errorf("メモが見つかりません")
+	}
+	if !isAdmin && target.MemoUserID != actorID {
+		return fmt.Errorf("権限がありません")
+	}
+	return uc.questionRepo.SoftDeleteMemoByUUID(memoUUID)
+}
+
+func (uc *QuestionUsecase) Delete(isAdmin bool, uuid string) error {
+	if !isAdmin {
+		return fmt.Errorf("権限がありません")
+	}
+	if _, err := uc.questionRepo.GetByUUID(uuid); err != nil {
+		return err
+	}
+	return uc.questionRepo.SoftDeleteByUUID(uuid)
+}
+
+func (uc *QuestionUsecase) Update(actorID uint, isSupporter bool, uuid string, title *string, status *string, due *time.Time, tags *[]string, requireHuman *bool, complete bool) error {
 	q, err := uc.questionRepo.GetByUUID(uuid)
 	if err != nil {
 		return err
@@ -216,8 +278,8 @@ func (uc *QuestionUsecase) Update(actorID uint, isSupporter bool, uuid string, t
 		q.IsRequireHumanSupport = *requireHuman
 	}
 	if tags != nil {
-		tagEntities := make([]entity.QuestionTag, 0, len(tags))
-		for _, t := range tags {
+		tagEntities := make([]entity.QuestionTag, 0, len(*tags))
+		for _, t := range *tags {
 			if s := strings.TrimSpace(t); s != "" {
 				tagEntities = append(tagEntities, entity.QuestionTag{Name: s, QuestionID: q.ID})
 			}

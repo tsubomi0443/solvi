@@ -26,6 +26,8 @@ document.addEventListener("alpine:init", () => {
         question: {},
         currentUser: {},
         isSupporter: window.solviIsSupporter === "true",
+        isAdmin: window.solviIsAdmin === "true",
+        canViewAll: window.solviCanViewAll === "true",
         composerText: "",
         editTitle: "",
         editStatus: "",
@@ -38,6 +40,11 @@ document.addEventListener("alpine:init", () => {
         chatAtBottom: true,
         lastTimelineCount: 0,
         userIconMap: {},
+        showDeleteModal: false,
+        showDeleteQuestionModal: false,
+        deleteTarget: null,
+        deletingItem: false,
+        deletingQuestion: false,
 
         init() {
             const qEl = document.getElementById("question-json");
@@ -132,7 +139,7 @@ document.addEventListener("alpine:init", () => {
                     refers: this.refersForAnswer(a),
                 });
             });
-            if (this.isSupporter) {
+            if (this.canViewAll) {
                 (this.question.memos || []).forEach((m) => {
                     items.push({ ...m, kind: "memo" });
                 });
@@ -179,12 +186,100 @@ document.addEventListener("alpine:init", () => {
             );
         },
 
+        canDeleteItem(item) {
+            if (item.kind !== "answer" && item.kind !== "memo") return false;
+            if (this.isAdmin) return true;
+            return this.isSupporter && this.isSelfItem(item);
+        },
+
+        deleteModalMessage() {
+            if (!this.deleteTarget) return "";
+            return this.deleteTarget.kind === "memo"
+                ? "このメモを削除しますか？"
+                : "この回答を削除しますか？";
+        },
+
+        openDeleteModal(item) {
+            this.deleteTarget = item;
+            this.showDeleteModal = true;
+        },
+
+        closeDeleteModal() {
+            if (this.deletingItem) return;
+            this.showDeleteModal = false;
+            this.deleteTarget = null;
+        },
+
+        async confirmDelete() {
+            if (!this.deleteTarget || this.deletingItem) return;
+            const { kind, uuid } = this.deleteTarget;
+            const path =
+                kind === "memo"
+                    ? `/api/v1/questions/${this.question.uuid}/memos/${uuid}`
+                    : `/api/v1/questions/${this.question.uuid}/answers/${uuid}`;
+            this.deletingItem = true;
+            try {
+                const res = await fetch(path, { method: "DELETE" });
+                if (!res.ok) {
+                    const msg = await res
+                        .json()
+                        .catch(() => ({ error: "削除に失敗しました" }));
+                    window.notice.show({
+                        message: msg.error || "削除に失敗しました",
+                        type: "error",
+                    });
+                    return;
+                }
+                this.showDeleteModal = false;
+                this.deleteTarget = null;
+                await this.fetchQuestion();
+                window.notice.show({
+                    message: "削除しました",
+                    type: "success",
+                });
+            } finally {
+                this.deletingItem = false;
+            }
+        },
+
         isShown(item) {
             return (
                 this.isSelfItem(item) ||
                 item.kind === "answer" ||
-                this.isSupporter
+                this.canViewAll
             );
+        },
+
+        openDeleteQuestionModal() {
+            this.showDeleteQuestionModal = true;
+        },
+
+        closeDeleteQuestionModal() {
+            if (this.deletingQuestion) return;
+            this.showDeleteQuestionModal = false;
+        },
+
+        async confirmDeleteQuestion() {
+            if (this.deletingQuestion) return;
+            this.deletingQuestion = true;
+            try {
+                const res = await fetch(`/api/v1/questions/${this.question.uuid}`, {
+                    method: "DELETE",
+                });
+                if (!res.ok) {
+                    const msg = await res
+                        .json()
+                        .catch(() => ({ error: "削除に失敗しました" }));
+                    window.notice.show({
+                        message: msg.error || "削除に失敗しました",
+                        type: "error",
+                    });
+                    return;
+                }
+                window.location.href = "/";
+            } finally {
+                this.deletingQuestion = false;
+            }
         },
 
         chatBubbleClass(kind) {

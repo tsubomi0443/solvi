@@ -13,16 +13,20 @@
     <script>
         window.solviSSEEnabled = true;
         window.solviIsSupporter = "{{ .IsSupporter }}";
+        window.solviIsAdmin = "{{ .IsAdmin }}";
+        window.solviCanViewAll = "{{ .CanViewAll }}";
     </script>
     <div class="flex h-screen overflow-hidden">
         {{template "sidebar" .}}
         <div class="flex min-w-0 flex-1 min-h-0 flex-col">
             {{template "header" dict "Breadcrumb" "質問詳細" "User" .User}}
             <main class="flex flex-1 min-h-0 flex-col overflow-hidden p-4 md:p-6">
-                <div class="mb-4 shrink-0">
+                <div class="mb-4 flex shrink-0 items-center justify-between gap-2">
                     <a href="/" class="btn btn-ghost btn-sm gap-2">
                         <i data-lucide="arrow-left" class="h-4 w-4"></i>一覧に戻る
                     </a>
+                    <button type="button" class="btn btn-ghost btn-sm text-error" x-show="isAdmin"
+                        @click="openDeleteQuestionModal()">質問を削除</button>
                 </div>
                 <div class="flex flex-1 min-h-0 flex-col gap-6 overflow-hidden lg:flex-row">
                     <!-- チャットパネル -->
@@ -61,6 +65,13 @@
                                                         <a :href="r.url" class="link link-primary text-xs"
                                                             target="_blank" rel="noopener" x-text="r.name"></a>
                                                     </template>
+                                                </div>
+                                            </template>
+                                            <template x-if="canDeleteItem(item)">
+                                                <div class="chat-footer">
+                                                    <button type="button"
+                                                        class="btn btn-ghost btn-xs text-error hover:bg-error/10"
+                                                        @click="openDeleteModal(item)">削除</button>
                                                 </div>
                                             </template>
                                         </div>
@@ -176,6 +187,35 @@
             </main>
         </div>
     </div>
+
+    <div class="modal backdrop-blur-sm" :class="{'modal-open': showDeleteQuestionModal}">
+        <div class="modal-box bg-white rounded-2xl shadow-2xl">
+            <h3 class="font-bold text-lg mb-6 tracking-tight">質問の削除</h3>
+            <p class="text-sm">この質問を削除しますか？この操作は取り消せません。</p>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost font-bold" @click="closeDeleteQuestionModal()"
+                    :disabled="deletingQuestion">キャンセル</button>
+                <button type="button" class="btn btn-error font-bold" @click="confirmDeleteQuestion()"
+                    :disabled="deletingQuestion">削除</button>
+            </div>
+        </div>
+        <div class="modal-backdrop bg-opacity-100" @click="closeDeleteQuestionModal()"></div>
+    </div>
+
+    <div class="modal backdrop-blur-sm" :class="{'modal-open': showDeleteModal}">
+        <div class="modal-box bg-white rounded-2xl shadow-2xl">
+            <h3 class="font-bold text-lg mb-6 tracking-tight">削除の確認</h3>
+            <p class="text-sm" x-text="deleteModalMessage()"></p>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost font-bold" @click="closeDeleteModal()"
+                    :disabled="deletingItem">キャンセル</button>
+                <button type="button" class="btn btn-error font-bold" @click="confirmDelete()"
+                    :disabled="deletingItem">削除</button>
+            </div>
+        </div>
+        <div class="modal-backdrop bg-opacity-100" @click="closeDeleteModal()"></div>
+    </div>
+
     <script type="module" src="/static/js/sse.js"></script>
 
 </body>

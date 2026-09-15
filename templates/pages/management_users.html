@@ -7,11 +7,13 @@
 <body class="bg-base-200 font-sans antialiased" x-data="solviManagementUsers" x-init="init()">
 {{template "notices" .}}
 <script type="application/json" id="users-json">{{.UsersJSON}}</script>
+<script>window.solviCurrentUserUUID = "{{.CurrentUserUUID}}";</script>
 <div class="flex min-h-screen">
     {{template "sidebar" .}}
     <div class="flex min-w-0 flex-1 flex-col">
         {{template "header" dict "Breadcrumb" "ユーザ管理" "User" .User}}
         <main class="flex-1 p-4 md:p-6">
+            <p class="mb-4 text-sm text-base-content/60">管理者・サポーター権限の変更は、対象ユーザの再ログイン後に反映されます。</p>
             <div class="overflow-x-auto rounded-2xl border border-base-300 bg-base-100">
                 <table class="table">
                     <thead>
@@ -20,6 +22,7 @@
                             <th>メール</th>
                             <th>部署</th>
                             <th>サポーター</th>
+                            <th>管理者</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -32,6 +35,12 @@
                                     <input type="checkbox" class="toggle toggle-sm toggle-success"
                                         :checked="u.isSupporter"
                                         @change="toggleSupporter(u)">
+                                </td>
+                                <td>
+                                    <input type="checkbox" class="toggle toggle-sm toggle-warning"
+                                        :checked="u.isAdmin"
+                                        :disabled="isSelf(u) && u.isAdmin"
+                                        @change="toggleAdmin(u)">
                                 </td>
                             </tr>
                         </template>

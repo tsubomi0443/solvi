@@ -28,7 +28,7 @@ func UserEntityToOutput(u *entity.User) outputmodel.UserOutput {
 		Icon:           icon,
 		IconBase64:     base64Text,
 		IsSupporter:    u.IsSupporter,
-		IsAdmin:        u.IsAdmin(),
+		IsAdmin:        u.IsAdmin,
 	}
 }
 

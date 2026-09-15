@@ -31,7 +31,7 @@ func TestList_ScopedToQuestionUser(t *testing.T) {
 	}, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	items, err := uc.List(10, false)
+	items, err := uc.List(10, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestGet_DeniesOtherUser(t *testing.T) {
 	}, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	_, err := uc.Get(10, false, qid.String())
+	_, err := uc.Get(10, false, false, qid.String())
 	if err == nil {
 		t.Fatal("expected permission error")
 	}
@@ -184,5 +184,233 @@ func TestUpdate_SupporterCompletesViaStatus(t *testing.T) {
 	status := "done"
 	if err := uc.Update(1, true, qid.String(), nil, &status, nil, nil, nil, false); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDeleteAnswer_OwnerSupporter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	answerUUID := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		Answers: []entity.QuestionAnswer{
+			{UUID: answerUUID, AnswerUserID: 1, Content: "answer"},
+		},
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteAnswerByUUID(answerUUID.String()).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteAnswer(1, true, false, qid.String(), answerUUID.String()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDeleteAnswer_DeniesNonSupporter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteAnswer(1, false, false, uuid.NewString(), uuid.NewString()); err == nil {
+		t.Fatal("expected permission error")
+	}
+}
+
+func TestDeleteAnswer_DeniesOtherSupporter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	answerUUID := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		Answers: []entity.QuestionAnswer{
+			{UUID: answerUUID, AnswerUserID: 99, Content: "answer"},
+		},
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteAnswer(1, true, false, qid.String(), answerUUID.String()); err == nil {
+		t.Fatal("expected permission error")
+	}
+}
+
+func TestDeleteMemo_OwnerSupporter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	memoUUID := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		Memos: []entity.QuestionMemo{
+			{UUID: memoUUID, MemoUserID: 1, Content: "memo"},
+		},
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteMemoByUUID(memoUUID.String()).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteMemo(1, true, false, qid.String(), memoUUID.String()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDeleteMemo_DeniesOtherSupporter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	memoUUID := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		Memos: []entity.QuestionMemo{
+			{UUID: memoUUID, MemoUserID: 99, Content: "memo"},
+		},
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteMemo(1, true, false, qid.String(), memoUUID.String()); err == nil {
+		t.Fatal("expected permission error")
+	}
+}
+
+func TestUpdate_AskerUpdatesRequireHuman(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		IsRequireHumanSupport: false,
+	}
+	requireHuman := true
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *entity.Question) error {
+		if !updated.IsRequireHumanSupport {
+			t.Fatal("expected require human support")
+		}
+		return nil
+	})
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.Update(5, false, qid.String(), nil, nil, nil, nil, &requireHuman, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestList_AdminSeesAll(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qRepo.EXPECT().ListAll().Return([]entity.Question{
+		{UUID: uuid.New(), Title: "all", SupportStatus: valueobject.SupportStatusPending},
+	}, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	items, err := uc.List(10, false, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 || items[0].Title != "all" {
+		t.Fatalf("unexpected list: %+v", items)
+	}
+}
+
+func TestGet_AdminCanViewOthers(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+		UUID: qid, QuestionUserID: 99, Title: "secret",
+	}, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	out, err := uc.Get(10, false, true, qid.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Title != "secret" {
+		t.Fatalf("unexpected detail: %+v", out)
+	}
+}
+
+func TestDeleteAnswer_AdminDeletesOther(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	answerUUID := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		Answers: []entity.QuestionAnswer{
+			{UUID: answerUUID, AnswerUserID: 99, Content: "answer"},
+		},
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteAnswerByUUID(answerUUID.String()).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteAnswer(1, false, true, qid.String(), answerUUID.String()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDelete_AdminDeletesQuestion(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{UUID: qid}, nil)
+	qRepo.EXPECT().SoftDeleteByUUID(qid.String()).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.Delete(true, qid.String()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDelete_DeniesNonAdmin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.Delete(false, uuid.NewString()); err == nil {
+		t.Fatal("expected permission error")
+	}
+}
+
+func TestUpdate_AdminCannotChangeRequireHumanForOthers(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		IsRequireHumanSupport: false,
+	}
+	requireHuman := true
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.Update(1, false, qid.String(), nil, nil, nil, nil, &requireHuman, false); err == nil {
+		t.Fatal("expected permission error")
 	}
 }

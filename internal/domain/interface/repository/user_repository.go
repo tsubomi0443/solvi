@@ -11,6 +11,7 @@ type UserRepository interface {
 	GetByUUID(uuid string) (*entity.User, error)
 	GetByEmail(email string) (*entity.User, error)
 	ListAll() ([]entity.User, error)
+	CountAdmins() (int64, error)
 	Create(user *entity.User) error
 	Update(user *entity.User) error
 }

@@ -11,7 +11,7 @@ import (
 func (h *Handler) QuestionDetailPage(c *echo.Context) error {
 	claims := authctx.Claims(c)
 	uuid := c.Param("uuid")
-	detail, err := h.deps.Question.Get(claims.UserID, claims.IsSupporter, uuid)
+	detail, err := h.deps.Question.Get(claims.UserID, claims.IsSupporter, claims.IsAdmin, uuid)
 	if err != nil {
 		return c.Redirect(http.StatusFound, "/")
 	}

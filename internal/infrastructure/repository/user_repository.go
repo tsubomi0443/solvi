@@ -66,6 +66,14 @@ func (r *UserRepository) GetByEmail(email string) (*entity.User, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) CountAdmins() (int64, error) {
+	var count int64
+	if err := r.db.Model(&entity.User{}).Where("is_admin = ?", true).Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("管理者数の取得に失敗しました: %w", err)
+	}
+	return count, nil
+}
+
 func (r *UserRepository) ListAll() ([]entity.User, error) {
 	var users []entity.User
 	if err := r.db.Order("id ASC").Find(&users).Error; err != nil {

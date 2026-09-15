@@ -36,6 +36,8 @@ document.addEventListener("alpine:init", () => {
         selectedStatuses: [],
         supportKind: "all",
         isSupporter: window.solviIsSupporter === "true",
+        isAdmin: window.solviIsAdmin === "true",
+        canViewAll: window.solviCanViewAll === "true",
         statusOptions: STATUS_OPTIONS,
 
         init() {
@@ -53,21 +55,28 @@ document.addEventListener("alpine:init", () => {
             }
             if (typeof lucide !== "undefined") lucide.createIcons();
             document.addEventListener("create-question", (e) => {
-                if (!this.isSupporter || !e.detail) return;
-                this.questions = [toListItem(e.detail), ...this.questions];
+                this.upsertQuestion(e.detail);
             });
             document.addEventListener("update-question", (e) => {
-                if (!e.detail?.uuid) return;
-                const idx = this.questions.findIndex(
-                    (q) => q.uuid === e.detail.uuid,
-                );
-                if (idx >= 0) {
-                    this.questions[idx] = toListItem({
-                        ...this.questions[idx],
-                        ...e.detail,
-                    });
-                }
+                this.upsertQuestion(e.detail);
             });
+        },
+
+        upsertQuestion(detail) {
+            if (!detail?.uuid) return;
+            const idx = this.questions.findIndex((q) => q.uuid === detail.uuid);
+            const item = toListItem(
+                idx >= 0 ? { ...this.questions[idx], ...detail } : detail,
+            );
+            if (idx >= 0) {
+                this.questions = [
+                    ...this.questions.slice(0, idx),
+                    item,
+                    ...this.questions.slice(idx + 1),
+                ];
+            } else {
+                this.questions = [item, ...this.questions];
+            }
         },
 
         setViewMode(mode) {

@@ -10,7 +10,7 @@ import (
 
 func (h *Handler) HomePage(c *echo.Context) error {
 	claims := authctx.Claims(c)
-	items, err := h.deps.Question.List(claims.UserID, claims.IsSupporter)
+	items, err := h.deps.Question.List(claims.UserID, claims.IsSupporter, claims.IsAdmin)
 	if err != nil {
 		return err
 	}

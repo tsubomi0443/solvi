@@ -13,12 +13,15 @@
         <div class="dropdown dropdown-end">
             <button type="button" tabindex="0" class="btn btn-ghost btn-sm gap-2 rounded-full border border-base-300">
                 <span class="grid h-7 w-7 place-items-center rounded-full bg-rose-900 text-xs font-semibold text-white">
+                    <!-- TODO; .User.IconBase64 == nil  -->
                     {{ if .User.Name }}{{ printf "%.1s" .User.Name }}{{ else }}?{{ end }}
+                    <!-- TODO; else IMG  -->
                 </span>
                 <span class="hidden sm:inline">{{ .User.Name }}</span>
                 <i data-lucide="chevron-down" class="h-4 w-4 opacity-60"></i>
             </button>
-            <ul tabindex="0" class="menu dropdown-content z-50 mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+            <ul tabindex="0"
+                class="menu dropdown-content z-50 mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
                 <li><a href="/setting"><i data-lucide="user" class="h-4 w-4"></i>プロフィール</a></li>
                 <li><a href="/logout"><i data-lucide="log-out" class="h-4 w-4"></i>ログアウト</a></li>
             </ul>

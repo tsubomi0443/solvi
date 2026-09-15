@@ -29,7 +29,7 @@ func TestLoginBasic_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	user := &entity.User{Model: gorm.Model{ID: 1}, UUID: uuid.New(), Name: "Admin", Email: "admin@solvi.local", Password: &hash, IsSupporter: true}
+	user := &entity.User{Model: gorm.Model{ID: 1}, UUID: uuid.New(), Name: "Admin", Email: "admin@solvi.local", Password: &hash, IsSupporter: true, IsAdmin: true}
 	userRepo.EXPECT().GetByEmail("admin@solvi.local").Return(user, nil)
 
 	uc := authuc.NewAuthUsecase(nil, userRepo)
@@ -42,6 +42,26 @@ func TestLoginBasic_Success(t *testing.T) {
 	}
 	if out.Email != "admin@solvi.local" || !out.IsAdmin {
 		t.Fatalf("unexpected user output: %+v", out)
+	}
+}
+
+func TestLoginBasic_PasswordOnlyDoesNotGrantAdmin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+	hash, err := crypto.HashPassword("admin", "test-pepper")
+	if err != nil {
+		t.Fatal(err)
+	}
+	user := &entity.User{Model: gorm.Model{ID: 1}, UUID: uuid.New(), Name: "User", Email: "user@solvi.local", Password: &hash, IsAdmin: false}
+	userRepo.EXPECT().GetByEmail("user@solvi.local").Return(user, nil)
+
+	uc := authuc.NewAuthUsecase(nil, userRepo)
+	_, out, err := uc.LoginBasic("user@solvi.local", "admin")
+	if err != nil {
+		t.Fatalf("LoginBasic: %v", err)
+	}
+	if out.IsAdmin {
+		t.Fatalf("expected non-admin output: %+v", out)
 	}
 }
 

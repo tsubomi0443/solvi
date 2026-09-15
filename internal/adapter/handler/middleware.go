@@ -54,6 +54,26 @@ func AdminOnly(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func AdminOnlyAPI(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c *echo.Context) error {
+		claims := authctx.Claims(c)
+		if claims == nil || !claims.IsAdmin {
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "forbidden"})
+		}
+		return next(c)
+	}
+}
+
+func SupporterOrAdmin(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c *echo.Context) error {
+		claims := authctx.Claims(c)
+		if claims == nil || (!claims.IsSupporter && !claims.IsAdmin) {
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "forbidden"})
+		}
+		return next(c)
+	}
+}
+
 func SupporterOnly(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c *echo.Context) error {
 		claims := authctx.Claims(c)

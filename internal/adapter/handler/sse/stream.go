@@ -31,6 +31,7 @@ func (h *Handler) Stream(c *echo.Context) error {
 	client := &Client{
 		UserID:      claims.UserID,
 		IsSupporter: claims.IsSupporter,
+		IsAdmin:     claims.IsAdmin,
 		Send:        make(chan Event, 8),
 	}
 	h.hub.Register(client)

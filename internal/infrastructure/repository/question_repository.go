@@ -69,6 +69,18 @@ func (r *QuestionRepository) AddMemo(memo *entity.QuestionMemo) error {
 	return r.db.Create(memo).Error
 }
 
+func (r *QuestionRepository) SoftDeleteAnswerByUUID(uuid string) error {
+	return r.db.Where("uuid = ?", uuid).Delete(&entity.QuestionAnswer{}).Error
+}
+
+func (r *QuestionRepository) SoftDeleteMemoByUUID(uuid string) error {
+	return r.db.Where("uuid = ?", uuid).Delete(&entity.QuestionMemo{}).Error
+}
+
+func (r *QuestionRepository) SoftDeleteByUUID(uuid string) error {
+	return r.db.Where("uuid = ?", uuid).Delete(&entity.Question{}).Error
+}
+
 func (r *QuestionRepository) AddRefer(refer *entity.QuestionRefer) error {
 	return r.db.Create(refer).Error
 }

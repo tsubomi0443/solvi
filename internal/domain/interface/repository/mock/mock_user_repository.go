@@ -195,6 +195,45 @@ func (c *MockUserRepositoryGetByUUIDCall) DoAndReturn(f func(string) (*entity.Us
 	return c
 }
 
+// CountAdmins mocks base method.
+func (m *MockUserRepository) CountAdmins() (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountAdmins")
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountAdmins indicates an expected call of CountAdmins.
+func (mr *MockUserRepositoryMockRecorder) CountAdmins() *MockUserRepositoryCountAdminsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountAdmins", reflect.TypeOf((*MockUserRepository)(nil).CountAdmins))
+	return &MockUserRepositoryCountAdminsCall{Call: call}
+}
+
+// MockUserRepositoryCountAdminsCall wrap *gomock.Call
+type MockUserRepositoryCountAdminsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockUserRepositoryCountAdminsCall) Return(arg0 int64, arg1 error) *MockUserRepositoryCountAdminsCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockUserRepositoryCountAdminsCall) Do(f func() (int64, error)) *MockUserRepositoryCountAdminsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockUserRepositoryCountAdminsCall) DoAndReturn(f func() (int64, error)) *MockUserRepositoryCountAdminsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // ListAll mocks base method.
 func (m *MockUserRepository) ListAll() ([]entity.User, error) {
 	m.ctrl.T.Helper()

@@ -13,7 +13,12 @@ type Event struct {
 type Client struct {
 	UserID      uint
 	IsSupporter bool
+	IsAdmin     bool
 	Send        chan Event
+}
+
+func (c *Client) canViewAll() bool {
+	return c.IsSupporter || c.IsAdmin
 }
 
 type Hub struct {
@@ -76,7 +81,7 @@ func (h *Hub) SendToSupporters(event string, payload interface{}) {
 	data, _ := json.Marshal(payload)
 	ev := Event{Event: event, Data: string(data)}
 	for c := range h.clients {
-		if c.IsSupporter {
+		if c.canViewAll() {
 			h.send(c, ev)
 		}
 	}
@@ -86,7 +91,7 @@ func (h *Hub) SendToQuestion(event string, payload interface{}, questionUserID u
 	data, _ := json.Marshal(payload)
 	ev := Event{Event: event, Data: string(data)}
 	for c := range h.clients {
-		if c.IsSupporter || c.UserID == questionUserID {
+		if c.canViewAll() || c.UserID == questionUserID {
 			h.send(c, ev)
 		}
 	}
@@ -96,7 +101,7 @@ func (h *Hub) SendMemo(event string, payload interface{}) {
 	data, _ := json.Marshal(payload)
 	ev := Event{Event: event, Data: string(data)}
 	for c := range h.clients {
-		if c.IsSupporter {
+		if c.canViewAll() {
 			h.send(c, ev)
 		}
 	}
