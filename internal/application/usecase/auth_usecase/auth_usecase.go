@@ -76,14 +76,14 @@ func (uc *AuthUsecase) LoginLDAP(email, password string) (string, outputmodel.Us
 func (uc *AuthUsecase) LoginBasic(email, password string) (string, outputmodel.UserOutput, error) {
 	user, err := uc.userRepo.GetByEmail(email)
 	if err != nil {
-		return "", outputmodel.UserOutput{}, fmt.Errorf("認証に失敗しました")
+		return "", outputmodel.UserOutput{}, fmt.Errorf("アカウントが存在しません")
 	}
 	if user.Password == nil {
-		return "", outputmodel.UserOutput{}, fmt.Errorf("認証に失敗しました")
+		return "", outputmodel.UserOutput{}, fmt.Errorf("パスワードが入力されていません")
 	}
 	ok, err := crypto.VerifyPassword(password, config.GetPepper(), *user.Password)
 	if err != nil || !ok {
-		return "", outputmodel.UserOutput{}, fmt.Errorf("認証に失敗しました")
+		return "", outputmodel.UserOutput{}, fmt.Errorf("メールアドレスかパスワードが誤っています")
 	}
 	token, err := issueToken(user)
 	if err != nil {

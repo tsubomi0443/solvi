@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	outputmodel "solvi/internal/application/model/output_model"
 	quc "solvi/internal/application/usecase/question_usecase"
 	"solvi/internal/domain/entity"
 	bedrockext "solvi/internal/domain/interface/external"
@@ -393,6 +394,84 @@ func TestDelete_DeniesNonAdmin(t *testing.T) {
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
 	if err := uc.Delete(false, uuid.NewString()); err == nil {
 		t.Fatal("expected permission error")
+	}
+}
+
+func TestAddRefers_PersistsMultiple(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
+	}, nil)
+	qRepo.EXPECT().AddRefer(gomock.Any()).Return(nil).Times(2)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	err := uc.AddRefers(10, qid.String(), []outputmodel.ReferOutput{
+		{Name: "Doc A", URL: "https://example.com/a"},
+		{Name: "Doc B", URL: "https://example.com/b"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestAddRefers_SkipsEmptyRows(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
+	}, nil)
+	qRepo.EXPECT().AddRefer(gomock.Any()).Return(nil).Times(1)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	err := uc.AddRefers(10, qid.String(), []outputmodel.ReferOutput{
+		{Name: "Doc A", URL: "https://example.com/a"},
+		{Name: " ", URL: " "},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestAddRefers_RejectsPartialRow(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
+	}, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	err := uc.AddRefers(10, qid.String(), []outputmodel.ReferOutput{
+		{Name: "Doc A", URL: ""},
+	})
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+}
+
+func TestAddRefers_RejectsEmptyPayload(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
+	}, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	err := uc.AddRefers(10, qid.String(), []outputmodel.ReferOutput{})
+	if err == nil {
+		t.Fatal("expected validation error")
 	}
 }
 

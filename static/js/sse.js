@@ -11,6 +11,7 @@ const SOLVI_SSE_EVENTS = [
     "create-refer",
     "update-question",
     "update-user",
+    "delete-question",
 ];
 
 const QUESTION_DETAIL_EVENTS = new Set([

@@ -42,6 +42,10 @@ document.addEventListener("alpine:init", () => {
         userIconMap: {},
         showDeleteModal: false,
         showDeleteQuestionModal: false,
+        showReferModal: false,
+        showReferList: false,
+        referRows: [{ name: "", url: "" }],
+        savingRefers: false,
         deleteTarget: null,
         deletingItem: false,
         deletingQuestion: false,
@@ -144,6 +148,16 @@ document.addEventListener("alpine:init", () => {
                     items.push({ ...m, kind: "memo" });
                 });
             }
+            (this.question.refers || []).forEach((r) => {
+                items.push({
+                    uuid: r.uuid,
+                    kind: "refer",
+                    name: r.name,
+                    url: r.url,
+                    createdAt: r.createdAt,
+                    userName: "参考情報",
+                });
+            });
             return items.sort(
                 (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
             );
@@ -243,6 +257,10 @@ document.addEventListener("alpine:init", () => {
         },
 
         isShown(item) {
+            if (item.kind === "refer") {
+                return true;
+            }
+
             return (
                 this.isSelfItem(item) ||
                 item.kind === "answer" ||
@@ -263,9 +281,12 @@ document.addEventListener("alpine:init", () => {
             if (this.deletingQuestion) return;
             this.deletingQuestion = true;
             try {
-                const res = await fetch(`/api/v1/questions/${this.question.uuid}`, {
-                    method: "DELETE",
-                });
+                const res = await fetch(
+                    `/api/v1/questions/${this.question.uuid}`,
+                    {
+                        method: "DELETE",
+                    },
+                );
                 if (!res.ok) {
                     const msg = await res
                         .json()
@@ -477,6 +498,82 @@ document.addEventListener("alpine:init", () => {
             this.composerText = "";
             await this.fetchQuestion();
             this.scrollChatToBottom();
+        },
+
+        openReferModal() {
+            this.referRows = [{ name: "", url: "" }];
+            this.showReferModal = true;
+            this.$nextTick(() => {
+                if (typeof lucide !== "undefined") lucide.createIcons();
+            });
+        },
+
+        closeReferModal() {
+            if (this.savingRefers) return;
+            this.showReferModal = false;
+        },
+
+        addReferRow() {
+            this.referRows.push({ name: "", url: "" });
+        },
+
+        removeReferRow(index) {
+            if (this.referRows.length <= 1) return;
+            this.referRows.splice(index, 1);
+        },
+
+        validReferRows() {
+            return this.referRows.filter(
+                (row) => row.name.trim() || row.url.trim(),
+            );
+        },
+
+        canSubmitRefers() {
+            const rows = this.validReferRows();
+            if (!rows.length) return false;
+            return rows.every((row) => row.name.trim() && row.url.trim());
+        },
+
+        toggleReferList() {
+            this.showReferList = !this.showReferList;
+        },
+
+        async submitRefers() {
+            if (this.savingRefers || !this.canSubmitRefers()) return;
+            const refers = this.validReferRows().map((row) => ({
+                name: row.name.trim(),
+                url: row.url.trim(),
+            }));
+            this.savingRefers = true;
+            try {
+                const res = await fetch(
+                    `/api/v1/questions/${this.question.uuid}/refers`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ refers }),
+                    },
+                );
+                if (!res.ok) {
+                    const msg = await res.json().catch(() => ({
+                        error: "参考情報の登録に失敗しました",
+                    }));
+                    window.notice.show({
+                        message: msg.error || "参考情報の登録に失敗しました",
+                        type: "error",
+                    });
+                    return;
+                }
+                this.showReferModal = false;
+                await this.fetchQuestion();
+                this.scrollChatToBottom();
+                window.notice.show({
+                    message: "参考情報を登録しました",
+                    type: "success",
+                });
+            } finally {
+                this.savingRefers = false;
+            }
         },
 
         statusLabel,

@@ -76,7 +76,12 @@ func QuestionEntityToDetail(q *entity.Question, includeMemos bool) outputmodel.Q
 		}
 	}
 	for _, r := range q.Refers {
-		out.Refers = append(out.Refers, outputmodel.ReferOutput{Name: r.Name, URL: r.URL})
+		out.Refers = append(out.Refers, outputmodel.ReferOutput{
+			UUID:      r.UUID.String(),
+			Name:      r.Name,
+			URL:       r.URL,
+			CreatedAt: r.CreatedAt.Format(time.RFC3339),
+		})
 	}
 	return out
 }

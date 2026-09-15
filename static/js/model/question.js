@@ -26,16 +26,20 @@ export class Timeline {
 }
 
 export class Refer {
-    constructor({ name = "", url = "" } = {}) {
+    constructor({ uuid = "", name = "", url = "", createdAt = "" } = {}) {
+        this.uuid = uuid;
         this.name = name;
         this.url = url;
+        this.createdAt = createdAt;
     }
 
     static fromJSON(dto) {
         if (!dto) return new Refer();
         return new Refer({
+            uuid: dto.uuid ?? "",
             name: dto.name ?? "",
             url: dto.url ?? "",
+            createdAt: dto.createdAt ?? "",
         });
     }
 }

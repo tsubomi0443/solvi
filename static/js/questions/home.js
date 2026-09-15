@@ -60,6 +60,9 @@ document.addEventListener("alpine:init", () => {
             document.addEventListener("update-question", (e) => {
                 this.upsertQuestion(e.detail);
             });
+            document.addEventListener("delete-question", (e) => {
+                this.deleteQuestion(e.detail);
+            });
         },
 
         upsertQuestion(detail) {
@@ -72,6 +75,19 @@ document.addEventListener("alpine:init", () => {
                 this.questions = [
                     ...this.questions.slice(0, idx),
                     item,
+                    ...this.questions.slice(idx + 1),
+                ];
+            } else {
+                this.questions = [item, ...this.questions];
+            }
+        },
+
+        deleteQuestion(detail) {
+            if (!detail?.uuid) return;
+            const idx = this.questions.findIndex((q) => q.uuid === detail.uuid);
+            if (idx >= 0) {
+                this.questions = [
+                    ...this.questions.slice(0, idx),
                     ...this.questions.slice(idx + 1),
                 ];
             } else {

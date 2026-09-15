@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+
+# Alpinejs Rules
+## コーディング(HTML)
+- `<template></template>`タグを利用する場合、必ず子要素を1つにすること。
+  - examples
+    - OK: `<template><div><template x-if="name === 'mike'"></template><template x-if="name !== 'mike'"></template></div></template>`
+    - OK: `<template><span><template x-if="name === 'mike'"></template><template x-if="name !== 'mike'"></template></span></template>`
+    - NG: `<template><template x-if="name === 'mike'"></template><template x-if="name !== 'mike'"></template></template>`

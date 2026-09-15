@@ -122,13 +122,19 @@ func (h *Handler) AddMemo(c *echo.Context) error {
 
 func (h *Handler) AddRefer(c *echo.Context) error {
 	claims := authctx.Claims(c)
-	var req outputmodel.ReferOutput
+	var req struct {
+		Refers []outputmodel.ReferOutput `json:"refers"`
+	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 	}
 	uuid := c.Param("uuid")
-	if err := h.deps.Question.AddRefer(claims.UserID, uuid, req.Name, req.URL); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	if err := h.deps.Question.AddRefers(claims.UserID, uuid, req.Refers); err != nil {
+		msg := err.Error()
+		if msg == "タイトルとURLは両方入力してください" || msg == "参考情報がありません" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": msg})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": msg})
 	}
 	q, _ := h.deps.Question.Get(claims.UserID, true, claims.IsAdmin, uuid)
 	h.deps.Hub.SendToQuestion("create-refer", q, q.QuestionUserID)
@@ -204,5 +210,10 @@ func (h *Handler) DeleteQuestion(c *echo.Context) error {
 	if err := h.deps.Question.Delete(claims.IsAdmin, uuid); err != nil {
 		return c.JSON(http.StatusForbidden, map[string]string{"error": err.Error()})
 	}
+	question, err := h.deps.Question.Get(claims.UserID, claims.IsSupporter, claims.IsAdmin, uuid)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	h.deps.Hub.SendToQuestion("delete-question", uuid, question.QuestionUserID)
 	return c.JSON(http.StatusOK, map[string]string{"ok": "true"})
 }

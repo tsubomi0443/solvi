@@ -37,6 +37,8 @@ type TimelineOutput struct {
 }
 
 type ReferOutput struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	UUID      string `json:"uuid,omitempty"`
+	Name      string `json:"name"`
+	URL       string `json:"url"`
+	CreatedAt string `json:"createdAt,omitempty"`
 }

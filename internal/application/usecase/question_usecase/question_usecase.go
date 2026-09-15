@@ -149,11 +149,37 @@ func (uc *QuestionUsecase) AddAnswer(actorID uint, uuid, content string, refers 
 }
 
 func (uc *QuestionUsecase) AddRefer(actorID uint, uuid, name, url string) error {
+	return uc.AddRefers(actorID, uuid, []outputmodel.ReferOutput{{Name: name, URL: url}})
+}
+
+func (uc *QuestionUsecase) AddRefers(actorID uint, uuid string, refers []outputmodel.ReferOutput) error {
 	q, err := uc.questionRepo.GetByUUID(uuid)
 	if err != nil {
 		return err
 	}
-	return uc.questionRepo.AddRefer(&entity.QuestionRefer{Name: name, URL: url, QuestionID: q.ID, UserID: actorID})
+	valid := make([]outputmodel.ReferOutput, 0, len(refers))
+	for _, r := range refers {
+		name := strings.TrimSpace(r.Name)
+		url := strings.TrimSpace(r.URL)
+		if name == "" && url == "" {
+			continue
+		}
+		if name == "" || url == "" {
+			return fmt.Errorf("タイトルとURLは両方入力してください")
+		}
+		valid = append(valid, outputmodel.ReferOutput{Name: name, URL: url})
+	}
+	if len(valid) == 0 {
+		return fmt.Errorf("参考情報がありません")
+	}
+	for _, r := range valid {
+		if err := uc.questionRepo.AddRefer(&entity.QuestionRefer{
+			Name: r.Name, URL: r.URL, QuestionID: q.ID, UserID: actorID,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (uc *QuestionUsecase) AddMemo(actorID uint, uuid, content string) error {
