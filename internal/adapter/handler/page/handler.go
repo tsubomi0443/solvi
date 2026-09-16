@@ -46,6 +46,7 @@ func (h *Handler) baseData(c *echo.Context, active string) map[string]interface{
 	}
 	if claims.IsAdmin {
 		nav = append(nav, NavItem{Href: "/management/users", Label: "ユーザ管理", Icon: "users", Active: active == "management"})
+		nav = append(nav, NavItem{Href: "/management/logs", Label: "ログ", Icon: "download", Active: active == "management-logs"})
 	}
 	user, _ := h.deps.Setting.GetProfile(claims.UserID)
 	return map[string]interface{}{

@@ -1,0 +1,127 @@
+{{define "management_logs.html"}}
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+{{template "head" dict "Title" "ログダウンロード - Solvi" "PageScript" "/static/js/management/logs.js"}}
+</head>
+<body class="bg-base-200 font-sans antialiased" x-data="solviManagementLogs" x-init="init()">
+{{template "notices" .}}
+<script type="application/json" id="log-dates-json">{{.LogDatesJSON}}</script>
+<div class="flex min-h-screen">
+    {{template "sidebar" .}}
+    <div class="flex min-w-0 flex-1 flex-col">
+        {{template "header" dict "Breadcrumb" "ログダウンロード" "User" .User}}
+        <main class="flex-1 p-4 md:p-6">
+            <p class="mb-6 text-sm text-base-content/60">
+                パスワード付き ZIP を期間限定リンクで保存します。管理者のみ利用できます。
+            </p>
+            <div class="grid gap-6 lg:grid-cols-2">
+                <section class="flex flex-col gap-4 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                    <div>
+                        <h2 class="text-base font-semibold text-base-content">すべてのログ</h2>
+                        <p class="mt-1 text-sm text-base-content/60">
+                            存在するログを一括で暗号化します。
+                        </p>
+                    </div>
+                    <button type="button"
+                        class="btn w-full border-rose-900 bg-rose-900 text-white sm:w-auto"
+                        @click="startDownloadAll()"
+                        :disabled="issuing || saving">
+                        <span class="loading loading-spinner loading-sm" x-show="issuing && issueMode === 'all'"></span>
+                        <span x-text="issuing && issueMode === 'all' ? '準備中...' : 'すべてダウンロード'"></span>
+                    </button>
+                </section>
+
+                <section class="flex flex-col gap-4 rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+                    <div>
+                        <h2 class="text-base font-semibold text-base-content">日付を指定</h2>
+                        <p class="mt-1 text-sm text-base-content/60">
+                            その日のログとアクセスログを暗号化します。
+                        </p>
+                    </div>
+                    <label class="form-control w-full max-w-xs">
+                        <span class="label-text text-sm text-base-content/70">対象日</span>
+                        <select class="select select-bordered w-full"
+                            x-model="selectedDate"
+                            :disabled="!hasDates || issuing || saving">
+                            <template x-for="date in dates" :key="date">
+                                <option :value="date" x-text="date"></option>
+                            </template>
+                        </select>
+                        <p class="mt-2 text-xs text-base-content/50" x-show="!hasDates">
+                            ダウンロード可能な日付がありません
+                        </p>
+                    </label>
+                    <button type="button"
+                        class="btn w-full border-rose-900 bg-rose-900 text-white sm:w-auto"
+                        @click="startDownloadByDate()"
+                        :disabled="!hasDates || !selectedDate || issuing || saving">
+                        <span class="loading loading-spinner loading-sm" x-show="issuing && issueMode === 'date'"></span>
+                        <span x-text="issuing && issueMode === 'date' ? '準備中...' : 'この日付を保存'"></span>
+                    </button>
+                </section>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div class="modal backdrop-blur-sm" :class="{'modal-open': showModal}">
+    <div class="modal-box bg-white rounded-2xl shadow-2xl max-w-lg">
+        <button type="button"
+            class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3"
+            @click="closeModal()"
+            :disabled="issuing || saving">
+            <i data-lucide="x" class="h-4 w-4"></i>
+        </button>
+
+        <template x-if="modalPhase === 'encrypting'">
+            <div class="py-4 text-center">
+                <h3 class="font-bold text-lg mb-6 tracking-tight">ログを暗号化しています</h3>
+                <span class="loading loading-spinner loading-lg text-rose-900"></span>
+                <p class="mt-6 text-sm text-base-content/70">
+                    ZIP の準備が終わるまでお待ちください。
+                </p>
+            </div>
+        </template>
+
+        <template x-if="modalPhase === 'ready'">
+            <div>
+                <h3 class="font-bold text-lg mb-4 tracking-tight">暗号化が完了しました</h3>
+                <p class="text-sm text-base-content/70 leading-relaxed">
+                    毎回新しい 32 桁パスワードが設定されます。<br>
+                    この画面は閉じると再表示できません。<br>
+                    必要な場合はパスワードを保存してください。
+                </p>
+
+                <label class="form-control mt-6">
+                    <span class="label-text text-sm font-medium">パスワード</span>
+                    <div class="join w-full">
+                        <input type="text"
+                            class="input input-bordered join-item w-full font-mono text-sm"
+                            :value="password"
+                            readonly>
+                        <button type="button"
+                            class="btn join-item border-base-300"
+                            @click="copyPassword()">
+                            コピー
+                        </button>
+                    </div>
+                </label>
+
+                <div class="modal-action mt-2">
+                    <button type="button"
+                        class="btn border-rose-900 bg-rose-900 font-bold text-white"
+                        @click="saveZip()"
+                        :disabled="saving || !downloadKey">
+                        <span class="loading loading-spinner loading-sm" x-show="saving"></span>
+                        <span x-text="saving ? '保存中...' : '保存'"></span>
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+    <div class="modal-backdrop bg-opacity-100" @click="closeModal()" x-show="!issuing && !saving"></div>
+</div>
+</body>
+</html>
+{{end}}

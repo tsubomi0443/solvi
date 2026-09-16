@@ -56,6 +56,7 @@ func RegisterRoutes(e *echo.Echo, deps Deps, accessLog io.Writer) {
 	auth.GET("/setting", ph.SettingPage)
 	auth.GET("/tags", ph.TagsPage, SupporterOnlyPage)
 	auth.GET("/management/users", ph.ManagementUsersPage, AdminOnly)
+	auth.GET("/management/logs", ph.ManagementLogsPage, AdminOnly)
 	auth.GET("/sse", sh.Stream)
 
 	apiAuth := e.Group("/api/v1", APIJWTConfig())
