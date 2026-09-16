@@ -46,6 +46,8 @@ document.addEventListener("alpine:init", () => {
         currentShowList: "",
         showReferList: false,
         showMemoList: false,
+        hideChatRefers: false,
+        hideChatMemos: false,
         referRows: [{ name: "", url: "" }],
         savingRefers: false,
         deleteTarget: null,
@@ -273,6 +275,12 @@ document.addEventListener("alpine:init", () => {
         },
 
         isShown(item) {
+            if (item.kind === "refer" && this.hideChatRefers) {
+                return false;
+            }
+            if (item.kind === "memo" && this.hideChatMemos) {
+                return false;
+            }
             if (item.kind === "refer") {
                 return true;
             }
