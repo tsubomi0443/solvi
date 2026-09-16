@@ -13,6 +13,7 @@ import (
 	ssehub "solvi/internal/adapter/handler/sse"
 	"solvi/internal/application/converter"
 	authuc "solvi/internal/application/usecase/auth_usecase"
+	loguc "solvi/internal/application/usecase/log_usecase"
 	mnguc "solvi/internal/application/usecase/management_usecase"
 	quc "solvi/internal/application/usecase/question_usecase"
 	setuc "solvi/internal/application/usecase/setting_usecase"
@@ -101,6 +102,11 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	questionRepo := repository.NewQuestionRepository(db)
 	tagRepo := repository.NewTagRepository(db)
+	logRepo, err := repository.NewLogRepository(logDir)
+	if err != nil {
+		slog.Error("failed to open log directory", "err", err)
+		os.Exit(1)
+	}
 
 	ldapSetting, err := config.GetLDAPSetting()
 	if err != nil {
@@ -137,6 +143,7 @@ func main() {
 		Setting:    setuc.NewSettingUsecase(userRepo, config.GetUploadDir()),
 		Management: mnguc.NewManagementUsecase(userRepo),
 		Tag:        taguc.NewTagUsecase(tagRepo),
+		Log:        loguc.NewLogUsecase(logRepo),
 		Hub:        hub,
 	}
 	handler.RegisterRoutes(ec, deps, multiWriter)

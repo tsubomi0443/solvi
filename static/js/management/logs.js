@@ -3,12 +3,11 @@ document.addEventListener('alpine:init', () => {
     dates: [],
     selectedDate: '',
     showModal: false,
-    modalPhase: 'encrypting',
+    modalPhase: 'preparing',
     issuing: false,
     saving: false,
     issueMode: '',
     downloadKey: '',
-    downloadLink: '',
     password: '',
     zipFilename: 'solvi-logs.zip',
 
@@ -27,11 +26,10 @@ document.addEventListener('alpine:init', () => {
       if (typeof lucide !== 'undefined') lucide.createIcons();
     },
 
-    openEncryptingModal(mode) {
+    openPreparingModal(mode) {
       this.issueMode = mode;
-      this.modalPhase = 'encrypting';
+      this.modalPhase = 'preparing';
       this.downloadKey = '';
-      this.downloadLink = '';
       this.password = '';
       this.showModal = true;
       if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -40,9 +38,8 @@ document.addEventListener('alpine:init', () => {
     closeModal() {
       if (this.issuing || this.saving) return;
       this.showModal = false;
-      this.modalPhase = 'encrypting';
+      this.modalPhase = 'preparing';
       this.downloadKey = '';
-      this.downloadLink = '';
       this.password = '';
       this.issueMode = '';
       this.zipFilename = 'solvi-logs.zip';
@@ -51,10 +48,10 @@ document.addEventListener('alpine:init', () => {
     async startDownloadAll() {
       if (this.issuing || this.saving) return;
       this.zipFilename = 'solvi-logs-all.zip';
-      this.openEncryptingModal('all');
+      this.openPreparingModal('all');
       this.issuing = true;
       try {
-        const res = await fetch('/api/v1/log/all');
+        const res = await fetch('/api/v1/log/download/all', { method: 'POST' });
         if (!res.ok) {
           const msg = await this.parseError(res);
           window.notice.show({ message: msg, type: 'error' });
@@ -66,7 +63,7 @@ document.addEventListener('alpine:init', () => {
         this.modalPhase = 'ready';
         if (typeof lucide !== 'undefined') lucide.createIcons();
       } catch {
-        window.notice.show({ message: '暗号化の開始に失敗しました', type: 'error' });
+        window.notice.show({ message: 'ダウンロード準備に失敗しました', type: 'error' });
         this.closeModal();
       } finally {
         this.issuing = false;
@@ -77,10 +74,13 @@ document.addEventListener('alpine:init', () => {
       if (this.issuing || this.saving || !this.selectedDate) return;
       const compact = this.selectedDate.replace(/-/g, '');
       this.zipFilename = `solvi-logs-${compact}.zip`;
-      this.openEncryptingModal('date');
+      this.openPreparingModal('date');
       this.issuing = true;
       try {
-        const res = await fetch(`/api/v1/log/date/?date=${encodeURIComponent(this.selectedDate)}`);
+        const res = await fetch(
+          `/api/v1/log/download/date?date=${encodeURIComponent(this.selectedDate)}`,
+          { method: 'POST' },
+        );
         if (!res.ok) {
           const msg = await this.parseError(res);
           window.notice.show({ message: msg, type: 'error' });
@@ -92,7 +92,7 @@ document.addEventListener('alpine:init', () => {
         this.modalPhase = 'ready';
         if (typeof lucide !== 'undefined') lucide.createIcons();
       } catch {
-        window.notice.show({ message: '暗号化の開始に失敗しました', type: 'error' });
+        window.notice.show({ message: 'ダウンロード準備に失敗しました', type: 'error' });
         this.closeModal();
       } finally {
         this.issuing = false;
@@ -101,60 +101,32 @@ document.addEventListener('alpine:init', () => {
 
     applyIssueResponse(data) {
       this.password = data.password || '';
-      this.downloadKey = data.key || data.uuid || '';
-      this.downloadLink = data.downloadLink || '';
+      this.downloadKey = data.downloadKey || data.key || '';
+      if (data.filename) {
+        this.zipFilename = data.filename;
+      }
     },
 
     resolveDownloadUrl() {
-      if (this.downloadLink) return this.downloadLink;
-      if (this.downloadKey) return `/api/v1/log/download/${encodeURIComponent(this.downloadKey)}`;
-      return '';
+      if (!this.downloadKey) return '';
+      return `/api/v1/log/download/${encodeURIComponent(this.downloadKey)}`;
     },
 
-    async saveZip() {
+    saveZip() {
       const url = this.resolveDownloadUrl();
       if (!url || this.saving) return;
       this.saving = true;
-      try {
-        const res = await fetch(url);
-        if (!res.ok) {
-          const msg = await this.parseError(res);
-          window.notice.show({ message: msg, type: 'error' });
-          return;
-        }
-        const base64 = await this.extractBase64(res);
-        if (!base64) {
-          window.notice.show({ message: 'ZIP データの取得に失敗しました', type: 'error' });
-          return;
-        }
-        this.triggerDownload(base64, this.zipFilename);
-        window.notice.show({ message: 'ZIP ファイルを保存しました', type: 'success' });
-      } catch {
-        window.notice.show({ message: 'ZIP の保存に失敗しました', type: 'error' });
-      } finally {
-        this.saving = false;
-      }
-    },
 
-    async extractBase64(res) {
-      const contentType = res.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const data = await res.json();
-        return data.zip || data.data || data.content || '';
-      }
-      const text = await res.text();
-      return text.trim();
-    },
-
-    triggerDownload(base64, filename) {
-      const bin = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-      const blob = new Blob([bin], { type: 'application/zip' });
-      const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = filename;
+      anchor.href = url;
+      anchor.download = this.zipFilename;
+      anchor.style.display = 'none';
+      document.body.appendChild(anchor);
       anchor.click();
-      URL.revokeObjectURL(objectUrl);
+      document.body.removeChild(anchor);
+
+      window.notice.show({ message: 'ZIP ファイルの保存を開始しました', type: 'success' });
+      this.saving = false;
     },
 
     async copyPassword() {

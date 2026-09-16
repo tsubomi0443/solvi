@@ -5,6 +5,7 @@ import (
 	"html/template"
 
 	"solvi/internal/adapter/handler/authctx"
+	loguc "solvi/internal/application/usecase/log_usecase"
 	mnguc "solvi/internal/application/usecase/management_usecase"
 	quc "solvi/internal/application/usecase/question_usecase"
 	setuc "solvi/internal/application/usecase/setting_usecase"
@@ -25,6 +26,7 @@ type Deps struct {
 	Setting    *setuc.SettingUsecase
 	Management *mnguc.ManagementUsecase
 	Tag        *taguc.TagUsecase
+	Log        *loguc.LogUsecase
 }
 
 type Handler struct {

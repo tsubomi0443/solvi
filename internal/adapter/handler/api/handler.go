@@ -1,12 +1,13 @@
 package api
 
 import (
+	"solvi/internal/adapter/handler/sse"
 	authuc "solvi/internal/application/usecase/auth_usecase"
+	loguc "solvi/internal/application/usecase/log_usecase"
 	mnguc "solvi/internal/application/usecase/management_usecase"
 	quc "solvi/internal/application/usecase/question_usecase"
 	setuc "solvi/internal/application/usecase/setting_usecase"
 	taguc "solvi/internal/application/usecase/tag_usecase"
-	"solvi/internal/adapter/handler/sse"
 )
 
 type Deps struct {
@@ -15,6 +16,7 @@ type Deps struct {
 	Setting    *setuc.SettingUsecase
 	Management *mnguc.ManagementUsecase
 	Tag        *taguc.TagUsecase
+	Log        *loguc.LogUsecase
 	Hub        *sse.Hub
 }
 

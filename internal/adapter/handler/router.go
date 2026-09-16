@@ -7,6 +7,7 @@ import (
 	"solvi/internal/adapter/handler/page"
 	"solvi/internal/adapter/handler/sse"
 	authuc "solvi/internal/application/usecase/auth_usecase"
+	loguc "solvi/internal/application/usecase/log_usecase"
 	mnguc "solvi/internal/application/usecase/management_usecase"
 	quc "solvi/internal/application/usecase/question_usecase"
 	setuc "solvi/internal/application/usecase/setting_usecase"
@@ -21,18 +22,21 @@ type Deps struct {
 	Setting    *setuc.SettingUsecase
 	Management *mnguc.ManagementUsecase
 	Tag        *taguc.TagUsecase
+	Log        *loguc.LogUsecase
 	Hub        *sse.Hub
 }
 
 func RegisterRoutes(e *echo.Echo, deps Deps, accessLog io.Writer) {
 	e.Static("/static", "static")
 	e.Static("/uploads", "uploads")
+	e.File("/favicon.ico", "favicon.ico")
 
 	ph := page.New(page.Deps{
 		Question:   deps.Question,
 		Setting:    deps.Setting,
 		Management: deps.Management,
 		Tag:        deps.Tag,
+		Log:        deps.Log,
 	})
 	ah := api.New(api.Deps{
 		Auth:       deps.Auth,
@@ -40,6 +44,7 @@ func RegisterRoutes(e *echo.Echo, deps Deps, accessLog io.Writer) {
 		Setting:    deps.Setting,
 		Management: deps.Management,
 		Tag:        deps.Tag,
+		Log:        deps.Log,
 		Hub:        deps.Hub,
 	})
 	sh := sse.NewHandler(deps.Hub)
@@ -82,4 +87,7 @@ func RegisterRoutes(e *echo.Echo, deps Deps, accessLog io.Writer) {
 	apiAuth.GET("/tags", ah.ListTags, SupporterOnly)
 	apiAuth.PUT("/tags", ah.RenameTag, SupporterOnly)
 	apiAuth.DELETE("/tags", ah.DeleteTag, SupporterOnly)
+	apiAuth.POST("/log/download/all", ah.IssueLogDownloadAll, AdminOnlyAPI)
+	apiAuth.POST("/log/download/date", ah.IssueLogDownloadDate, AdminOnlyAPI)
+	apiAuth.GET("/log/download/:key", ah.StreamLogDownload, AdminOnlyAPI)
 }

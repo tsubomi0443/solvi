@@ -17,7 +17,7 @@
                     {{ if .User.Name }}{{ printf "%.1s" .User.Name }}{{ else }}?{{ end }}
                     {{ else }}
                     <div class="w-full h-full mask mask-circle">
-                        <img src="/uploads/{{ .User.Icon }}" alt="{{ .User.Name }}" class="object-cover w-full h-full">
+                        <img src="{{ .User.IconBase64 }}" alt="{{ .User.Name }}" class="object-cover w-full h-full">
                     </div>
                     {{ end }}
                 </span>

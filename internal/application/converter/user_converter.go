@@ -3,6 +3,7 @@ package converter
 import (
 	"encoding/base64"
 	"fmt"
+	"html/template"
 	"path/filepath"
 	outputmodel "solvi/internal/application/model/output_model"
 	"solvi/internal/domain/entity"
@@ -26,7 +27,7 @@ func UserEntityToOutput(u *entity.User) outputmodel.UserOutput {
 		Email:          u.Email,
 		DepartmentName: u.DepartmentName,
 		Icon:           icon,
-		IconBase64:     base64Text,
+		IconBase64:     template.URL(base64Text),
 		IsSupporter:    u.IsSupporter,
 		IsAdmin:        u.IsAdmin,
 	}
