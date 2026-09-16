@@ -38,30 +38,50 @@
                                 <template x-for="item in chatTimelineItems()" :key="item.uuid + '-' + item.kind">
                                     <template x-if="isShown(item)">
                                         <div>
-                                            <template x-if="item.kind === 'refer'">
+                                            <template x-if="item.kind === 'refer' || item.kind === 'memo'">
                                                 <div class="flex justify-center py-1">
                                                     <div
                                                         class="w-full max-w-3xl rounded-xl border border-base-300 bg-base-100/90 px-4 py-3 shadow-sm">
-                                                        <div class="flex items-start gap-3">
+                                                        <div class="flex items-start gap-3" x-data="{ 'kind': '' }"
+                                                            x-init="kind = item.kind">
                                                             <div
                                                                 class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-info/10 text-info">
-                                                                <i data-lucide="link-2" class="h-4 w-4"></i>
+                                                                <i :data-lucide="kind === 'memo' ? 'sticky-note': 'link-2'"
+                                                                    data-lucide="link-2" class="h-4 w-4"></i>
                                                             </div>
                                                             <div class="min-w-0 flex-1">
-                                                                <p class="text-xs font-semibold text-base-content/60">
-                                                                    参考情報が追加されました</p>
-                                                                <a :href="item.url"
-                                                                    class="link link-primary mt-1 block truncate text-sm font-medium"
-                                                                    target="_blank" rel="noopener"
-                                                                    x-text="item.name"></a>
-                                                                <time class="mt-1 block text-xs text-base-content/50"
-                                                                    x-text="formatDate(item.createdAt)"></time>
+                                                                <span class="text-xs font-semibold text-base-content/60"
+                                                                    x-text="kind === 'memo' ? 'メモ':'引用'">
+                                                                </span>
+                                                                <template x-if="kind === 'refer'">
+                                                                    <a :href="item.url"
+                                                                        class="link link-primary mt-1 block truncate text-sm font-medium"
+                                                                        target="_blank" rel="noopener"
+                                                                        x-text="item.name"></a>
+                                                                </template>
+                                                                <template x-if="kind ==='memo'">
+                                                                    <p x-text="item.content"
+                                                                        class="whitespace-pre-wrap text-sm font-medium truncate block mt-1">
+                                                                    </p>
+                                                                </template>
+                                                                <div class="flex flex-1 justify-between">
+                                                                    <time
+                                                                        class="mt-1 block text-xs text-base-content/50"
+                                                                        x-text="formatDate(item.createdAt)"></time>
+                                                                    <template x-if="canDeleteItem(item)">
+                                                                        <div class="">
+                                                                            <button type="button"
+                                                                                class="btn btn-ghost btn-xs text-error hover:bg-error/10"
+                                                                                @click="openDeleteModal(item)">削除</button>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </template>
-                                            <template x-if="item.kind !== 'refer'">
+                                            <template x-if="item.kind !== 'refer' && item.kind !=='memo'">
                                                 <div class="chat" :class="isSelfItem(item) ? 'chat-end' : 'chat-start'">
                                                     <div class="chat-image avatar" x-data="{ icon: '' }"
                                                         x-init="icon = await chatTimelineUserIcon(item.userUuid)">
@@ -115,26 +135,61 @@
                         </div>
                         <div class="shrink-0 border-t border-base-300 p-4">
                             <div class="mb-3 flex flex-wrap items-center gap-2">
-                                <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleReferList()">
+                                <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleMemoList()"
+                                    :class="currentShowList === 'memo' ? 'bg-slate-200':''">
                                     <i data-lucide="list" class="h-4 w-4"></i>
-                                    参照情報一覧
+                                    メモ一覧
+                                    <span class="badge badge-sm badge-ghost"
+                                        x-text="(question.memos || []).length"></span>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleReferList()"
+                                    :class="currentShowList === 'refer' ? 'bg-slate-200':''">
+                                    <i data-lucide="list" class="h-4 w-4"></i>
+                                    引用情報一覧
                                     <span class="badge badge-sm badge-ghost"
                                         x-text="(question.refers || []).length"></span>
                                 </button>
                             </div>
                             <div x-show="showReferList" x-transition
                                 class="mb-3 rounded-xl border border-base-300 bg-base-200/50 p-3">
-                                <p class="mb-2 text-xs font-semibold text-base-content/60">登録済みの参考情報</p>
                                 <template x-if="!(question.refers || []).length">
-                                    <p class="text-xs text-base-content/50">まだ参考情報はありません</p>
+                                    <p class="text-xs text-base-content/50">まだ引用情報はありません</p>
                                 </template>
                                 <ul class="space-y-2" x-show="(question.refers || []).length">
                                     <template x-for="r in question.refers" :key="r.uuid || r.url">
                                         <li class="flex items-center gap-2 rounded-lg bg-base-100 px-3 py-2 text-sm">
                                             <i data-lucide="external-link"
                                                 class="h-4 w-4 shrink-0 text-base-content/40"></i>
-                                            <a :href="r.url" class="link link-primary min-w-0 truncate" target="_blank"
-                                                rel="noopener" x-text="r.name"></a>
+                                            <div class="flex flex-1 justify-between">
+                                                <a :href="r.url" class="link link-primary min-w-0 truncate"
+                                                    target="_blank" rel="noopener" x-text="r.name"></a>
+                                                <span x-text="r.url"></span>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                            <div x-show="showMemoList" x-transition
+                                class="mb-3 rounded-xl border border-base-300 bg-base-200/50 p-3">
+                                <template x-if="!(question.memos || []).length">
+                                    <p class="text-xs text-base-content/50">まだメモはありません</p>
+                                </template>
+                                <ul class="space-y-2" x-show="(question.memos || []).length">
+                                    <template x-for="memo in question.memos" :key="memo.uuid">
+                                        <li class="flex items-center gap-2 rounded-lg bg-base-100 px-3 py-2 text-sm"
+                                            x-data="{showContent: false}"
+                                            @click="if(isExistsMemoNextLine(memo.content)) showContent = !showContent;"
+                                            x-cloak>
+                                            <i data-lucide="sticky-note"
+                                                class="h-4 w-4 shrink-0 text-base-content/40"></i>
+                                            <div class="flex flex-1 flex-col">
+                                                <p x-text="showMemoFirstLine(memo.content)" x-show="!showContent"
+                                                    x-cloak>
+                                                </p>
+                                                <p x-text="memo.content" x-transition x-show="showContent" x-cloak
+                                                    class="whitespace-pre-wrap text-sm truncate block mt-1">
+                                                </p>
+                                            </div>
                                         </li>
                                     </template>
                                 </ul>
@@ -145,7 +200,7 @@
                                 <button type="button" class="btn btn-sm btn-outline gap-1" x-show="isSupporter"
                                     @click="openReferModal()">
                                     <i data-lucide="plus" class="h-4 w-4"></i>
-                                    参考情報の追加
+                                    引用情報の追加
                                 </button>
                                 <div>
                                     <button type="button" class="btn btn-sm btn-outline"
@@ -235,7 +290,7 @@
                                 </div>
                             </template>
                             <div x-show="question.refers && question.refers.length">
-                                <p class="mb-1 text-xs font-semibold text-base-content/60">参照</p>
+                                <p class="mb-1 text-xs font-semibold text-base-content/60">引用</p>
                                 <ul class="space-y-1">
                                     <template x-for="r in question.refers" :key="r.url">
                                         <li><a :href="r.url" class="link link-primary text-xs" target="_blank"
@@ -254,8 +309,8 @@
         <div class="modal-box relative max-w-2xl bg-white rounded-2xl shadow-2xl">
             <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3"
                 @click="closeReferModal()" :disabled="savingRefers" aria-label="閉じる">×</button>
-            <h3 class="font-bold text-lg mb-2 tracking-tight pr-8">参考情報の追加</h3>
-            <p class="mb-4 text-sm text-base-content/60">タイトルとURLを入力して参考情報を登録します。</p>
+            <h3 class="font-bold text-lg mb-2 tracking-tight pr-8">引用情報の追加</h3>
+            <p class="mb-4 text-sm text-base-content/60">タイトルとURLを入力して引用情報を登録します。</p>
             <div class="space-y-3">
                 <template x-for="(row, index) in referRows" :key="index">
                     <div

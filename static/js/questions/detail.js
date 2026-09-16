@@ -43,7 +43,9 @@ document.addEventListener("alpine:init", () => {
         showDeleteModal: false,
         showDeleteQuestionModal: false,
         showReferModal: false,
+        currentShowList: "",
         showReferList: false,
+        showMemoList: false,
         referRows: [{ name: "", url: "" }],
         savingRefers: false,
         deleteTarget: null,
@@ -155,7 +157,7 @@ document.addEventListener("alpine:init", () => {
                     name: r.name,
                     url: r.url,
                     createdAt: r.createdAt,
-                    userName: "参考情報",
+                    userName: "引用情報",
                 });
             });
             return items.sort(
@@ -535,7 +537,31 @@ document.addEventListener("alpine:init", () => {
         },
 
         toggleReferList() {
+            this.showMemoList = false;
             this.showReferList = !this.showReferList;
+            this.setCurrentShowList();
+        },
+
+        toggleMemoList() {
+            this.showReferList = false;
+            this.showMemoList = !this.showMemoList;
+            this.setCurrentShowList();
+        },
+
+        showMemoFirstLine(memo = "") {
+            const nlineIdx = memo.indexOf("\n");
+            if (nlineIdx === -1) return memo;
+            return memo.slice(0, nlineIdx);
+        },
+
+        isExistsMemoNextLine(memo = "") {
+            return memo.indexOf("\n") !== -1;
+        },
+
+        setCurrentShowList() {
+            if (this.showReferList) this.currentShowList = "refer";
+            else if (this.showMemoList) this.currentShowList = "memo";
+            else this.currentShowList = "";
         },
 
         async submitRefers() {
@@ -556,10 +582,10 @@ document.addEventListener("alpine:init", () => {
                 );
                 if (!res.ok) {
                     const msg = await res.json().catch(() => ({
-                        error: "参考情報の登録に失敗しました",
+                        error: "引用情報の登録に失敗しました",
                     }));
                     window.notice.show({
-                        message: msg.error || "参考情報の登録に失敗しました",
+                        message: msg.error || "引用情報の登録に失敗しました",
                         type: "error",
                     });
                     return;
@@ -568,7 +594,7 @@ document.addEventListener("alpine:init", () => {
                 await this.fetchQuestion();
                 this.scrollChatToBottom();
                 window.notice.show({
-                    message: "参考情報を登録しました",
+                    message: "引用情報を登録しました",
                     type: "success",
                 });
             } finally {

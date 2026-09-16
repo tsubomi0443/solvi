@@ -131,7 +131,7 @@ func (h *Handler) AddRefer(c *echo.Context) error {
 	uuid := c.Param("uuid")
 	if err := h.deps.Question.AddRefers(claims.UserID, uuid, req.Refers); err != nil {
 		msg := err.Error()
-		if msg == "タイトルとURLは両方入力してください" || msg == "参考情報がありません" {
+		if msg == "タイトルとURLは両方入力してください" || msg == "引用情報がありません" {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": msg})
 		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": msg})

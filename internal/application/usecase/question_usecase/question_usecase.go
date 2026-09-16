@@ -170,7 +170,7 @@ func (uc *QuestionUsecase) AddRefers(actorID uint, uuid string, refers []outputm
 		valid = append(valid, outputmodel.ReferOutput{Name: name, URL: url})
 	}
 	if len(valid) == 0 {
-		return fmt.Errorf("参考情報がありません")
+		return fmt.Errorf("引用情報がありません")
 	}
 	for _, r := range valid {
 		if err := uc.questionRepo.AddRefer(&entity.QuestionRefer{
