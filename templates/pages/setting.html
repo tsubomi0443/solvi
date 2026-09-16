@@ -1,6 +1,6 @@
 {{define "setting.html"}}
 <!DOCTYPE html>
-<html lang="ja" data-theme="light">
+{{template "html"}}
 
 <head>
     {{template "head" dict "Title" "プロフィール - Solvi" "PageScript" "/static/js/setting/setting.js"}}
@@ -22,7 +22,7 @@
                     </div>
 
                     <label
-                        class="group relative block w-44 cursor-pointer focus-within:outline-none focus-within:ring-2 focus-within:ring-rose-900/40 focus-within:ring-offset-2 focus-within:ring-offset-base-100"
+                        class="group relative block w-44 cursor-pointer focus-within:outline-none focus-within:ring-2 focus-within:ring-primary/40 focus-within:ring-offset-2 focus-within:ring-offset-base-100"
                         :class="{ 'pointer-events-none': loading }">
                         <input type="file" class="sr-only" accept="image/*" @change="onIconChange($event)"
                             :disabled="loading">
@@ -32,7 +32,7 @@
                                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
 
                             <div x-show="!form.icon"
-                                class="absolute inset-0 grid place-items-center bg-rose-900 text-4xl font-semibold text-white">
+                                class="absolute inset-0 grid place-items-center bg-primary text-4xl font-semibold text-primary-content">
                                 <span x-text="form.name ? form.name.charAt(0) : '?'"></span>
                             </div>
 
@@ -44,7 +44,7 @@
 
                             <div x-show="loading"
                                 class="absolute inset-0 flex items-center justify-center bg-base-100/80 backdrop-blur-sm">
-                                <span class="loading loading-spinner loading-md text-rose-900"></span>
+                                <span class="loading loading-spinner loading-md text-primary"></span>
                             </div>
                         </div>
                     </label>

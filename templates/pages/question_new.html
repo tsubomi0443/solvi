@@ -1,6 +1,6 @@
 {{define "question_new.html"}}
 <!DOCTYPE html>
-<html lang="ja" data-theme="light">
+{{template "html"}}
 
 <head>
     {{template "head" dict "Title" "新規質問 - Solvi" "PageScript" "/static/js/questions/new.js"}}
@@ -43,7 +43,7 @@
                     </template>
                     <div class="flex justify-end gap-2">
                         <a href="/" class="btn btn-ghost">キャンセル</a>
-                        <button type="submit" class="btn border-rose-900 bg-rose-900 text-white" :disabled="loading">
+                        <button type="submit" class="btn btn-primary" :disabled="loading">
                             <span x-show="!loading">質問を送信</span>
                             <span x-show="loading" class="loading loading-spinner loading-sm"></span>
                         </button>

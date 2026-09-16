@@ -125,7 +125,8 @@ func main() {
 
 	hub := ssehub.NewHub()
 	go hub.Run()
-	hub.RunSSE()
+	// TODO; 時計機能を除外したので不要
+	//// hub.RunSSE()
 
 	questionUC := quc.NewQuestionUsecase(questionRepo, userRepo, bedrockClient, func(questionUUID string) {
 		q, err := questionRepo.GetByUUID(questionUUID)

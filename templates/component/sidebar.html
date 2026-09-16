@@ -2,8 +2,8 @@
 <aside class="hidden shrink-0 border-r border-base-300 bg-base-100 transition-[width] duration-200 md:flex md:flex-col"
     :class="$store.ui.sidebarOpen ? 'w-64' : 'w-20'">
     <div class="flex h-16 items-center gap-3 border-b border-base-300 px-5">
-        <div class="grid h-8 w-8 place-items-center rounded-xl bg-rose-900 text-white">
-            <img src="/static/img/logo.png" alt="solvi" class="h-[40px] w-[40px]" />
+        <div class="grid h-8 w-8 place-items-center rounded-xl bg-primary text-primary-content">
+            <img src="/static/img/logo.png" alt="solvi" class="h-full w-full" />
         </div>
         <div x-show="$store.ui.sidebarOpen" x-transition.opacity>
             <div class="font-display text-sm font-semibold">Solvi</div>
@@ -13,7 +13,7 @@
     <nav class="flex-1 space-y-1 p-3">
         {{ range .Navigation }}
         <a href="{{ .Href }}"
-            class="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition {{ if .Active }}bg-rose-50 text-rose-900{{ else }}text-base-content/60 hover:bg-base-200 hover:text-base-content{{ end }}">
+            class="flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition {{ if .Active }}bg-primary/10 text-primary{{ else }}text-base-content/60 hover:bg-base-200 hover:text-base-content{{ end }}">
             <i data-lucide="{{ .Icon }}" class="h-5 w-5 shrink-0"></i>
             <span x-show="$store.ui.sidebarOpen" x-transition.opacity>{{ .Label }}</span>
         </a>

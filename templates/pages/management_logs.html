@@ -1,6 +1,6 @@
 {{define "management_logs.html"}}
 <!DOCTYPE html>
-<html lang="ja" data-theme="light">
+{{template "html"}}
 
 <head>
     {{template "head" dict "Title" "ログダウンロード - Solvi" "PageScript" "/static/js/management/logs.js"}}
@@ -27,7 +27,7 @@
                                 存在するログを一括でダウンロードします。
                             </p>
                         </div>
-                        <button type="button" class="btn w-full border-rose-900 bg-rose-900 text-white sm:w-auto"
+                        <button type="button" class="btn btn-primary w-full sm:w-auto"
                             @click="startDownloadAll()" :disabled="issuing || saving">
                             <span class="loading loading-spinner loading-sm"
                                 x-show="issuing && issueMode === 'all'"></span>
@@ -54,7 +54,7 @@
                                 ダウンロード可能な日付がありません
                             </p>
                         </label>
-                        <button type="button" class="btn w-full border-rose-900 bg-rose-900 text-white sm:w-auto"
+                        <button type="button" class="btn btn-primary w-full sm:w-auto"
                             @click="startDownloadByDate()" :disabled="!hasDates || !selectedDate || issuing || saving">
                             <span class="loading loading-spinner loading-sm"
                                 x-show="issuing && issueMode === 'date'"></span>
@@ -76,7 +76,7 @@
             <template x-if="modalPhase === 'preparing'">
                 <div class="py-4 text-center">
                     <h3 class="font-bold text-lg mb-6 tracking-tight">ダウンロードを準備しています</h3>
-                    <span class="loading loading-spinner loading-lg text-rose-900"></span>
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
                     <p class="mt-6 text-sm text-base-content/70">
                         ダウンロードキーの発行が完了するまでお待ちください。
                     </p>
@@ -104,7 +104,7 @@
                     </label>
 
                     <div class="modal-action mt-2">
-                        <button type="button" class="btn border-rose-900 bg-rose-900 font-bold text-white"
+                        <button type="button" class="btn btn-primary font-bold"
                             @click="saveZip()" :disabled="saving || !downloadKey">
                             <span class="loading loading-spinner loading-sm" x-show="saving"></span>
                             <span x-text="saving ? '保存中...' : '保存'"></span>

@@ -1,6 +1,6 @@
 {{define "question_detail.html"}}
 <!DOCTYPE html>
-<html lang="ja" data-theme="light">
+{{template "html"}}
 
 <head>
     {{template "head" dict "Title" "質問詳細 - Solvi" "PageScript" "/static/js/questions/detail.js"}}
@@ -97,7 +97,7 @@
                                                         x-init="icon = await chatTimelineUserIcon(item.userUuid)">
                                                         <template x-if=" !icon">
                                                             <div
-                                                                class="h-10 w-10 place-items-center rounded-full bg-rose-900 text-xs font-semibold text-white text-center content-center">
+                                                                class="h-10 w-10 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-content text-center content-center">
                                                                 <span x-text="initial(item.userName)"></span>
                                                             </div>
                                                         </template>
@@ -232,7 +232,7 @@
                                             <button type="button" class="btn btn-sm btn-outline" @click="addMemo()"
                                                 :disabled="!composerText.trim()">メモ登録</button>
                                             <button type="button"
-                                                class="btn btn-sm border-rose-900 bg-rose-900 text-white"
+                                                class="btn btn-primary btn-sm"
                                                 @click="addAnswer()" :disabled="!composerText.trim()">回答送信</button>
                                         </div>
                                     </template>
@@ -378,7 +378,7 @@
             <div class="modal-action">
                 <button type="button" class="btn btn-ghost font-bold" @click="closeReferModal()"
                     :disabled="savingRefers">閉じる</button>
-                <button type="button" class="btn border-rose-900 bg-rose-900 font-bold text-white"
+                <button type="button" class="btn btn-primary font-bold"
                     @click="submitRefers()" :disabled="savingRefers || !canSubmitRefers()">登録</button>
             </div>
         </div>

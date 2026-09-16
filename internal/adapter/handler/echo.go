@@ -19,7 +19,10 @@ func NewEcho(outputs io.Writer) *echo.Echo {
 	ec.Use(middleware.Recover())
 
 	tmpl := template.New("")
-	tmpl.Funcs(template.FuncMap{"dict": MakeMapFunc})
+	tmpl.Funcs(template.FuncMap{
+		"dict":   MakeMapFunc,
+		"themes": ThemeOptions,
+	})
 
 	err := filepath.Walk("templates", func(path string, info os.FileInfo, err error) error {
 		if err != nil {

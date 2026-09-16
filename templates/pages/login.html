@@ -1,6 +1,6 @@
 {{define "login.html"}}
 <!DOCTYPE html>
-<html lang="ja" data-theme="light">
+{{template "html"}}
 
 <head>
     {{template "head" dict "Title" "ログイン - Solvi" "PageScript" "/static/js/login/login.js"}}
@@ -11,8 +11,8 @@
     <main class="grid min-h-screen place-items-center p-6">
         <div class="w-full max-w-md rounded-2xl border border-base-300 bg-base-100 p-8 shadow-sm">
             <div class="mb-8 text-center">
-                <div class="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-rose-900 text-white">
-                    <img src="/static/img/logo.png" alt="solvi" class="h-[16px] w-[16px] object-cover" />
+                <div class="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-primary text-primary-content">
+                    <img src="/static/img/logo.png" alt="solvi" class="h-full w-full object-cover" />
                 </div>
                 <h1 class="text-xl font-semibold">Solvi</h1>
                 <p class="mt-1 text-sm text-base-content/60">人事・総務 FAQ サポート</p>
@@ -34,9 +34,7 @@
                     <input type="password" class="input input-bordered w-full" x-model="password" required
                         autocomplete="current-password">
                 </label>
-                <button type="submit"
-                    class="btn w-full border-rose-900 bg-rose-900 text-white hover:border-rose-950 hover:bg-rose-950"
-                    :disabled="loading">
+                <button type="submit" class="btn btn-primary w-full" :disabled="loading">
                     <span x-show="!loading">ログイン</span>
                     <span x-show="loading" class="loading loading-spinner loading-sm"></span>
                 </button>

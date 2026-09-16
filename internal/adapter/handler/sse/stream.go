@@ -2,9 +2,11 @@ package sse
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"solvi/internal/adapter/handler/authctx"
+	logutils "solvi/internal/shared/logUtils"
 
 	"github.com/labstack/echo/v5"
 )
@@ -50,6 +52,7 @@ func (h *Handler) Stream(c *echo.Context) error {
 			if _, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", ev.Event, ev.Data); err != nil {
 				return nil
 			}
+			slog.Info("SSE", logutils.LogAny("client", *client), logutils.LogAny("event", ev))
 			flusher.Flush()
 		}
 	}

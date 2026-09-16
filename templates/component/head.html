@@ -1,6 +1,7 @@
 {{define "head"}}
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script>document.documentElement.setAttribute("data-theme", localStorage.getItem("solvi-theme") || "solvi");</script>
 <title>{{if .Title}}{{.Title}}{{else}}Solvi{{end}}</title>
 <link href="/static/css/output.css" rel="stylesheet">
 <link href="/static/css/solvi.css" rel="stylesheet">

@@ -2,8 +2,10 @@ package api
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"solvi/internal/adapter/handler/authctx"
+	logutils "solvi/internal/shared/logUtils"
 
 	"github.com/labstack/echo/v5"
 )
@@ -44,8 +46,11 @@ func (h *Handler) StreamLogDownload(c *echo.Context) error {
 	res.Header().Set("Content-Type", "application/zip")
 	res.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", ticket.Filename))
 
+	slog.Info("/api/v1/log/download/:key", slog.String("stream", "start"), slog.String("key", key), logutils.LogAny("request", *c.Request()), logutils.LogAny("claims", *claims))
 	if err := h.deps.Log.Stream(res, key, claims.UUID); err != nil {
+		slog.Info("/api/v1/log/download/:key", slog.String("stream", "failed"), slog.String("key", key), logutils.LogAny("request", *c.Request()), logutils.LogAny("claims", *claims))
 		return err
 	}
+	slog.Info("/api/v1/log/download/:key", slog.String("stream", "success"), slog.String("key", key), logutils.LogAny("request", *c.Request()), logutils.LogAny("claims", *claims))
 	return nil
 }
