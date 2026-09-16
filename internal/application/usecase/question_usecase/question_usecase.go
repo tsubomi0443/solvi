@@ -238,6 +238,30 @@ func (uc *QuestionUsecase) DeleteMemo(actorID uint, isSupporter, isAdmin bool, q
 	return uc.questionRepo.SoftDeleteMemoByUUID(memoUUID)
 }
 
+func (uc *QuestionUsecase) DeleteRefer(actorID uint, isSupporter, isAdmin bool, questionUUID, referUUID string) error {
+	if !isSupporter && !isAdmin {
+		return fmt.Errorf("権限がありません")
+	}
+	q, err := uc.questionRepo.GetByUUID(questionUUID)
+	if err != nil {
+		return err
+	}
+	var target *entity.QuestionRefer
+	for i := range q.Refers {
+		if q.Refers[i].UUID.String() == referUUID {
+			target = &q.Refers[i]
+			break
+		}
+	}
+	if target == nil {
+		return fmt.Errorf("引用情報が見つかりません")
+	}
+	if !isAdmin && target.UserID != actorID {
+		return fmt.Errorf("権限がありません")
+	}
+	return uc.questionRepo.SoftDeleteReferByUUID(referUUID)
+}
+
 func (uc *QuestionUsecase) Delete(isAdmin bool, uuid string) error {
 	if !isAdmin {
 		return fmt.Errorf("権限がありません")

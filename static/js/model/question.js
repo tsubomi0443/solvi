@@ -26,10 +26,17 @@ export class Timeline {
 }
 
 export class Refer {
-    constructor({ uuid = "", name = "", url = "", createdAt = "" } = {}) {
+    constructor({
+        uuid = "",
+        name = "",
+        url = "",
+        userUuid = "",
+        createdAt = "",
+    } = {}) {
         this.uuid = uuid;
         this.name = name;
         this.url = url;
+        this.userUuid = userUuid;
         this.createdAt = createdAt;
     }
 
@@ -39,6 +46,7 @@ export class Refer {
             uuid: dto.uuid ?? "",
             name: dto.name ?? "",
             url: dto.url ?? "",
+            userUuid: dto.userUuid ?? "",
             createdAt: dto.createdAt ?? "",
         });
     }

@@ -77,6 +77,10 @@ func (r *QuestionRepository) SoftDeleteMemoByUUID(uuid string) error {
 	return r.db.Where("uuid = ?", uuid).Delete(&entity.QuestionMemo{}).Error
 }
 
+func (r *QuestionRepository) SoftDeleteReferByUUID(uuid string) error {
+	return r.db.Where("uuid = ?", uuid).Delete(&entity.QuestionRefer{}).Error
+}
+
 func (r *QuestionRepository) SoftDeleteByUUID(uuid string) error {
 	return r.db.Where("uuid = ?", uuid).Delete(&entity.Question{}).Error
 }

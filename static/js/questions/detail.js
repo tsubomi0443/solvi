@@ -156,6 +156,7 @@ document.addEventListener("alpine:init", () => {
                     kind: "refer",
                     name: r.name,
                     url: r.url,
+                    userUuid: r.userUuid,
                     createdAt: r.createdAt,
                     userName: "引用情報",
                 });
@@ -203,16 +204,25 @@ document.addEventListener("alpine:init", () => {
         },
 
         canDeleteItem(item) {
-            if (item.kind !== "answer" && item.kind !== "memo") return false;
+            if (
+                item.kind !== "answer" &&
+                item.kind !== "memo" &&
+                item.kind !== "refer"
+            )
+                return false;
             if (this.isAdmin) return true;
             return this.isSupporter && this.isSelfItem(item);
         },
 
         deleteModalMessage() {
             if (!this.deleteTarget) return "";
-            return this.deleteTarget.kind === "memo"
-                ? "このメモを削除しますか？"
-                : "この回答を削除しますか？";
+            if (this.deleteTarget.kind === "memo") {
+                return "このメモを削除しますか？";
+            }
+            if (this.deleteTarget.kind === "refer") {
+                return "この引用情報を削除しますか？";
+            }
+            return "この回答を削除しますか？";
         },
 
         openDeleteModal(item) {
@@ -229,10 +239,14 @@ document.addEventListener("alpine:init", () => {
         async confirmDelete() {
             if (!this.deleteTarget || this.deletingItem) return;
             const { kind, uuid } = this.deleteTarget;
-            const path =
-                kind === "memo"
-                    ? `/api/v1/questions/${this.question.uuid}/memos/${uuid}`
-                    : `/api/v1/questions/${this.question.uuid}/answers/${uuid}`;
+            let path;
+            if (kind === "memo") {
+                path = `/api/v1/questions/${this.question.uuid}/memos/${uuid}`;
+            } else if (kind === "refer") {
+                path = `/api/v1/questions/${this.question.uuid}/refers/${uuid}`;
+            } else {
+                path = `/api/v1/questions/${this.question.uuid}/answers/${uuid}`;
+            }
             this.deletingItem = true;
             try {
                 const res = await fetch(path, { method: "DELETE" });

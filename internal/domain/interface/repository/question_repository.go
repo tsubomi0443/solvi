@@ -17,6 +17,7 @@ type QuestionRepository interface {
 	AddMemo(memo *entity.QuestionMemo) error
 	SoftDeleteAnswerByUUID(uuid string) error
 	SoftDeleteMemoByUUID(uuid string) error
+	SoftDeleteReferByUUID(uuid string) error
 	SoftDeleteByUUID(uuid string) error
 	AddRefer(refer *entity.QuestionRefer) error
 	ReplaceTags(questionID uint, tags []entity.QuestionTag) error

@@ -204,6 +204,21 @@ func (h *Handler) DeleteMemo(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"ok": "true"})
 }
 
+func (h *Handler) DeleteRefer(c *echo.Context) error {
+	claims := authctx.Claims(c)
+	uuid := c.Param("uuid")
+	referUUID := c.Param("referUuid")
+	if err := h.deps.Question.DeleteRefer(claims.UserID, claims.IsSupporter, claims.IsAdmin, uuid, referUUID); err != nil {
+		return c.JSON(http.StatusForbidden, map[string]string{"error": err.Error()})
+	}
+	q, err := h.deps.Question.Get(claims.UserID, true, claims.IsAdmin, uuid)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+	h.deps.Hub.SendToQuestion("update-question", q, q.QuestionUserID)
+	return c.JSON(http.StatusOK, map[string]string{"ok": "true"})
+}
+
 func (h *Handler) DeleteQuestion(c *echo.Context) error {
 	claims := authctx.Claims(c)
 	uuid := c.Param("uuid")

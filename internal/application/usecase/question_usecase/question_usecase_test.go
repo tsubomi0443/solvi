@@ -285,6 +285,71 @@ func TestDeleteMemo_DeniesOtherSupporter(t *testing.T) {
 	}
 }
 
+func TestDeleteRefer_OwnerSupporter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	referUUID := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		Refers: []entity.QuestionRefer{
+			{UUID: referUUID, UserID: 1, Name: "ref", URL: "https://example.com"},
+		},
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteReferByUUID(referUUID.String()).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteRefer(1, true, false, qid.String(), referUUID.String()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDeleteRefer_DeniesOtherSupporter(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	referUUID := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		Refers: []entity.QuestionRefer{
+			{UUID: referUUID, UserID: 99, Name: "ref", URL: "https://example.com"},
+		},
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteRefer(1, true, false, qid.String(), referUUID.String()); err == nil {
+		t.Fatal("expected permission error")
+	}
+}
+
+func TestDeleteRefer_AdminDeletesOther(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	referUUID := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		Refers: []entity.QuestionRefer{
+			{UUID: referUUID, UserID: 99, Name: "ref", URL: "https://example.com"},
+		},
+	}
+	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteReferByUUID(referUUID.String()).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteRefer(1, false, true, qid.String(), referUUID.String()); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestUpdate_AskerUpdatesRequireHuman(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	qRepo := repomock.NewMockQuestionRepository(ctrl)

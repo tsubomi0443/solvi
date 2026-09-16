@@ -151,7 +151,7 @@
                                 </button>
                             </div>
                             <div x-show="showReferList" x-transition
-                                class="mb-3 rounded-xl border border-base-300 bg-base-200/50 p-3">
+                                class="mb-3 max-h-40 overflow-y-auto rounded-xl border border-base-300 bg-base-200/50 p-3">
                                 <template x-if="!(question.refers || []).length">
                                     <p class="text-xs text-base-content/50">まだ引用情報はありません</p>
                                 </template>
@@ -160,29 +160,35 @@
                                         <li class="flex items-center gap-2 rounded-lg bg-base-100 px-3 py-2 text-sm">
                                             <i data-lucide="external-link"
                                                 class="h-4 w-4 shrink-0 text-base-content/40"></i>
-                                            <div class="flex flex-1 justify-between">
+                                            <div class="flex min-w-0 flex-1 items-center justify-between gap-2">
                                                 <a :href="r.url" class="link link-primary min-w-0 truncate"
                                                     target="_blank" rel="noopener" x-text="r.name"></a>
-                                                <span x-text="r.url"></span>
+                                                <span class="min-w-0 truncate text-xs text-base-content/50"
+                                                    x-text="r.url"></span>
                                             </div>
+                                            <template x-if="canDeleteItem({...r, kind: 'refer'})">
+                                                <button type="button"
+                                                    class="btn btn-ghost btn-xs shrink-0 text-error hover:bg-error/10"
+                                                    @click="openDeleteModal({...r, kind: 'refer'})">削除</button>
+                                            </template>
                                         </li>
                                     </template>
                                 </ul>
                             </div>
                             <div x-show="showMemoList" x-transition
-                                class="mb-3 rounded-xl border border-base-300 bg-base-200/50 p-3">
+                                class="mb-3 max-h-40 overflow-y-auto rounded-xl border border-base-300 bg-base-200/50 p-3">
                                 <template x-if="!(question.memos || []).length">
                                     <p class="text-xs text-base-content/50">まだメモはありません</p>
                                 </template>
                                 <ul class="space-y-2" x-show="(question.memos || []).length">
                                     <template x-for="memo in question.memos" :key="memo.uuid">
-                                        <li class="flex items-center gap-2 rounded-lg bg-base-100 px-3 py-2 text-sm"
+                                        <li class="flex items-center gap-2 rounded-lg bg-base-100 px-3 py-2 text-sm cursor-pointer"
                                             x-data="{showContent: false}"
                                             @click="if(isExistsMemoNextLine(memo.content)) showContent = !showContent;"
                                             x-cloak>
                                             <i data-lucide="sticky-note"
                                                 class="h-4 w-4 shrink-0 text-base-content/40"></i>
-                                            <div class="flex flex-1 flex-col">
+                                            <div class="flex min-w-0 flex-1 flex-col">
                                                 <p x-text="showMemoFirstLine(memo.content)" x-show="!showContent"
                                                     x-cloak>
                                                 </p>
@@ -190,6 +196,11 @@
                                                     class="whitespace-pre-wrap text-sm truncate block mt-1">
                                                 </p>
                                             </div>
+                                            <template x-if="canDeleteItem({...memo, kind: 'memo'})">
+                                                <button type="button"
+                                                    class="btn btn-ghost btn-xs shrink-0 text-error hover:bg-error/10"
+                                                    @click.stop="openDeleteModal({...memo, kind: 'memo'})">削除</button>
+                                            </template>
                                         </li>
                                     </template>
                                 </ul>
@@ -289,15 +300,6 @@
                                     <p class="text-sm" x-text="formatDue(question.answerDue)"></p>
                                 </div>
                             </template>
-                            <div x-show="question.refers && question.refers.length">
-                                <p class="mb-1 text-xs font-semibold text-base-content/60">引用</p>
-                                <ul class="space-y-1">
-                                    <template x-for="r in question.refers" :key="r.url">
-                                        <li><a :href="r.url" class="link link-primary text-xs" target="_blank"
-                                                rel="noopener" x-text="r.name"></a></li>
-                                    </template>
-                                </ul>
-                            </div>
                         </div>
                     </div>
                 </div>

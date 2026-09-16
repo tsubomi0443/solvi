@@ -40,5 +40,6 @@ type ReferOutput struct {
 	UUID      string `json:"uuid,omitempty"`
 	Name      string `json:"name"`
 	URL       string `json:"url"`
+	UserUUID  string `json:"userUuid,omitempty"`
 	CreatedAt string `json:"createdAt,omitempty"`
 }

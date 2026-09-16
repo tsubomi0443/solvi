@@ -80,6 +80,7 @@ func QuestionEntityToDetail(q *entity.Question, includeMemos bool) outputmodel.Q
 			UUID:      r.UUID.String(),
 			Name:      r.Name,
 			URL:       r.URL,
+			UserUUID:  r.User.UUID.String(),
 			CreatedAt: r.CreatedAt.Format(time.RFC3339),
 		})
 	}

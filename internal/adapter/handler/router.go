@@ -71,6 +71,7 @@ func RegisterRoutes(e *echo.Echo, deps Deps, accessLog io.Writer) {
 	apiAuth.POST("/questions/:uuid/memos", ah.AddMemo, SupporterOnly)
 	apiAuth.DELETE("/questions/:uuid/memos/:memoUuid", ah.DeleteMemo, SupporterOrAdmin)
 	apiAuth.POST("/questions/:uuid/refers", ah.AddRefer, SupporterOnly)
+	apiAuth.DELETE("/questions/:uuid/refers/:referUuid", ah.DeleteRefer, SupporterOrAdmin)
 	apiAuth.PUT("/questions/:uuid", ah.UpdateQuestion)
 	apiAuth.PUT("/setting", ah.UpdateSetting)
 	apiAuth.POST("/setting/icon", ah.UploadIcon)
