@@ -139,7 +139,7 @@
                                     </template>
                                 </ul>
                             </div>
-                            <textarea class="textarea textarea-bordered mb-3 w-full text-sm" rows="3"
+                            <textarea class="textarea textarea-bordered mb-3 w-full text-sm" rows="3" x-show="!isAdmin"
                                 x-model="composerText" placeholder="メッセージを入力..."></textarea>
                             <div class="flex flex-wrap justify-between gap-2">
                                 <button type="button" class="btn btn-sm btn-outline gap-1" x-show="isSupporter"
@@ -148,8 +148,9 @@
                                     参考情報の追加
                                 </button>
                                 <div>
-                                    <button type="button" class="btn btn-sm btn-outline" x-show="!isSupporter"
-                                        @click="appendContent()" :disabled="!composerText.trim()">追記</button>
+                                    <button type="button" class="btn btn-sm btn-outline"
+                                        x-show="!isSupporter && !isAdmin" @click="appendContent()"
+                                        :disabled="!composerText.trim()">追記</button>
                                     <template x-if="isSupporter">
                                         <div class="flex gap-2">
                                             <button type="button" class="btn btn-sm btn-outline" @click="addMemo()"
