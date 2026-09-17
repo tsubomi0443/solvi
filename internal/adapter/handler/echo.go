@@ -2,7 +2,6 @@ package handler
 
 import (
 	"html/template"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -12,11 +11,8 @@ import (
 	"github.com/labstack/echo/v5/middleware"
 )
 
-func NewEcho(outputs io.Writer) *echo.Echo {
+func NewEcho(accessLogger *slog.Logger) *echo.Echo {
 	ec := echo.New()
-
-	ec.Use(middleware.RequestLogger())
-	ec.Use(middleware.Recover())
 
 	tmpl := template.New("")
 	tmpl.Funcs(template.FuncMap{
@@ -28,7 +24,6 @@ func NewEcho(outputs io.Writer) *echo.Echo {
 		if err != nil {
 			return err
 		}
-		// .html ファイルのみを対象とする
 		if !info.IsDir() && strings.HasSuffix(path, ".html") {
 			if _, err := tmpl.ParseFiles(path); err != nil {
 				return err
@@ -40,17 +35,14 @@ func NewEcho(outputs io.Writer) *echo.Echo {
 		slog.Error("failed to load templates", "err", err)
 	}
 
-	// テンプレートの設定
 	ec.Renderer = &echo.TemplateRenderer{
 		Template: tmpl,
 	}
 
-	handler := slog.NewJSONHandler(outputs, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	})
-	ec.Logger = slog.New(handler)
+	if accessLogger != nil {
+		ec.Logger = accessLogger
+	}
 
-	// ミドルウェア
 	ec.Use(middleware.Recover(), middleware.RequestLogger())
 	return ec
 }

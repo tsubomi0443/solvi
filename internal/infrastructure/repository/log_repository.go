@@ -5,8 +5,8 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"regexp"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -24,9 +24,17 @@ func NewLogRepository(logDirectoryRootPath string) (*LogRepository, error) {
 	}, nil
 }
 
-const (
-	logNamePattern       = "log_20060102.log"
-	accessLogNamePattern = "log_20060102_access.log"
+func (repo *LogRepository) Close() error {
+	if repo == nil || repo.logDirectory == nil {
+		return nil
+	}
+	return repo.logDirectory.Close()
+}
+
+var (
+	newLogNameRE = regexp.MustCompile(`^(?:application|access|audit)-(\d{8})(?:-.+)?\.log$`)
+	oldAppLogRE  = regexp.MustCompile(`^log_(\d{8})\.log$`)
+	oldAccLogRE  = regexp.MustCompile(`^log_(\d{8})_access\.log$`)
 )
 
 func (repo *LogRepository) ListNames() ([]string, error) {
@@ -64,18 +72,8 @@ func (repo *LogRepository) ListDates() ([]string, error) {
 
 	dates := make(map[string]struct{})
 	for _, name := range names {
-		if !strings.HasPrefix(name, "log_") || !strings.HasSuffix(name, ".log") || strings.Contains(name, "_access") {
-			continue
-		}
-		compact := strings.TrimSuffix(strings.TrimPrefix(name, "log_"), ".log")
-		if len(compact) != 8 {
-			continue
-		}
-		date, err := time.ParseInLocation("20060102", compact, time.Local)
-		if err != nil {
-			continue
-		}
-		if !repo.HasDatePair(date) {
+		compact, ok := parseLogDate(name)
+		if !ok {
 			continue
 		}
 		dates[formatLogDate(compact)] = struct{}{}
@@ -89,16 +87,35 @@ func (repo *LogRepository) ListDates() ([]string, error) {
 	return result, nil
 }
 
-func (repo *LogRepository) HasDatePair(date time.Time) bool {
-	logName := date.Format(logNamePattern)
-	accessLogName := date.Format(accessLogNamePattern)
-	if _, err := repo.logDirectory.OpenFile(logName, os.O_RDONLY, 0); err != nil {
-		return false
+func (repo *LogRepository) ListByDate(date time.Time) ([]string, error) {
+	names, err := repo.ListNames()
+	if err != nil {
+		return nil, err
 	}
-	if _, err := repo.logDirectory.OpenFile(accessLogName, os.O_RDONLY, 0); err != nil {
-		return false
+
+	want := date.Format("20060102")
+	matched := make([]string, 0)
+	for _, name := range names {
+		compact, ok := parseLogDate(name)
+		if !ok || compact != want {
+			continue
+		}
+		matched = append(matched, name)
 	}
-	return true
+	return matched, nil
+}
+
+func parseLogDate(name string) (string, bool) {
+	if m := newLogNameRE.FindStringSubmatch(name); len(m) == 2 {
+		return m[1], true
+	}
+	if m := oldAccLogRE.FindStringSubmatch(name); len(m) == 2 {
+		return m[1], true
+	}
+	if m := oldAppLogRE.FindStringSubmatch(name); len(m) == 2 {
+		return m[1], true
+	}
+	return "", false
 }
 
 func formatLogDate(compact string) string {

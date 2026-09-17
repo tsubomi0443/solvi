@@ -59,7 +59,11 @@ func (uc *LogUsecase) IssueDate(userUUID string, date string) (*IssueResult, err
 	if err != nil {
 		return nil, err
 	}
-	if !uc.logRepository.HasDatePair(parsed) {
+	names, err := uc.logRepository.ListByDate(parsed)
+	if err != nil {
+		return nil, fmt.Errorf("ログファイルの取得に失敗しました: %w", err)
+	}
+	if len(names) == 0 {
 		return nil, fmt.Errorf("対象日付のログファイルが見つかりません")
 	}
 
@@ -164,7 +168,14 @@ func (uc *LogUsecase) resolveNames(ticket entity.DownloadTicket) ([]string, erro
 		}
 		return names, nil
 	case entity.DownloadKindDate:
-		return dateLogNames(ticket.Date), nil
+		names, err := uc.logRepository.ListByDate(ticket.Date)
+		if err != nil {
+			return nil, err
+		}
+		if len(names) == 0 {
+			return nil, fmt.Errorf("対象日付のログファイルが見つかりません")
+		}
+		return names, nil
 	default:
 		return nil, fmt.Errorf("不明なダウンロード種別です")
 	}
@@ -210,14 +221,6 @@ func parseDate(date string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("日付の形式が不正です")
 	}
 	return parsed, nil
-}
-
-func dateLogNames(date time.Time) []string {
-	compact := date.Format("20060102")
-	return []string{
-		fmt.Sprintf("log_%s.log", compact),
-		fmt.Sprintf("log_%s_access.log", compact),
-	}
 }
 
 const (

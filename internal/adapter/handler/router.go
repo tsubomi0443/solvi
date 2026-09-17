@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"io"
 	"log/slog"
 
 	"solvi/internal/adapter/handler/api"
@@ -29,7 +28,7 @@ type Deps struct {
 	Hub        *sse.Hub
 }
 
-func RegisterRoutes(e *echo.Echo, deps Deps, accessLog io.Writer) {
+func RegisterRoutes(e *echo.Echo, deps Deps, auditLogger *slog.Logger) {
 	e.Static("/static", "static")
 	e.Static("/uploads", "uploads")
 	e.File("/favicon.ico", "favicon.ico")
@@ -49,85 +48,76 @@ func RegisterRoutes(e *echo.Echo, deps Deps, accessLog io.Writer) {
 		Tag:        deps.Tag,
 		Log:        deps.Log,
 		Hub:        deps.Hub,
+		Audit:      auditLogger,
 	})
 	sh := sse.NewHandler(deps.Hub)
 
 	e.GET("/login", ph.LoginPage)
-	e.GET("/logout", ph.LogoutPage)
+	e.POST("/api/v1/login", ah.Login, auditLogging(auditLogger, true))
 
-	auth := e.Group("", JWTConfig())
-	auth.GET("/", ph.HomePage, infoLogging)
-	auth.GET("/questions/new", ph.QuestionNewPage, infoLogging)
-	auth.GET("/questions/:uuid", ph.QuestionDetailPage, infoLogging)
-	auth.GET("/setting", ph.SettingPage, infoLogging)
-	auth.GET("/tags", ph.TagsPage, SupporterOnlyPage, infoLogging)
-	auth.GET("/management/users", ph.ManagementUsersPage, AdminOnly, infoLogging)
-	auth.GET("/management/logs", ph.ManagementLogsPage, AdminOnly, infoLogging)
-	auth.GET("/sse", sh.Stream, infoLogging)
+	auth := e.Group("", JWTConfig(auditLogger))
+	auth.GET("/", ph.HomePage, auditLogging(auditLogger, false))
+	auth.GET("/questions/new", ph.QuestionNewPage, auditLogging(auditLogger, false))
+	auth.GET("/questions/:uuid", ph.QuestionDetailPage, auditLogging(auditLogger, false))
+	auth.GET("/setting", ph.SettingPage, auditLogging(auditLogger, false))
+	auth.GET("/tags", ph.TagsPage, SupporterOnlyPage, auditLogging(auditLogger, false))
+	auth.GET("/management/users", ph.ManagementUsersPage, AdminOnly, auditLogging(auditLogger, false))
+	auth.GET("/management/logs", ph.ManagementLogsPage, AdminOnly, auditLogging(auditLogger, false))
+	auth.GET("/sse", sh.Stream, auditLogging(auditLogger, false))
+	auth.GET("/logout", ph.LogoutPage, auditLogging(auditLogger, true))
 
-	apiAuth := e.Group("/api/v1", APIJWTConfig())
-	apiAuth.POST("/login", ah.Login, authenticateInfoLogging, infoLogging)
-	apiAuth.POST("/logout", ah.Logout, authenticateInfoLogging, infoLogging)
-	apiAuth.GET("/user/icon/:uuid", ah.GetUserIcon, infoLogging)
-	apiAuth.GET("/questions", ah.ListQuestions, infoLogging)
-	apiAuth.GET("/questions/:uuid", ah.GetQuestion, infoLogging)
-	apiAuth.POST("/questions", ah.CreateQuestion, infoLogging)
-	apiAuth.POST("/questions/:uuid/contents", ah.AppendContent, infoLogging)
-	apiAuth.POST("/questions/:uuid/answers", ah.AddAnswer, SupporterOnly, infoLogging)
-	apiAuth.DELETE("/questions/:uuid", ah.DeleteQuestion, AdminOnlyAPI, infoLogging)
-	apiAuth.DELETE("/questions/:uuid/answers/:answerUuid", ah.DeleteAnswer, SupporterOrAdmin, infoLogging)
-	apiAuth.POST("/questions/:uuid/memos", ah.AddMemo, SupporterOnly, infoLogging)
-	apiAuth.DELETE("/questions/:uuid/memos/:memoUuid", ah.DeleteMemo, SupporterOrAdmin, infoLogging)
-	apiAuth.POST("/questions/:uuid/refers", ah.AddRefer, SupporterOnly, infoLogging)
-	apiAuth.DELETE("/questions/:uuid/refers/:referUuid", ah.DeleteRefer, SupporterOrAdmin, infoLogging)
-	apiAuth.PUT("/questions/:uuid", ah.UpdateQuestion, infoLogging)
-	apiAuth.PUT("/setting", ah.UpdateSetting, infoLogging)
-	apiAuth.POST("/setting/icon", ah.UploadIcon, infoLogging)
-	apiAuth.DELETE("/setting/icon", ah.DeleteIcon, infoLogging)
-	apiAuth.GET("/management/users", ah.ListUsers, AdminOnlyAPI, infoLogging)
-	apiAuth.PUT("/management/users/:uuid", ah.UpdateUser, AdminOnlyAPI, infoLogging)
-	apiAuth.GET("/tags", ah.ListTags, SupporterOnly, infoLogging)
-	apiAuth.PUT("/tags", ah.RenameTag, SupporterOnly, infoLogging)
-	apiAuth.DELETE("/tags", ah.DeleteTag, SupporterOnly, infoLogging)
-	apiAuth.POST("/log/download/all", ah.IssueLogDownloadAll, AdminOnlyAPI, infoLogging)
-	apiAuth.POST("/log/download/date", ah.IssueLogDownloadDate, AdminOnlyAPI, infoLogging)
-	apiAuth.GET("/log/download/:key", ah.StreamLogDownload, AdminOnlyAPI, infoLogging)
+	apiAuth := e.Group("/api/v1", APIJWTConfig(auditLogger))
+	apiAuth.GET("/user/icon/:uuid", ah.GetUserIcon, auditLogging(auditLogger, false))
+	apiAuth.GET("/questions", ah.ListQuestions, auditLogging(auditLogger, false))
+	apiAuth.GET("/questions/:uuid", ah.GetQuestion, auditLogging(auditLogger, false))
+	apiAuth.POST("/questions", ah.CreateQuestion, auditLogging(auditLogger, false))
+	apiAuth.POST("/questions/:uuid/contents", ah.AppendContent, auditLogging(auditLogger, false))
+	apiAuth.POST("/questions/:uuid/answers", ah.AddAnswer, SupporterOnly, auditLogging(auditLogger, false))
+	apiAuth.DELETE("/questions/:uuid", ah.DeleteQuestion, AdminOnlyAPI, auditLogging(auditLogger, false))
+	apiAuth.DELETE("/questions/:uuid/answers/:answerUuid", ah.DeleteAnswer, SupporterOrAdmin, auditLogging(auditLogger, false))
+	apiAuth.POST("/questions/:uuid/memos", ah.AddMemo, SupporterOnly, auditLogging(auditLogger, false))
+	apiAuth.DELETE("/questions/:uuid/memos/:memoUuid", ah.DeleteMemo, SupporterOrAdmin, auditLogging(auditLogger, false))
+	apiAuth.POST("/questions/:uuid/refers", ah.AddRefer, SupporterOnly, auditLogging(auditLogger, false))
+	apiAuth.DELETE("/questions/:uuid/refers/:referUuid", ah.DeleteRefer, SupporterOrAdmin, auditLogging(auditLogger, false))
+	apiAuth.PUT("/questions/:uuid", ah.UpdateQuestion, auditLogging(auditLogger, false))
+	apiAuth.PUT("/setting", ah.UpdateSetting, auditLogging(auditLogger, false))
+	apiAuth.POST("/setting/icon", ah.UploadIcon, auditLogging(auditLogger, false))
+	apiAuth.DELETE("/setting/icon", ah.DeleteIcon, auditLogging(auditLogger, false))
+	apiAuth.GET("/management/users", ah.ListUsers, AdminOnlyAPI, auditLogging(auditLogger, false))
+	apiAuth.PUT("/management/users/:uuid", ah.UpdateUser, AdminOnlyAPI, auditLogging(auditLogger, false))
+	apiAuth.GET("/tags", ah.ListTags, SupporterOnly, auditLogging(auditLogger, false))
+	apiAuth.PUT("/tags", ah.RenameTag, SupporterOnly, auditLogging(auditLogger, false))
+	apiAuth.DELETE("/tags", ah.DeleteTag, SupporterOnly, auditLogging(auditLogger, false))
+	apiAuth.POST("/log/download/all", ah.IssueLogDownloadAll, AdminOnlyAPI, auditLogging(auditLogger, false))
+	apiAuth.POST("/log/download/date", ah.IssueLogDownloadDate, AdminOnlyAPI, auditLogging(auditLogger, false))
+	apiAuth.GET("/log/download/:key", ah.StreamLogDownload, AdminOnlyAPI, auditLogging(auditLogger, false))
+	apiAuth.POST("/api/v1/logout", ah.Logout, auditLogging(auditLogger, true))
 }
 
-func authenticateInfoLogging(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c *echo.Context) error {
-		req := c.Request()
-		slog.Info(
-			"audit",
-			slog.String("method", req.Method),
-			slog.String("path", req.URL.Path),
-			slog.String("remote_addr", req.RemoteAddr),
-			slog.String("real_ip", c.RealIP()),
-			slog.String("user_agent", req.UserAgent()),
-			slog.String("uuid", c.Param("uuid")),
-			slog.String("key", c.Param("key")),
-		)
-
-		return next(c)
+func auditLogging(auditLogger *slog.Logger, beforeAuth bool) echo.MiddlewareFunc {
+	if auditLogger == nil {
+		auditLogger = slog.Default()
 	}
-}
-
-func infoLogging(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c *echo.Context) error {
-		claims := authctx.Claims(c)
-		req := c.Request()
-		slog.Info(
-			"audit",
-			slog.String("method", req.Method),
-			slog.String("path", req.URL.Path),
-			slog.String("remote_addr", req.RemoteAddr),
-			slog.String("real_ip", c.RealIP()),
-			slog.String("user_agent", req.UserAgent()),
-			slog.String("uuid", c.Param("uuid")),
-			slog.String("key", c.Param("key")),
-			logutils.LogAny("query", c.QueryParams()),
-			logutils.LogAny("claims", claims),
-		)
-		return next(c)
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			req := c.Request()
+			attrs := []any{
+				slog.String("method", req.Method),
+				slog.String("path", req.URL.Path),
+				slog.String("remote_addr", req.RemoteAddr),
+				slog.String("real_ip", c.RealIP()),
+				slog.String("user_agent", req.UserAgent()),
+				slog.String("uuid", c.Param("uuid")),
+				slog.String("key", c.Param("key")),
+			}
+			if !beforeAuth {
+				attrs = append(attrs,
+					logutils.LogAny("query", c.QueryParams()),
+					logutils.LogAny("claims", authctx.Claims(c)),
+				)
+			}
+			auditLogger.Info("audit", attrs...)
+			return next(c)
+		}
 	}
 }

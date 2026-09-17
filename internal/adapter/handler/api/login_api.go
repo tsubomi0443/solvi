@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 
 	"solvi/internal/adapter/handler/authctx"
@@ -18,18 +19,23 @@ func (h *Handler) Login(c *echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 	}
-	var token string
-	var user outputmodel.UserOutput
-	var err error
+	var (
+		token string
+		user  outputmodel.UserOutput
+		err   error
+	)
 	switch req.Method {
 	case "ldap":
 		token, user, err = h.deps.Auth.LoginLDAP(req.Email, req.Password)
 	case "basic":
 		token, user, err = h.deps.Auth.LoginBasic(req.Email, req.Password)
 	default:
+		slog.Warn("login failed", slog.String("invalid method", req.Method))
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid method"})
 	}
+
 	if err != nil {
+		h.deps.Audit.Debug("ERROR", slog.Any("err", err))
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": err.Error()})
 	}
 	setTokenCookie(c, token)

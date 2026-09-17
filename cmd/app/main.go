@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	"solvi/internal/adapter/handler"
@@ -20,6 +18,7 @@ import (
 	taguc "solvi/internal/application/usecase/tag_usecase"
 	"solvi/internal/infrastructure/external/bedrock"
 	"solvi/internal/infrastructure/external/ldap"
+	applogger "solvi/internal/infrastructure/logger"
 	"solvi/internal/infrastructure/postgresql"
 	"solvi/internal/infrastructure/repository"
 	"solvi/internal/shared/config"
@@ -27,71 +26,53 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var (
-	logDir                         = "logs"
-	logFile, accessLogFile, awsLog *os.File
-)
-
 func init() {
 	if err := godotenv.Load(".env"); err != nil {
 		panic(err)
 	}
 
-	if _, err := os.Stat(logDir); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.Mkdir(logDir, 0755); err != nil {
-				panic(err)
-			}
-		}
-	}
-
-	var err error
-	logFile, err = os.OpenFile(time.Now().Format(logDir+`/log_20060102.log`), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
-	if err != nil {
-		panic(err)
-	}
-
-	level := slog.LevelInfo
-	mode := os.Getenv("MODE")
-	if len(mode) >= 3 && strings.ToLower(mode[:3]) == "dev" {
-		level = slog.LevelDebug
-	}
-	logger := slog.New(slog.NewJSONHandler(logFile, &slog.HandlerOptions{Level: level}))
-	slog.SetDefault(logger)
-
-	accessLogFile, err = os.OpenFile(time.Now().Format(logDir+`/log_20060102_access.log`), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
-	if err != nil {
-		panic(err)
-	}
-
 	loc, err := time.LoadLocation("Asia/Tokyo")
 	if err != nil {
-		slog.Error("failed to load timezone", "err", err)
-		os.Exit(1)
+		panic(err)
 	}
 	time.Local = loc
-	maxProc := runtime.GOMAXPROCS(runtime.NumCPU() / 2)
-	slog.Info("Use processor limit", "maxProc", maxProc)
 }
 
 func main() {
+	logDir := os.Getenv("LOG")
+	if logDir == "" {
+		logDir = "logs"
+	}
+
+	level := slog.LevelInfo
+	if config.IsDevelop() {
+		level = slog.LevelDebug
+	}
+
+	logs, err := applogger.New(applogger.Options{
+		Dir:          logDir,
+		Level:        level,
+		AccessStdout: true,
+	})
+	if err != nil {
+		panic(err)
+	}
 	defer func() {
-		if err := accessLogFile.Close(); err != nil {
-			slog.Error("failed to close access log file", "err", err)
-			os.Exit(1)
-		}
-		if err := logFile.Close(); err != nil {
-			panic(err.Error())
+		if err := logs.Close(); err != nil {
+			slog.Error("failed to close log files", "err", err)
 		}
 	}()
+	slog.SetDefault(logs.App)
+
+	maxProc := runtime.GOMAXPROCS(runtime.NumCPU() / 2)
+	slog.Info("Use processor limit", "maxProc", maxProc)
 
 	if err := os.MkdirAll(config.GetUploadDir(), 0755); err != nil {
 		slog.Error("failed to create uploads dir", "err", err)
 		os.Exit(1)
 	}
 
-	multiWriter := io.MultiWriter(os.Stdout, accessLogFile)
-	ec := handler.NewEcho(multiWriter)
+	ec := handler.NewEcho(logs.Access)
 
 	db, err := postgresql.NewPostgresqlDB(config.GetPostgresqlDSN())
 	if err != nil {
@@ -125,8 +106,6 @@ func main() {
 
 	hub := ssehub.NewHub()
 	go hub.Run()
-	// TODO; 時計機能を除外したので不要
-	//// hub.RunSSE()
 
 	questionUC := quc.NewQuestionUsecase(questionRepo, userRepo, bedrockClient, func(questionUUID string) {
 		q, err := questionRepo.GetByUUID(questionUUID)
@@ -147,7 +126,7 @@ func main() {
 		Log:        loguc.NewLogUsecase(logRepo),
 		Hub:        hub,
 	}
-	handler.RegisterRoutes(ec, deps, multiWriter)
+	handler.RegisterRoutes(ec, deps, logs.Audit)
 
 	if err := ec.Start(":" + config.GetEchoPort()); err != nil {
 		slog.Error("server stopped", "err", err)

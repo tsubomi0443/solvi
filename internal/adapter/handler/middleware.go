@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 
 	"solvi/internal/adapter/handler/authctx"
@@ -12,23 +13,25 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func JWTConfig() echo.MiddlewareFunc {
+func JWTConfig(auditLogger *slog.Logger) echo.MiddlewareFunc {
 	return echojwt.WithConfig(echojwt.Config{
 		NewClaimsFunc: func(c *echo.Context) jwt.Claims { return new(auth.CustomClaims) },
 		SigningKey:    []byte(config.GetJWTKey()),
 		TokenLookup:   "cookie:" + authctx.CookieNameToken,
 		ErrorHandler: func(c *echo.Context, err error) error {
+			auditLogger.Error("jwt-page-error", slog.String("error", err.Error()))
 			return c.Redirect(http.StatusFound, "/login")
 		},
 	})
 }
 
-func APIJWTConfig() echo.MiddlewareFunc {
+func APIJWTConfig(auditLogger *slog.Logger) echo.MiddlewareFunc {
 	return echojwt.WithConfig(echojwt.Config{
 		NewClaimsFunc: func(c *echo.Context) jwt.Claims { return new(auth.CustomClaims) },
 		SigningKey:    []byte(config.GetJWTKey()),
 		TokenLookup:   "cookie:" + authctx.CookieNameToken,
 		ErrorHandler: func(c *echo.Context, err error) error {
+			auditLogger.Error("jwt-api-error", slog.String("error", err.Error()))
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		},
 	})
