@@ -415,6 +415,59 @@
         <div class="modal-backdrop bg-opacity-100" @click="closeDeleteModal()"></div>
     </div>
 
+    <div class="modal backdrop-blur-sm" :class="{'modal-open': showDoneModal}">
+        <div class="modal-box bg-white rounded-2xl shadow-2xl max-w-xl">
+            <h3 class="font-bold text-lg mb-3 tracking-tight">対応完了の確認</h3>
+            <p class="text-sm text-base-content/70 mb-4">
+                対応完了の要約と、実際に活用した引用情報を確認してください。
+            </p>
+            <div class="space-y-4">
+                <label class="form-control w-full">
+                    <span class="label-text text-xs font-semibold text-base-content/70">質問の要約 <span
+                            class="text-error">*</span></span>
+                    <textarea class="textarea textarea-bordered mt-1 h-24 w-full text-sm leading-relaxed"
+                        x-model="doneSummaryContent" x-ref="doneSummaryContentInput"
+                        placeholder="質問内容の要約を入力してください" :disabled="submittingDone"></textarea>
+                </label>
+                <label class="form-control w-full">
+                    <span class="label-text text-xs font-semibold text-base-content/70">対応の要約 <span
+                            class="text-error">*</span></span>
+                    <textarea class="textarea textarea-bordered mt-1 h-24 w-full text-sm leading-relaxed"
+                        x-model="doneSummaryAnswer" placeholder="回答・対応内容の要約を入力してください"
+                        :disabled="submittingDone"></textarea>
+                </label>
+                <div>
+                    <span class="label-text text-xs font-semibold text-base-content/70">実際に活用した引用</span>
+                    <div class="mt-2 max-h-48 overflow-y-auto rounded-lg border border-base-300 p-2 space-y-2">
+                        <template x-if="!(question.refers || []).length">
+                            <p class="text-xs text-base-content/50 p-2">引用はありません</p>
+                        </template>
+                        <template x-for="r in (question.refers || [])" :key="r.uuid || r.url">
+                            <label class="flex items-start gap-2 p-1 hover:bg-base-200/60 rounded cursor-pointer">
+                                <input type="checkbox" class="checkbox checkbox-sm mt-0.5" :value="r.uuid"
+                                    x-model="doneSelectedReferUuids" :disabled="submittingDone">
+                                <span class="text-xs min-w-0 flex-1">
+                                    <span class="font-medium" x-text="r.name"></span>
+                                    <span class="text-base-content/60 block truncate" x-text="r.url"></span>
+                                </span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost font-bold" @click="closeDoneModal()"
+                    :disabled="submittingDone">キャンセル</button>
+                <button type="button" class="btn btn-success font-bold text-white" @click="submitDone()"
+                    :disabled="!canSubmitDone()">
+                    <span class="loading loading-spinner loading-sm" x-show="submittingDone"></span>
+                    完了へと変更
+                </button>
+            </div>
+        </div>
+        <div class="modal-backdrop bg-opacity-100" @click="closeDoneModal()"></div>
+    </div>
+
     <script type="module" src="/static/js/sse.js"></script>
 
 </body>

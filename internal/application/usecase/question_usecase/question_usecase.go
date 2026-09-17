@@ -371,7 +371,13 @@ func (uc *QuestionUsecase) Delete(ctx context.Context, isAdmin bool, uuid string
 	return nil
 }
 
-func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, isSupporter bool, uuid string, title *string, status *string, due *time.Time, tags *[]string, requireHuman *bool, complete bool) error {
+type QuestionSummaryInput struct {
+	Content    string
+	Answer     string
+	ReferUUIDs []string
+}
+
+func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, isSupporter bool, uuid string, title *string, status *string, due *time.Time, tags *[]string, requireHuman *bool, complete bool, summary *QuestionSummaryInput) error {
 	const op = opQuestion + ".Update"
 	logutils.Debug(ctx, logutils.LayerUsecase, op, "処理開始", slog.String("question_uuid", uuid), slog.Bool("complete", complete))
 	q, err := uc.questionRepo.GetByUUID(ctx, uuid)
@@ -386,9 +392,16 @@ func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, is
 				usecase.LogRepoPropagation(ctx, op, "完了更新失敗", err, slog.String("question_uuid", uuid))
 				return err
 			}
-			if err := uc.createSummary(ctx, q); err != nil {
-				usecase.LogRepoPropagation(ctx, op, "サマリー作成失敗", err, slog.String("question_uuid", uuid))
-				return err
+			if summary != nil {
+				if err := uc.upsertSummary(ctx, q, *summary); err != nil {
+					usecase.LogRepoPropagation(ctx, op, "サマリー保存失敗", err, slog.String("question_uuid", uuid))
+					return err
+				}
+			} else {
+				if err := uc.createSummary(ctx, q); err != nil {
+					usecase.LogRepoPropagation(ctx, op, "サマリー作成失敗", err, slog.String("question_uuid", uuid))
+					return err
+				}
 			}
 			logutils.Info(ctx, logutils.LayerUsecase, op, "質問完了", slog.String("question_uuid", uuid))
 			return nil
@@ -431,14 +444,26 @@ func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, is
 			usecase.LogBusinessWarn(ctx, op, "ステータス不正", err, slog.String("question_uuid", uuid))
 			return err
 		}
-		if parsed == valueobject.SupportStatusDone && q.SupportStatus != valueobject.SupportStatusDone {
+		if parsed == valueobject.SupportStatusDone {
+			if summary == nil {
+				usecase.LogBusinessWarn(ctx, op, "サマリー必須", fmt.Errorf("完了に変更する場合は要約が必要です"), slog.String("question_uuid", uuid))
+				return fmt.Errorf("完了に変更する場合は要約が必要です")
+			}
+			if strings.TrimSpace(summary.Content) == "" || strings.TrimSpace(summary.Answer) == "" {
+				usecase.LogBusinessWarn(ctx, op, "要約未入力", fmt.Errorf("質問の要約と対応の要約は必須です"), slog.String("question_uuid", uuid))
+				return fmt.Errorf("質問の要約と対応の要約は必須です")
+			}
+			if len(q.Refers) > 0 && len(summary.ReferUUIDs) == 0 {
+				usecase.LogBusinessWarn(ctx, op, "引用未選択", fmt.Errorf("引用を1件以上選択してください"), slog.String("question_uuid", uuid))
+				return fmt.Errorf("引用を1件以上選択してください")
+			}
 			q.SupportStatus = parsed
 			if err := uc.questionRepo.Update(ctx, q); err != nil {
 				usecase.LogRepoPropagation(ctx, op, "更新失敗", err, slog.String("question_uuid", uuid))
 				return err
 			}
-			if err := uc.createSummary(ctx, q); err != nil {
-				usecase.LogRepoPropagation(ctx, op, "サマリー作成失敗", err, slog.String("question_uuid", uuid))
+			if err := uc.upsertSummary(ctx, q, *summary); err != nil {
+				usecase.LogRepoPropagation(ctx, op, "サマリー保存失敗", err, slog.String("question_uuid", uuid))
 				return err
 			}
 			logutils.Info(ctx, logutils.LayerUsecase, op, "質問完了", slog.String("question_uuid", uuid))
@@ -504,4 +529,25 @@ func (uc *QuestionUsecase) createSummary(ctx context.Context, q *entity.Question
 		refs = append(refs, entity.QuestionSummaryReference{Name: r.Name, URL: r.URL})
 	}
 	return uc.questionRepo.CreateSummary(ctx, summary, refs)
+}
+
+func (uc *QuestionUsecase) upsertSummary(ctx context.Context, q *entity.Question, input QuestionSummaryInput) error {
+	full, err := uc.questionRepo.GetByUUID(ctx, q.UUID.String())
+	if err != nil {
+		return err
+	}
+	refMap := make(map[string]entity.QuestionRefer, len(full.Refers))
+	for _, r := range full.Refers {
+		refMap[r.UUID.String()] = r
+	}
+	refs := make([]entity.QuestionSummaryReference, 0, len(input.ReferUUIDs))
+	for _, uid := range input.ReferUUIDs {
+		if r, ok := refMap[uid]; ok {
+			refs = append(refs, entity.QuestionSummaryReference{
+				Name: r.Name,
+				URL:  r.URL,
+			})
+		}
+	}
+	return uc.questionRepo.UpsertSummary(ctx, full.ID, full.Title, strings.TrimSpace(input.Content), strings.TrimSpace(input.Answer), refs)
 }

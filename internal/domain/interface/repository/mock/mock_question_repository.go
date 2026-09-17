@@ -613,3 +613,41 @@ func (c *MockQuestionRepositoryUpdateCall) DoAndReturn(f func(context.Context, *
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
+
+// UpsertSummary mocks base method.
+func (m *MockQuestionRepository) UpsertSummary(ctx context.Context, questionID uint, title, content, answer string, refs []entity.QuestionSummaryReference) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpsertSummary", ctx, questionID, title, content, answer, refs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpsertSummary indicates an expected call of UpsertSummary.
+func (mr *MockQuestionRepositoryMockRecorder) UpsertSummary(ctx, questionID, title, content, answer, refs any) *MockQuestionRepositoryUpsertSummaryCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpsertSummary", reflect.TypeOf((*MockQuestionRepository)(nil).UpsertSummary), ctx, questionID, title, content, answer, refs)
+	return &MockQuestionRepositoryUpsertSummaryCall{Call: call}
+}
+
+// MockQuestionRepositoryUpsertSummaryCall wrap *gomock.Call
+type MockQuestionRepositoryUpsertSummaryCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockQuestionRepositoryUpsertSummaryCall) Return(arg0 error) *MockQuestionRepositoryUpsertSummaryCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockQuestionRepositoryUpsertSummaryCall) Do(f func(context.Context, uint, string, string, string, []entity.QuestionSummaryReference) error) *MockQuestionRepositoryUpsertSummaryCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockQuestionRepositoryUpsertSummaryCall) DoAndReturn(f func(context.Context, uint, string, string, string, []entity.QuestionSummaryReference) error) *MockQuestionRepositoryUpsertSummaryCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}

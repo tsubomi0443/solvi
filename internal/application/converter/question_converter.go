@@ -15,10 +15,14 @@ func QuestionEntityToListItem(q *entity.Question) outputmodel.QuestionListItemOu
 	if q.AnswerDue != nil {
 		due = q.AnswerDue.Format(time.RFC3339)
 	}
+	content := ""
+	if len(q.Contents) > 0 {
+		content = q.Contents[0].Content
+	}
 	return outputmodel.QuestionListItemOutput{
 		UUID:                   q.UUID.String(),
 		Title:                  q.Title,
-		Content:                q.Contents[0].Content,
+		Content:                content,
 		SupportStatus:          q.SupportStatus.String(),
 		IsRequireHumanSupport:  q.IsRequireHumanSupport,
 		QuestionUserUUID:       q.QuestionUser.UUID.String(),
@@ -85,6 +89,23 @@ func QuestionEntityToDetail(q *entity.Question, includeMemos bool) outputmodel.Q
 			UserUUID:  r.User.UUID.String(),
 			CreatedAt: r.CreatedAt.Format(time.RFC3339),
 		})
+	}
+	if q.Summary != nil {
+		refs := make([]outputmodel.SummaryReferenceOutput, 0, len(q.Summary.References))
+		for _, ref := range q.Summary.References {
+			refs = append(refs, outputmodel.SummaryReferenceOutput{
+				UUID: ref.UUID.String(),
+				Name: ref.Name,
+				URL:  ref.URL,
+			})
+		}
+		out.Summary = &outputmodel.SummaryOutput{
+			UUID:       q.Summary.UUID.String(),
+			Title:      q.Summary.Title,
+			Content:    q.Summary.Content,
+			Answer:     q.Summary.Answer,
+			References: refs,
+		}
 	}
 	return out
 }

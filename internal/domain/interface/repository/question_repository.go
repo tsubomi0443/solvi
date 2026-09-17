@@ -24,4 +24,5 @@ type QuestionRepository interface {
 	AddRefer(ctx context.Context, refer *entity.QuestionRefer) error
 	ReplaceTags(ctx context.Context, questionID uint, tags []entity.QuestionTag) error
 	CreateSummary(ctx context.Context, summary *entity.QuestionSummary, refs []entity.QuestionSummaryReference) error
+	UpsertSummary(ctx context.Context, questionID uint, title, content, answer string, refs []entity.QuestionSummaryReference) error
 }

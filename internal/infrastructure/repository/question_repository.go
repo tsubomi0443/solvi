@@ -214,3 +214,57 @@ func (r *QuestionRepository) CreateSummary(ctx context.Context, summary *entity.
 	}
 	return err
 }
+
+func (r *QuestionRepository) UpsertSummary(ctx context.Context, questionID uint, title, content, answer string, refs []entity.QuestionSummaryReference) error {
+	const op = opQuestionRepo + ".UpsertSummary"
+	logutils.Debug(ctx, logutils.LayerRepository, op, "DBサマリー更新", slog.Uint64("question_id", uint64(questionID)))
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var existing entity.QuestionSummary
+		findErr := tx.Unscoped().Where("question_id = ?", questionID).First(&existing).Error
+		if findErr != nil && !errors.Is(findErr, gorm.ErrRecordNotFound) {
+			return findErr
+		}
+
+		var summaryID uint
+		if errors.Is(findErr, gorm.ErrRecordNotFound) {
+			summary := entity.QuestionSummary{
+				Title:      title,
+				Content:    content,
+				Answer:     answer,
+				QuestionID: questionID,
+			}
+			if err := tx.Create(&summary).Error; err != nil {
+				return err
+			}
+			summaryID = summary.ID
+		} else {
+			existing.Title = title
+			existing.Content = content
+			existing.Answer = answer
+			existing.DeletedAt = gorm.DeletedAt{}
+			if err := tx.Save(&existing).Error; err != nil {
+				return err
+			}
+			summaryID = existing.ID
+		}
+
+		if err := tx.Where("question_summary_id = ?", summaryID).Delete(&entity.QuestionSummaryReference{}).Error; err != nil {
+			return err
+		}
+
+		for i := range refs {
+			refs[i].ID = 0
+			refs[i].QuestionSummaryID = summaryID
+		}
+		if len(refs) > 0 {
+			if err := tx.Create(&refs).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		logutils.Error(ctx, logutils.LayerRepository, op, "DBサマリー更新失敗", slog.Uint64("question_id", uint64(questionID)), slog.String("err", err.Error()))
+	}
+	return err
+}

@@ -52,6 +52,52 @@ export class Refer {
     }
 }
 
+export class QuestionSummaryReference {
+    constructor({ uuid = "", name = "", url = "" } = {}) {
+        this.uuid = uuid;
+        this.name = name;
+        this.url = url;
+    }
+
+    static fromJSON(dto) {
+        if (!dto) return new QuestionSummaryReference();
+        return new QuestionSummaryReference({
+            uuid: dto.uuid ?? "",
+            name: dto.name ?? "",
+            url: dto.url ?? "",
+        });
+    }
+}
+
+export class QuestionSummary {
+    constructor({
+        uuid = "",
+        title = "",
+        content = "",
+        answer = "",
+        references = [],
+    } = {}) {
+        this.uuid = uuid;
+        this.title = title;
+        this.content = content;
+        this.answer = answer;
+        this.references = references;
+    }
+
+    static fromJSON(dto) {
+        if (!dto) return null;
+        return new QuestionSummary({
+            uuid: dto.uuid ?? "",
+            title: dto.title ?? "",
+            content: dto.content ?? "",
+            answer: dto.answer ?? "",
+            references: (dto.references || []).map((r) =>
+                QuestionSummaryReference.fromJSON(r),
+            ),
+        });
+    }
+}
+
 export class QuestionListItem {
     constructor({
         uuid = "",
@@ -109,6 +155,7 @@ export class Question {
         answers = [],
         memos = [],
         refers = [],
+        summary = null,
     } = {}) {
         this.uuid = uuid;
         this.title = title;
@@ -123,6 +170,7 @@ export class Question {
         this.answers = answers;
         this.memos = memos;
         this.refers = refers;
+        this.summary = summary;
     }
 
     static fromJSON(dto) {
@@ -144,6 +192,7 @@ export class Question {
             answers: (dto.answers || []).map((item) => Timeline.fromJSON(item)),
             memos: (dto.memos || []).map((item) => Timeline.fromJSON(item)),
             refers: (dto.refers || []).map((item) => Refer.fromJSON(item)),
+            summary: QuestionSummary.fromJSON(dto.summary),
         });
     }
 }

@@ -8,6 +8,7 @@ import (
 
 	"solvi/internal/adapter/handler/authctx"
 	outputmodel "solvi/internal/application/model/output_model"
+	quc "solvi/internal/application/usecase/question_usecase"
 	"solvi/internal/shared/datetime"
 
 	"github.com/labstack/echo/v5"
@@ -178,6 +179,11 @@ func (h *Handler) UpdateQuestion(c *echo.Context) error {
 		Tags                  *[]string `json:"tags"`
 		IsRequireHumanSupport *bool     `json:"isRequireHumanSupport"`
 		Complete              bool      `json:"complete"`
+		Summary               *struct {
+			Content    string   `json:"content"`
+			Answer     string   `json:"answer"`
+			ReferUUIDs []string `json:"referUuids"`
+		} `json:"summary"`
 	}
 	if err := c.Bind(&req); err != nil {
 		logHandlerWarn(ctx, op, "リクエスト不正", http.StatusBadRequest, handlerAttrs(c)...)
@@ -192,8 +198,16 @@ func (h *Handler) UpdateQuestion(c *echo.Context) error {
 		}
 		due = &parsed
 	}
+	var summaryInput *quc.QuestionSummaryInput
+	if req.Summary != nil {
+		summaryInput = &quc.QuestionSummaryInput{
+			Content:    req.Summary.Content,
+			Answer:     req.Summary.Answer,
+			ReferUUIDs: req.Summary.ReferUUIDs,
+		}
+	}
 	uuid := c.Param("uuid")
-	if err := h.deps.Question.Update(ctx, claims.UserID, claims.IsAdmin, claims.IsSupporter, uuid, req.Title, req.Status, due, req.Tags, req.IsRequireHumanSupport, req.Complete); err != nil {
+	if err := h.deps.Question.Update(ctx, claims.UserID, claims.IsAdmin, claims.IsSupporter, uuid, req.Title, req.Status, due, req.Tags, req.IsRequireHumanSupport, req.Complete, summaryInput); err != nil {
 		logHandlerDebug(ctx, op, "質問更新失敗", http.StatusForbidden, append(handlerAttrs(c), slog.String("question_uuid", uuid))...)
 		return c.JSON(http.StatusForbidden, map[string]string{"error": err.Error()})
 	}

@@ -28,6 +28,21 @@ type QuestionDetailOutput struct {
 	Answers                []TimelineOutput `json:"answers"`
 	Memos                  []TimelineOutput `json:"memos,omitempty"`
 	Refers                 []ReferOutput    `json:"refers"`
+	Summary                *SummaryOutput   `json:"summary,omitempty"`
+}
+
+type SummaryOutput struct {
+	UUID       string                    `json:"uuid"`
+	Title      string                    `json:"title"`
+	Content    string                    `json:"content"`
+	Answer     string                    `json:"answer"`
+	References []SummaryReferenceOutput `json:"references"`
+}
+
+type SummaryReferenceOutput struct {
+	UUID string `json:"uuid,omitempty"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
 
 type TimelineOutput struct {

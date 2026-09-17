@@ -113,7 +113,7 @@ func TestUpdate_SupporterUpdatesTitle(t *testing.T) {
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
 	title := "new title"
-	if err := uc.Update(context.Background(), 1, true, true, qid.String(), &title, nil, nil, nil, nil, false); err != nil {
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), &title, nil, nil, nil, nil, false, nil); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -138,7 +138,7 @@ func TestUpdate_SupporterUpdatesAnswerDue(t *testing.T) {
 	})
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, nil, &due, nil, nil, false); err != nil {
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, nil, &due, nil, nil, false, nil); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -163,7 +163,7 @@ func TestUpdate_SupporterReopensDoneQuestion(t *testing.T) {
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
 	status := "pending"
-	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false); err != nil {
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false, nil); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -174,17 +174,70 @@ func TestUpdate_SupporterCompletesViaStatus(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	qid := uuid.New()
+	refUUID := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusSupporting,
+		Refers: []entity.QuestionRefer{
+			{UUID: refUUID, Name: "Doc", URL: "https://example.com/doc"},
+		},
+	}
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil).Times(2)
+	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+	qRepo.EXPECT().UpsertSummary(gomock.Any(), uint(1), "title", "q-summary", "a-summary", gomock.Any()).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	status := "done"
+	summaryInput := &quc.QuestionSummaryInput{
+		Content:    "q-summary",
+		Answer:     "a-summary",
+		ReferUUIDs: []string{refUUID.String()},
+	}
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false, summaryInput); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdate_DoneRequiresSummary(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
 	q := &entity.Question{
 		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
 		SupportStatus: valueobject.SupportStatusSupporting,
 	}
-	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil).Times(2)
-	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
-	qRepo.EXPECT().CreateSummary(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
 	status := "done"
-	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false); err != nil {
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false, nil); err == nil {
+		t.Fatal("expected error when summary is nil")
+	}
+}
+
+func TestUpdate_ReDoneUpdatesExistingSummary(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusDone,
+	}
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil).Times(2)
+	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+	qRepo.EXPECT().UpsertSummary(gomock.Any(), uint(1), "title", "updated-q", "updated-a", gomock.Any()).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	status := "done"
+	summaryInput := &quc.QuestionSummaryInput{
+		Content: "updated-q",
+		Answer:  "updated-a",
+	}
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false, summaryInput); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -371,7 +424,7 @@ func TestUpdate_AskerUpdatesRequireHuman(t *testing.T) {
 	})
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.Update(context.Background(), 5, false, false, qid.String(), nil, nil, nil, nil, &requireHuman, false); err != nil {
+	if err := uc.Update(context.Background(), 5, false, false, qid.String(), nil, nil, nil, nil, &requireHuman, false, nil); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -555,7 +608,7 @@ func TestUpdate_AdminCannotChangeRequireHumanForOthers(t *testing.T) {
 	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.Update(context.Background(), 1, false, false, qid.String(), nil, nil, nil, nil, &requireHuman, false); err == nil {
+	if err := uc.Update(context.Background(), 1, false, false, qid.String(), nil, nil, nil, nil, &requireHuman, false, nil); err == nil {
 		t.Fatal("expected permission error")
 	}
 }

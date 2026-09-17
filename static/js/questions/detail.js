@@ -53,6 +53,11 @@ document.addEventListener("alpine:init", () => {
         deleteTarget: null,
         deletingItem: false,
         deletingQuestion: false,
+        showDoneModal: false,
+        doneSummaryContent: "",
+        doneSummaryAnswer: "",
+        doneSelectedReferUuids: [],
+        submittingDone: false,
 
         init() {
             const qEl = document.getElementById("question-json");
@@ -372,7 +377,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         async updateQuestion(payload) {
-            if (this.savingMeta) return;
+            if (this.savingMeta) return false;
             this.savingMeta = true;
             try {
                 const res = await fetch(
@@ -392,7 +397,7 @@ document.addEventListener("alpine:init", () => {
                         type: "error",
                     });
                     this.syncMetaFields();
-                    return;
+                    return false;
                 }
                 this.question = Question.fromJSON(await res.json());
                 this.syncMetaFields();
@@ -400,6 +405,7 @@ document.addEventListener("alpine:init", () => {
                     message: "更新しました",
                     type: "success",
                 });
+                return true;
             } finally {
                 this.savingMeta = false;
             }
@@ -417,7 +423,78 @@ document.addEventListener("alpine:init", () => {
                 this.editStatus === this.question.supportStatus
             )
                 return;
+            if (this.editStatus === "done") {
+                this.openDoneModal();
+                return;
+            }
             await this.updateQuestion({ status: this.editStatus });
+        },
+
+        openDoneModal() {
+            const sum = this.question.summary;
+            this.doneSummaryContent = sum?.content || "";
+            this.doneSummaryAnswer = sum?.answer || "";
+            const currentRefers = this.question.refers || [];
+            if (sum && Array.isArray(sum.references) && sum.references.length > 0) {
+                const matchedUuids = [];
+                sum.references.forEach((savedRef) => {
+                    const match = currentRefers.find(
+                        (r) =>
+                            r.name === savedRef.name && r.url === savedRef.url,
+                    );
+                    if (match && match.uuid) {
+                        matchedUuids.push(match.uuid);
+                    }
+                });
+                this.doneSelectedReferUuids = matchedUuids;
+            } else {
+                this.doneSelectedReferUuids = [];
+            }
+            this.submittingDone = false;
+            this.showDoneModal = true;
+            this.$nextTick(() => {
+                this.$refs.doneSummaryContentInput?.focus();
+            });
+        },
+
+        closeDoneModal() {
+            if (this.submittingDone) return;
+            this.showDoneModal = false;
+            this.editStatus = this.question.supportStatus || "pending";
+        },
+
+        canSubmitDone() {
+            if (this.submittingDone) return false;
+            if (!this.doneSummaryContent.trim()) return false;
+            if (!this.doneSummaryAnswer.trim()) return false;
+            const refers = this.question.refers || [];
+            if (refers.length > 0 && this.doneSelectedReferUuids.length === 0) {
+                return false;
+            }
+            return true;
+        },
+
+        async submitDone() {
+            if (!this.canSubmitDone()) return;
+            this.submittingDone = true;
+            try {
+                const payload = {
+                    status: "done",
+                    summary: {
+                        content: this.doneSummaryContent.trim(),
+                        answer: this.doneSummaryAnswer.trim(),
+                        referUuids: this.doneSelectedReferUuids.slice(),
+                    },
+                };
+                const ok = await this.updateQuestion(payload);
+                if (ok !== false) {
+                    this.showDoneModal = false;
+                } else {
+                    this.editStatus = this.question.supportStatus || "pending";
+                }
+            } finally {
+                this.submittingDone = false;
+            }
         },
 
         async saveAnswerDue() {
