@@ -17,14 +17,15 @@
                     class="mx-auto max-w-2xl space-y-4 rounded-2xl border border-base-300 bg-base-100 p-6">
                     <label class="form-control w-full">
                         <span class="label-text">タイトル</span>
-                        <input type="text" class="input input-bordered w-full" x-model="form.title" required>
+                        <input type="text" class="input input-bordered w-full" x-model="form.title" maxlength="20"
+                            required>
                     </label>
                     <label class="form-control w-full">
                         <span class="label-text">質問内容</span>
                         <textarea class="textarea textarea-bordered min-h-40 w-full" x-model="form.content"
                             required></textarea>
                     </label>
-                    <label class="form-control w-full">
+                    <label class=" form-control w-full">
                         <span class="label-text">タグ（カンマ区切り）</span>
                         <input type="text" class="input input-bordered w-full" x-model="form.tagsText"
                             placeholder="例: 給与, 勤怠">

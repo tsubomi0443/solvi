@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +31,8 @@ func TestLogRepository_listNewAndLegacyNames(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = repo.Close() })
 
-	dates, err := repo.ListDates()
+	ctx := context.Background()
+	dates, err := repo.ListDates(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +41,7 @@ func TestLogRepository_listNewAndLegacyNames(t *testing.T) {
 	}
 
 	day := time.Date(2026, 9, 17, 0, 0, 0, 0, time.Local)
-	got, err := repo.ListByDate(day)
+	got, err := repo.ListByDate(ctx, day)
 	if err != nil {
 		t.Fatal(err)
 	}

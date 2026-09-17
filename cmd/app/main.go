@@ -108,7 +108,7 @@ func main() {
 	go hub.Run()
 
 	questionUC := quc.NewQuestionUsecase(questionRepo, userRepo, bedrockClient, func(questionUUID string) {
-		q, err := questionRepo.GetByUUID(questionUUID)
+		q, err := questionRepo.GetByUUID(context.Background(), questionUUID)
 		if err != nil {
 			return
 		}

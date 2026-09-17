@@ -43,6 +43,6 @@ func NewEcho(accessLogger *slog.Logger) *echo.Echo {
 		ec.Logger = accessLogger
 	}
 
-	ec.Use(middleware.Recover(), middleware.RequestLogger())
+	ec.Use(RequestID(), middleware.Recover(), middleware.RequestLogger())
 	return ec
 }

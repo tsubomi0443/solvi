@@ -56,6 +56,7 @@ export class QuestionListItem {
     constructor({
         uuid = "",
         title = "",
+        content = "",
         supportStatus = "",
         isRequireHumanSupport = false,
         questionUserUUID = "",
@@ -66,6 +67,7 @@ export class QuestionListItem {
     } = {}) {
         this.uuid = uuid;
         this.title = title;
+        this.content = content;
         this.supportStatus = supportStatus;
         this.isRequireHumanSupport = isRequireHumanSupport;
         this.questionUserUUID = questionUserUUID;
@@ -80,6 +82,7 @@ export class QuestionListItem {
         return new QuestionListItem({
             uuid: dto.uuid ?? "",
             title: dto.title ?? "",
+            content: dto.content ?? "",
             supportStatus: dto.supportStatus ?? "",
             isRequireHumanSupport: Boolean(dto.isRequireHumanSupport),
             questionUserUUID: dto.questionUserUUID ?? "",

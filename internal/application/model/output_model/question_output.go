@@ -3,6 +3,7 @@ package outputmodel
 type QuestionListItemOutput struct {
 	UUID                   string   `json:"uuid"`
 	Title                  string   `json:"title"`
+	Content                string   `json:"content"`
 	SupportStatus          string   `json:"supportStatus"`
 	IsRequireHumanSupport  bool     `json:"isRequireHumanSupport"`
 	QuestionUserUUID       string   `json:"questionUserUUID"`

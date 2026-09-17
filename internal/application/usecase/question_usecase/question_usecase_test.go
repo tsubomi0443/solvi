@@ -1,6 +1,7 @@
 package question_usecase_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -27,12 +28,12 @@ func TestList_ScopedToQuestionUser(t *testing.T) {
 	qRepo := repomock.NewMockQuestionRepository(ctrl)
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
-	qRepo.EXPECT().ListByQuestionUserID(uint(10)).Return([]entity.Question{
+	qRepo.EXPECT().ListByQuestionUserID(gomock.Any(), uint(10)).Return([]entity.Question{
 		{UUID: uuid.New(), Title: "mine", SupportStatus: valueobject.SupportStatusPending},
 	}, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	items, err := uc.List(10, false, false)
+	items, err := uc.List(context.Background(), 10, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,12 +48,12 @@ func TestGet_DeniesOtherUser(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	qid := uuid.New()
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
 		UUID: qid, QuestionUserID: 99, Title: "secret",
 	}, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	_, err := uc.Get(10, false, false, qid.String())
+	_, err := uc.Get(context.Background(), 10, false, false, qid.String())
 	if err == nil {
 		t.Fatal("expected permission error")
 	}
@@ -65,25 +66,25 @@ func TestCreate_PersistsQuestion(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	qid := uuid.New()
-	qRepo.EXPECT().Create(gomock.Any()).DoAndReturn(func(q *entity.Question) error {
+	qRepo.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, q *entity.Question) error {
 		q.ID = 1
 		q.UUID = qid
 		return nil
 	})
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
 		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
 		SupportStatus: valueobject.SupportStatusPending,
 		Contents:      []entity.QuestionContent{{Content: "body"}},
 	}, nil)
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
 		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
 	}, nil).AnyTimes()
-	qRepo.EXPECT().AddAnswer(gomock.Any()).Return(nil).AnyTimes()
-	uRepo.EXPECT().GetByEmail(gomock.Any()).Return(nil, gorm.ErrRecordNotFound).AnyTimes()
+	qRepo.EXPECT().AddAnswer(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	uRepo.EXPECT().GetByEmail(gomock.Any(), gomock.Any()).Return(nil, gorm.ErrRecordNotFound).AnyTimes()
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, stubBedrock{}, nil)
 	tt := time.Date(2006, 1, 2, 3, 4, 5, 0, time.Local)
-	out, err := uc.Create(5, "title", "body", []string{"給与"}, &tt, false)
+	out, err := uc.Create(context.Background(), 5, "title", "body", []string{"給与"}, &tt, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,8 +103,8 @@ func TestUpdate_SupporterUpdatesTitle(t *testing.T) {
 		Model: gorm.Model{ID: 1}, UUID: qid, Title: "old", QuestionUserID: 5,
 		SupportStatus: valueobject.SupportStatusPending,
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
-	qRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *entity.Question) error {
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, updated *entity.Question) error {
 		if updated.Title != "new title" {
 			t.Fatalf("title=%q", updated.Title)
 		}
@@ -112,7 +113,7 @@ func TestUpdate_SupporterUpdatesTitle(t *testing.T) {
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
 	title := "new title"
-	if err := uc.Update(1, true, qid.String(), &title, nil, nil, nil, nil, false); err != nil {
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), &title, nil, nil, nil, nil, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -128,8 +129,8 @@ func TestUpdate_SupporterUpdatesAnswerDue(t *testing.T) {
 		SupportStatus: valueobject.SupportStatusPending,
 	}
 	due := time.Date(2026, 9, 14, 23, 59, 59, 0, time.FixedZone("Asia/Tokyo", 9*60*60))
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
-	qRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *entity.Question) error {
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, updated *entity.Question) error {
 		if updated.AnswerDue == nil || !updated.AnswerDue.Equal(due) {
 			t.Fatalf("due=%v", updated.AnswerDue)
 		}
@@ -137,7 +138,7 @@ func TestUpdate_SupporterUpdatesAnswerDue(t *testing.T) {
 	})
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.Update(1, true, qid.String(), nil, nil, &due, nil, nil, false); err != nil {
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, nil, &due, nil, nil, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -152,8 +153,8 @@ func TestUpdate_SupporterReopensDoneQuestion(t *testing.T) {
 		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
 		SupportStatus: valueobject.SupportStatusDone,
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
-	qRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *entity.Question) error {
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, updated *entity.Question) error {
 		if updated.SupportStatus != valueobject.SupportStatusPending {
 			t.Fatalf("status=%v", updated.SupportStatus)
 		}
@@ -162,7 +163,7 @@ func TestUpdate_SupporterReopensDoneQuestion(t *testing.T) {
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
 	status := "pending"
-	if err := uc.Update(1, true, qid.String(), nil, &status, nil, nil, nil, false); err != nil {
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -177,13 +178,13 @@ func TestUpdate_SupporterCompletesViaStatus(t *testing.T) {
 		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
 		SupportStatus: valueobject.SupportStatusSupporting,
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil).Times(2)
-	qRepo.EXPECT().Update(gomock.Any()).Return(nil)
-	qRepo.EXPECT().CreateSummary(gomock.Any(), gomock.Any()).Return(nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil).Times(2)
+	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+	qRepo.EXPECT().CreateSummary(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
 	status := "done"
-	if err := uc.Update(1, true, qid.String(), nil, &status, nil, nil, nil, false); err != nil {
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -201,11 +202,11 @@ func TestDeleteAnswer_OwnerSupporter(t *testing.T) {
 			{UUID: answerUUID, AnswerUserID: 1, Content: "answer"},
 		},
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
-	qRepo.EXPECT().SoftDeleteAnswerByUUID(answerUUID.String()).Return(nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteAnswerByUUID(gomock.Any(), answerUUID.String()).Return(nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.DeleteAnswer(1, true, false, qid.String(), answerUUID.String()); err != nil {
+	if err := uc.DeleteAnswer(context.Background(), 1, true, true, qid.String(), answerUUID.String()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -216,7 +217,7 @@ func TestDeleteAnswer_DeniesNonSupporter(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.DeleteAnswer(1, false, false, uuid.NewString(), uuid.NewString()); err == nil {
+	if err := uc.DeleteAnswer(context.Background(), 1, false, false, uuid.NewString(), uuid.NewString()); err == nil {
 		t.Fatal("expected permission error")
 	}
 }
@@ -234,10 +235,10 @@ func TestDeleteAnswer_DeniesOtherSupporter(t *testing.T) {
 			{UUID: answerUUID, AnswerUserID: 99, Content: "answer"},
 		},
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.DeleteAnswer(1, true, false, qid.String(), answerUUID.String()); err == nil {
+	if err := uc.DeleteAnswer(context.Background(), 1, true, false, qid.String(), answerUUID.String()); err == nil {
 		t.Fatal("expected permission error")
 	}
 }
@@ -255,11 +256,11 @@ func TestDeleteMemo_OwnerSupporter(t *testing.T) {
 			{UUID: memoUUID, MemoUserID: 1, Content: "memo"},
 		},
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
-	qRepo.EXPECT().SoftDeleteMemoByUUID(memoUUID.String()).Return(nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteMemoByUUID(gomock.Any(), memoUUID.String()).Return(nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.DeleteMemo(1, true, false, qid.String(), memoUUID.String()); err != nil {
+	if err := uc.DeleteMemo(context.Background(), 1, true, true, qid.String(), memoUUID.String()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -277,10 +278,10 @@ func TestDeleteMemo_DeniesOtherSupporter(t *testing.T) {
 			{UUID: memoUUID, MemoUserID: 99, Content: "memo"},
 		},
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.DeleteMemo(1, true, false, qid.String(), memoUUID.String()); err == nil {
+	if err := uc.DeleteMemo(context.Background(), 1, true, false, qid.String(), memoUUID.String()); err == nil {
 		t.Fatal("expected permission error")
 	}
 }
@@ -298,11 +299,11 @@ func TestDeleteRefer_OwnerSupporter(t *testing.T) {
 			{UUID: referUUID, UserID: 1, Name: "ref", URL: "https://example.com"},
 		},
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
-	qRepo.EXPECT().SoftDeleteReferByUUID(referUUID.String()).Return(nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteReferByUUID(gomock.Any(), referUUID.String()).Return(nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.DeleteRefer(1, true, false, qid.String(), referUUID.String()); err != nil {
+	if err := uc.DeleteRefer(context.Background(), 1, true, true, qid.String(), referUUID.String()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -320,10 +321,10 @@ func TestDeleteRefer_DeniesOtherSupporter(t *testing.T) {
 			{UUID: referUUID, UserID: 99, Name: "ref", URL: "https://example.com"},
 		},
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.DeleteRefer(1, true, false, qid.String(), referUUID.String()); err == nil {
+	if err := uc.DeleteRefer(context.Background(), 1, true, false, qid.String(), referUUID.String()); err == nil {
 		t.Fatal("expected permission error")
 	}
 }
@@ -341,11 +342,11 @@ func TestDeleteRefer_AdminDeletesOther(t *testing.T) {
 			{UUID: referUUID, UserID: 99, Name: "ref", URL: "https://example.com"},
 		},
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
-	qRepo.EXPECT().SoftDeleteReferByUUID(referUUID.String()).Return(nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteReferByUUID(gomock.Any(), referUUID.String()).Return(nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.DeleteRefer(1, false, true, qid.String(), referUUID.String()); err != nil {
+	if err := uc.DeleteRefer(context.Background(), 1, false, true, qid.String(), referUUID.String()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -361,8 +362,8 @@ func TestUpdate_AskerUpdatesRequireHuman(t *testing.T) {
 		IsRequireHumanSupport: false,
 	}
 	requireHuman := true
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
-	qRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(updated *entity.Question) error {
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, updated *entity.Question) error {
 		if !updated.IsRequireHumanSupport {
 			t.Fatal("expected require human support")
 		}
@@ -370,7 +371,7 @@ func TestUpdate_AskerUpdatesRequireHuman(t *testing.T) {
 	})
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.Update(5, false, qid.String(), nil, nil, nil, nil, &requireHuman, false); err != nil {
+	if err := uc.Update(context.Background(), 5, false, false, qid.String(), nil, nil, nil, nil, &requireHuman, false); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -380,12 +381,12 @@ func TestList_AdminSeesAll(t *testing.T) {
 	qRepo := repomock.NewMockQuestionRepository(ctrl)
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
-	qRepo.EXPECT().ListAll().Return([]entity.Question{
+	qRepo.EXPECT().ListAll(gomock.Any()).Return([]entity.Question{
 		{UUID: uuid.New(), Title: "all", SupportStatus: valueobject.SupportStatusPending},
 	}, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	items, err := uc.List(10, false, true)
+	items, err := uc.List(context.Background(), 10, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -400,12 +401,12 @@ func TestGet_AdminCanViewOthers(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	qid := uuid.New()
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
 		UUID: qid, QuestionUserID: 99, Title: "secret",
 	}, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	out, err := uc.Get(10, false, true, qid.String())
+	out, err := uc.Get(context.Background(), 10, false, true, qid.String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -427,11 +428,11 @@ func TestDeleteAnswer_AdminDeletesOther(t *testing.T) {
 			{UUID: answerUUID, AnswerUserID: 99, Content: "answer"},
 		},
 	}
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
-	qRepo.EXPECT().SoftDeleteAnswerByUUID(answerUUID.String()).Return(nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteAnswerByUUID(gomock.Any(), answerUUID.String()).Return(nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.DeleteAnswer(1, false, true, qid.String(), answerUUID.String()); err != nil {
+	if err := uc.DeleteAnswer(context.Background(), 1, false, true, qid.String(), answerUUID.String()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -442,11 +443,11 @@ func TestDelete_AdminDeletesQuestion(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	qid := uuid.New()
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{UUID: qid}, nil)
-	qRepo.EXPECT().SoftDeleteByUUID(qid.String()).Return(nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{UUID: qid}, nil)
+	qRepo.EXPECT().SoftDeleteByUUID(gomock.Any(), qid.String()).Return(nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.Delete(true, qid.String()); err != nil {
+	if err := uc.Delete(context.Background(), true, qid.String()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -457,7 +458,7 @@ func TestDelete_DeniesNonAdmin(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.Delete(false, uuid.NewString()); err == nil {
+	if err := uc.Delete(context.Background(), false, uuid.NewString()); err == nil {
 		t.Fatal("expected permission error")
 	}
 }
@@ -468,13 +469,13 @@ func TestAddRefers_PersistsMultiple(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	qid := uuid.New()
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
 		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
 	}, nil)
-	qRepo.EXPECT().AddRefer(gomock.Any()).Return(nil).Times(2)
+	qRepo.EXPECT().AddRefer(gomock.Any(), gomock.Any()).Return(nil).Times(2)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	err := uc.AddRefers(10, qid.String(), []outputmodel.ReferOutput{
+	err := uc.AddRefers(context.Background(), 10, qid.String(), []outputmodel.ReferOutput{
 		{Name: "Doc A", URL: "https://example.com/a"},
 		{Name: "Doc B", URL: "https://example.com/b"},
 	})
@@ -489,13 +490,13 @@ func TestAddRefers_SkipsEmptyRows(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	qid := uuid.New()
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
 		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
 	}, nil)
-	qRepo.EXPECT().AddRefer(gomock.Any()).Return(nil).Times(1)
+	qRepo.EXPECT().AddRefer(gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	err := uc.AddRefers(10, qid.String(), []outputmodel.ReferOutput{
+	err := uc.AddRefers(context.Background(), 10, qid.String(), []outputmodel.ReferOutput{
 		{Name: "Doc A", URL: "https://example.com/a"},
 		{Name: " ", URL: " "},
 	})
@@ -510,12 +511,12 @@ func TestAddRefers_RejectsPartialRow(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	qid := uuid.New()
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
 		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
 	}, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	err := uc.AddRefers(10, qid.String(), []outputmodel.ReferOutput{
+	err := uc.AddRefers(context.Background(), 10, qid.String(), []outputmodel.ReferOutput{
 		{Name: "Doc A", URL: ""},
 	})
 	if err == nil {
@@ -529,12 +530,12 @@ func TestAddRefers_RejectsEmptyPayload(t *testing.T) {
 	uRepo := repomock.NewMockUserRepository(ctrl)
 
 	qid := uuid.New()
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(&entity.Question{
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
 		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
 	}, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	err := uc.AddRefers(10, qid.String(), []outputmodel.ReferOutput{})
+	err := uc.AddRefers(context.Background(), 10, qid.String(), []outputmodel.ReferOutput{})
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
@@ -551,10 +552,10 @@ func TestUpdate_AdminCannotChangeRequireHumanForOthers(t *testing.T) {
 		IsRequireHumanSupport: false,
 	}
 	requireHuman := true
-	qRepo.EXPECT().GetByUUID(qid.String()).Return(q, nil)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	if err := uc.Update(1, false, qid.String(), nil, nil, nil, nil, &requireHuman, false); err == nil {
+	if err := uc.Update(context.Background(), 1, false, false, qid.String(), nil, nil, nil, nil, &requireHuman, false); err == nil {
 		t.Fatal("expected permission error")
 	}
 }

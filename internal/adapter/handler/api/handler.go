@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log/slog"
 	"solvi/internal/adapter/handler/sse"
 	authuc "solvi/internal/application/usecase/auth_usecase"
 	loguc "solvi/internal/application/usecase/log_usecase"
@@ -19,7 +18,6 @@ type Deps struct {
 	Tag        *taguc.TagUsecase
 	Log        *loguc.LogUsecase
 	Hub        *sse.Hub
-	Audit      *slog.Logger
 }
 
 type Handler struct {

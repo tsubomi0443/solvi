@@ -1,6 +1,7 @@
 package auth_usecase_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -30,10 +31,10 @@ func TestLoginBasic_Success(t *testing.T) {
 		t.Fatal(err)
 	}
 	user := &entity.User{Model: gorm.Model{ID: 1}, UUID: uuid.New(), Name: "Admin", Email: "admin@solvi.local", Password: &hash, IsSupporter: true, IsAdmin: true}
-	userRepo.EXPECT().GetByEmail("admin@solvi.local").Return(user, nil)
+	userRepo.EXPECT().GetByEmail(gomock.Any(), "admin@solvi.local").Return(user, nil)
 
 	uc := authuc.NewAuthUsecase(nil, userRepo)
-	token, out, err := uc.LoginBasic("admin@solvi.local", "admin")
+	token, out, err := uc.LoginBasic(context.Background(), "admin@solvi.local", "admin")
 	if err != nil {
 		t.Fatalf("LoginBasic: %v", err)
 	}
@@ -53,10 +54,10 @@ func TestLoginBasic_PasswordOnlyDoesNotGrantAdmin(t *testing.T) {
 		t.Fatal(err)
 	}
 	user := &entity.User{Model: gorm.Model{ID: 1}, UUID: uuid.New(), Name: "User", Email: "user@solvi.local", Password: &hash, IsAdmin: false}
-	userRepo.EXPECT().GetByEmail("user@solvi.local").Return(user, nil)
+	userRepo.EXPECT().GetByEmail(gomock.Any(), "user@solvi.local").Return(user, nil)
 
 	uc := authuc.NewAuthUsecase(nil, userRepo)
-	_, out, err := uc.LoginBasic("user@solvi.local", "admin")
+	_, out, err := uc.LoginBasic(context.Background(), "user@solvi.local", "admin")
 	if err != nil {
 		t.Fatalf("LoginBasic: %v", err)
 	}
@@ -70,10 +71,10 @@ func TestLoginBasic_WrongPassword(t *testing.T) {
 	userRepo := repomock.NewMockUserRepository(ctrl)
 	hash, _ := crypto.HashPassword("admin", "test-pepper")
 	user := &entity.User{Email: "admin@solvi.local", Password: &hash}
-	userRepo.EXPECT().GetByEmail("admin@solvi.local").Return(user, nil)
+	userRepo.EXPECT().GetByEmail(gomock.Any(), "admin@solvi.local").Return(user, nil)
 
 	uc := authuc.NewAuthUsecase(nil, userRepo)
-	_, _, err := uc.LoginBasic("admin@solvi.local", "wrong")
+	_, _, err := uc.LoginBasic(context.Background(), "admin@solvi.local", "wrong")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -87,8 +88,8 @@ func TestLoginLDAP_CreatesSupporter(t *testing.T) {
 	ldapClient.EXPECT().Authenticate("user@example.com", "pass").Return(&ldap_entity.LDAPUser{
 		Name: "User", Mail: "user@example.com", Department: "総務部",
 	}, nil)
-	userRepo.EXPECT().GetByEmail("user@example.com").Return(nil, gorm.ErrRecordNotFound)
-	userRepo.EXPECT().Create(gomock.Any()).DoAndReturn(func(u *entity.User) error {
+	userRepo.EXPECT().GetByEmail(gomock.Any(), "user@example.com").Return(nil, gorm.ErrRecordNotFound)
+	userRepo.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, u *entity.User) error {
 		u.ID = 2
 		if !u.IsSupporter {
 			t.Fatal("expected supporter from department")
@@ -97,7 +98,7 @@ func TestLoginLDAP_CreatesSupporter(t *testing.T) {
 	})
 
 	uc := authuc.NewAuthUsecase(ldapClient, userRepo)
-	token, out, err := uc.LoginLDAP("user@example.com", "pass")
+	token, out, err := uc.LoginLDAP(context.Background(), "user@example.com", "pass")
 	if err != nil {
 		t.Fatalf("LoginLDAP: %v", err)
 	}

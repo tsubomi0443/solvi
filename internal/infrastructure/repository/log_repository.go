@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/fs"
@@ -9,7 +10,11 @@ import (
 	"regexp"
 	"sort"
 	"time"
+
+	logutils "solvi/internal/shared/logUtils"
 )
+
+const opLogRepo = "LogRepository"
 
 type LogRepository struct {
 	logDirectory *os.Root
@@ -18,7 +23,7 @@ type LogRepository struct {
 func NewLogRepository(logDirectoryRootPath string) (*LogRepository, error) {
 	root, err := os.OpenRoot(logDirectoryRootPath)
 	if err != nil {
-		slog.Error("root directory could not be found", slog.String("error", err.Error()))
+		slog.Error("ログディレクトリのルートが参照できません", slog.String("path", logDirectoryRootPath), slog.String("err", err.Error()))
 		return nil, fmt.Errorf("ログディレクトリのルートが参照できませんでした: %w", err)
 	}
 	return &LogRepository{
@@ -39,7 +44,9 @@ var (
 	oldAccLogRE  = regexp.MustCompile(`^log_(\d{8})_access\.log$`)
 )
 
-func (repo *LogRepository) ListNames() ([]string, error) {
+func (repo *LogRepository) ListNames(ctx context.Context) ([]string, error) {
+	const op = opLogRepo + ".ListNames"
+	logutils.Debug(ctx, logutils.LayerRepository, op, "ログファイル走査")
 	names := []string{}
 	err := fs.WalkDir(repo.logDirectory.FS(), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -52,25 +59,29 @@ func (repo *LogRepository) ListNames() ([]string, error) {
 		return nil
 	})
 	if err != nil {
+		logutils.Error(ctx, logutils.LayerRepository, op, "ログファイル走査失敗", slog.String("err", err.Error()))
 		return nil, fmt.Errorf("ログファイルの走査中にエラーが発生しました: %w", err)
 	}
 	sort.Strings(names)
+	logutils.Debug(ctx, logutils.LayerRepository, op, "ログファイル走査完了", slog.Int("count", len(names)))
 	return names, nil
 }
 
-func (repo *LogRepository) Open(name string) (io.ReadCloser, error) {
+func (repo *LogRepository) Open(ctx context.Context, name string) (io.ReadCloser, error) {
+	const op = opLogRepo + ".Open"
+	logutils.Debug(ctx, logutils.LayerRepository, op, "ログファイル開く", slog.String("name", name))
 	f, err := repo.logDirectory.OpenFile(name, os.O_RDONLY, 0)
 	if err != nil {
-		slog.Error("")
+		logutils.Error(ctx, logutils.LayerRepository, op, "ログファイル開く失敗", slog.String("name", name), slog.String("err", err.Error()))
 		return nil, fmt.Errorf("ログファイルを開けませんでした: %w", err)
 	}
 	return f, nil
 }
 
-func (repo *LogRepository) ListDates() ([]string, error) {
-	names, err := repo.ListNames()
+func (repo *LogRepository) ListDates(ctx context.Context) ([]string, error) {
+	const op = opLogRepo + ".ListDates"
+	names, err := repo.ListNames(ctx)
 	if err != nil {
-		slog.Error("")
 		return nil, err
 	}
 
@@ -88,17 +99,19 @@ func (repo *LogRepository) ListDates() ([]string, error) {
 		result = append(result, date)
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(result)))
+	logutils.Debug(ctx, logutils.LayerRepository, op, "日付一覧取得完了", slog.Int("count", len(result)))
 	return result, nil
 }
 
-func (repo *LogRepository) ListByDate(date time.Time) ([]string, error) {
-	names, err := repo.ListNames()
+func (repo *LogRepository) ListByDate(ctx context.Context, date time.Time) ([]string, error) {
+	const op = opLogRepo + ".ListByDate"
+	want := date.Format("20060102")
+	logutils.Debug(ctx, logutils.LayerRepository, op, "日付でログファイル検索", slog.String("date", want))
+	names, err := repo.ListNames(ctx)
 	if err != nil {
-		slog.Error("")
 		return nil, err
 	}
 
-	want := date.Format("20060102")
 	matched := make([]string, 0)
 	for _, name := range names {
 		compact, ok := parseLogDate(name)
@@ -107,6 +120,7 @@ func (repo *LogRepository) ListByDate(date time.Time) ([]string, error) {
 		}
 		matched = append(matched, name)
 	}
+	logutils.Debug(ctx, logutils.LayerRepository, op, "日付でログファイル検索完了", slog.Int("count", len(matched)))
 	return matched, nil
 }
 

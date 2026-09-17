@@ -18,6 +18,7 @@ func QuestionEntityToListItem(q *entity.Question) outputmodel.QuestionListItemOu
 	return outputmodel.QuestionListItemOutput{
 		UUID:                   q.UUID.String(),
 		Title:                  q.Title,
+		Content:                q.Contents[0].Content,
 		SupportStatus:          q.SupportStatus.String(),
 		IsRequireHumanSupport:  q.IsRequireHumanSupport,
 		QuestionUserUUID:       q.QuestionUser.UUID.String(),

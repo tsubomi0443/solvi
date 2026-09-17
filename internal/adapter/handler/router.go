@@ -48,7 +48,6 @@ func RegisterRoutes(e *echo.Echo, deps Deps, auditLogger *slog.Logger) {
 		Tag:        deps.Tag,
 		Log:        deps.Log,
 		Hub:        deps.Hub,
-		Audit:      auditLogger,
 	})
 	sh := sse.NewHandler(deps.Hub)
 
@@ -102,6 +101,7 @@ func auditLogging(auditLogger *slog.Logger, beforeAuth bool) echo.MiddlewareFunc
 		return func(c *echo.Context) error {
 			req := c.Request()
 			attrs := []any{
+				slog.String("request_id", logutils.RequestIDFromContext(req.Context())),
 				slog.String("method", req.Method),
 				slog.String("path", req.URL.Path),
 				slog.String("remote_addr", req.RemoteAddr),

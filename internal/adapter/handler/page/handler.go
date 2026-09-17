@@ -3,6 +3,7 @@ package page
 import (
 	"encoding/json"
 	"html/template"
+	"log/slog"
 
 	"solvi/internal/adapter/handler/authctx"
 	loguc "solvi/internal/application/usecase/log_usecase"
@@ -38,6 +39,8 @@ func New(deps Deps) *Handler {
 }
 
 func (h *Handler) baseData(c *echo.Context, active string) map[string]interface{} {
+	const op = "page.baseData"
+	ctx := requestCtx(c)
 	claims := authctx.Claims(c)
 	nav := []NavItem{
 		{Href: "/", Label: navHomeLabel(claims.IsSupporter || claims.IsAdmin), Icon: "message-circle-question", Active: active == "home"},
@@ -50,7 +53,10 @@ func (h *Handler) baseData(c *echo.Context, active string) map[string]interface{
 		nav = append(nav, NavItem{Href: "/management/users", Label: "ユーザ管理", Icon: "users", Active: active == "management"})
 		nav = append(nav, NavItem{Href: "/management/logs", Label: "ログ", Icon: "download", Active: active == "management-logs"})
 	}
-	user, _ := h.deps.Setting.GetProfile(claims.UserID)
+	user, err := h.deps.Setting.GetProfile(ctx, claims.UserID)
+	if err != nil {
+		logPageWarn(ctx, op, "プロフィール取得失敗", append(pageAttrs(c), slog.Uint64("user_id", uint64(claims.UserID)), slog.String("err", err.Error()))...)
+	}
 	return map[string]interface{}{
 		"Navigation":  nav,
 		"User":        user,
@@ -67,9 +73,11 @@ func navHomeLabel(isSupporter bool) string {
 	return "自分の質問"
 }
 
-func mustJSON(v interface{}) template.JS {
+func mustJSON(c *echo.Context, v interface{}) template.JS {
+	const op = "page.mustJSON"
 	b, err := json.Marshal(v)
 	if err != nil {
+		logPageWarn(requestCtx(c), op, "JSON変換失敗", append(pageAttrs(c), slog.String("err", err.Error()))...)
 		return "[]"
 	}
 	return template.JS(b)

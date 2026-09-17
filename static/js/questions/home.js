@@ -195,6 +195,12 @@ document.addEventListener("alpine:init", () => {
             return (name || "?").slice(0, 1);
         },
 
+        showContentFirstLine(questionContent = "") {
+            const nlineIdx = questionContent.indexOf("\n");
+            if (nlineIdx === -1) return questionContent;
+            return questionContent.slice(0, nlineIdx);
+        },
+
         async userIcon(uuid) {
             if (uuid in this.userIconMap) {
                 return this.userIconMap[uuid];

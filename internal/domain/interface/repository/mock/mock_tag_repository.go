@@ -10,6 +10,7 @@
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 	repository "solvi/internal/domain/interface/repository"
 
@@ -41,17 +42,17 @@ func (m *MockTagRepository) EXPECT() *MockTagRepositoryMockRecorder {
 }
 
 // DeleteTagByName mocks base method.
-func (m *MockTagRepository) DeleteTagByName(name string) error {
+func (m *MockTagRepository) DeleteTagByName(ctx context.Context, name string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteTagByName", name)
+	ret := m.ctrl.Call(m, "DeleteTagByName", ctx, name)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteTagByName indicates an expected call of DeleteTagByName.
-func (mr *MockTagRepositoryMockRecorder) DeleteTagByName(name any) *MockTagRepositoryDeleteTagByNameCall {
+func (mr *MockTagRepositoryMockRecorder) DeleteTagByName(ctx, name any) *MockTagRepositoryDeleteTagByNameCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTagByName", reflect.TypeOf((*MockTagRepository)(nil).DeleteTagByName), name)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTagByName", reflect.TypeOf((*MockTagRepository)(nil).DeleteTagByName), ctx, name)
 	return &MockTagRepositoryDeleteTagByNameCall{Call: call}
 }
 
@@ -67,30 +68,30 @@ func (c *MockTagRepositoryDeleteTagByNameCall) Return(arg0 error) *MockTagReposi
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockTagRepositoryDeleteTagByNameCall) Do(f func(string) error) *MockTagRepositoryDeleteTagByNameCall {
+func (c *MockTagRepositoryDeleteTagByNameCall) Do(f func(context.Context, string) error) *MockTagRepositoryDeleteTagByNameCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockTagRepositoryDeleteTagByNameCall) DoAndReturn(f func(string) error) *MockTagRepositoryDeleteTagByNameCall {
+func (c *MockTagRepositoryDeleteTagByNameCall) DoAndReturn(f func(context.Context, string) error) *MockTagRepositoryDeleteTagByNameCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // ListTagStats mocks base method.
-func (m *MockTagRepository) ListTagStats() ([]repository.TagStat, error) {
+func (m *MockTagRepository) ListTagStats(ctx context.Context) ([]repository.TagStat, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListTagStats")
+	ret := m.ctrl.Call(m, "ListTagStats", ctx)
 	ret0, _ := ret[0].([]repository.TagStat)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListTagStats indicates an expected call of ListTagStats.
-func (mr *MockTagRepositoryMockRecorder) ListTagStats() *MockTagRepositoryListTagStatsCall {
+func (mr *MockTagRepositoryMockRecorder) ListTagStats(ctx any) *MockTagRepositoryListTagStatsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTagStats", reflect.TypeOf((*MockTagRepository)(nil).ListTagStats))
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTagStats", reflect.TypeOf((*MockTagRepository)(nil).ListTagStats), ctx)
 	return &MockTagRepositoryListTagStatsCall{Call: call}
 }
 
@@ -106,29 +107,29 @@ func (c *MockTagRepositoryListTagStatsCall) Return(arg0 []repository.TagStat, ar
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockTagRepositoryListTagStatsCall) Do(f func() ([]repository.TagStat, error)) *MockTagRepositoryListTagStatsCall {
+func (c *MockTagRepositoryListTagStatsCall) Do(f func(context.Context) ([]repository.TagStat, error)) *MockTagRepositoryListTagStatsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockTagRepositoryListTagStatsCall) DoAndReturn(f func() ([]repository.TagStat, error)) *MockTagRepositoryListTagStatsCall {
+func (c *MockTagRepositoryListTagStatsCall) DoAndReturn(f func(context.Context) ([]repository.TagStat, error)) *MockTagRepositoryListTagStatsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
 // RenameTag mocks base method.
-func (m *MockTagRepository) RenameTag(from, to string) error {
+func (m *MockTagRepository) RenameTag(ctx context.Context, from, to string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RenameTag", from, to)
+	ret := m.ctrl.Call(m, "RenameTag", ctx, from, to)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // RenameTag indicates an expected call of RenameTag.
-func (mr *MockTagRepositoryMockRecorder) RenameTag(from, to any) *MockTagRepositoryRenameTagCall {
+func (mr *MockTagRepositoryMockRecorder) RenameTag(ctx, from, to any) *MockTagRepositoryRenameTagCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameTag", reflect.TypeOf((*MockTagRepository)(nil).RenameTag), from, to)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameTag", reflect.TypeOf((*MockTagRepository)(nil).RenameTag), ctx, from, to)
 	return &MockTagRepositoryRenameTagCall{Call: call}
 }
 
@@ -144,13 +145,13 @@ func (c *MockTagRepositoryRenameTagCall) Return(arg0 error) *MockTagRepositoryRe
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockTagRepositoryRenameTagCall) Do(f func(string, string) error) *MockTagRepositoryRenameTagCall {
+func (c *MockTagRepositoryRenameTagCall) Do(f func(context.Context, string, string) error) *MockTagRepositoryRenameTagCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockTagRepositoryRenameTagCall) DoAndReturn(f func(string, string) error) *MockTagRepositoryRenameTagCall {
+func (c *MockTagRepositoryRenameTagCall) DoAndReturn(f func(context.Context, string, string) error) *MockTagRepositoryRenameTagCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

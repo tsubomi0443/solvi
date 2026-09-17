@@ -1,6 +1,7 @@
 package tag_usecase_test
 
 import (
+	"context"
 	"testing"
 
 	taguc "solvi/internal/application/usecase/tag_usecase"
@@ -13,12 +14,12 @@ import (
 func TestList_ReturnsStats(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	tagRepo := repomock.NewMockTagRepository(ctrl)
-	tagRepo.EXPECT().ListTagStats().Return([]repo.TagStat{
+	tagRepo.EXPECT().ListTagStats(gomock.Any()).Return([]repo.TagStat{
 		{Name: "給与", Count: 3},
 	}, nil)
 
 	uc := taguc.NewTagUsecase(tagRepo)
-	items, err := uc.List()
+	items, err := uc.List(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +32,7 @@ func TestRename_ValidatesEmpty(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	tagRepo := repomock.NewMockTagRepository(ctrl)
 	uc := taguc.NewTagUsecase(tagRepo)
-	if err := uc.Rename("", "x"); err == nil {
+	if err := uc.Rename(context.Background(), "", "x"); err == nil {
 		t.Fatal("expected error")
 	}
 }
@@ -39,10 +40,10 @@ func TestRename_ValidatesEmpty(t *testing.T) {
 func TestDelete_CallsRepo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	tagRepo := repomock.NewMockTagRepository(ctrl)
-	tagRepo.EXPECT().DeleteTagByName("勤怠").Return(nil)
+	tagRepo.EXPECT().DeleteTagByName(gomock.Any(), "勤怠").Return(nil)
 
 	uc := taguc.NewTagUsecase(tagRepo)
-	if err := uc.Delete("勤怠"); err != nil {
+	if err := uc.Delete(context.Background(), "勤怠"); err != nil {
 		t.Fatal(err)
 	}
 }

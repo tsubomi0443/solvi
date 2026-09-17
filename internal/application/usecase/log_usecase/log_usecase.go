@@ -1,19 +1,27 @@
 package log_usecase
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"io"
+	"log/slog"
+	"solvi/internal/application/usecase"
 	"solvi/internal/domain/entity"
 	"solvi/internal/domain/interface/repository"
 	"sync"
 	"time"
 
+	logutils "solvi/internal/shared/logUtils"
+
 	"github.com/google/uuid"
 	"github.com/yeka/zip"
 )
 
-const ticketTTL = 10 * time.Minute
+const (
+	ticketTTL = 10 * time.Minute
+	opLog     = "log_usecase"
+)
 
 type IssueResult struct {
 	DownloadKey string `json:"downloadKey"`
@@ -34,67 +42,101 @@ func NewLogUsecase(logRepo repository.LogRepository) *LogUsecase {
 	}
 }
 
-func (uc *LogUsecase) ListAvailableDates() []string {
-	dates, err := uc.logRepository.ListDates()
+func (uc *LogUsecase) ListAvailableDates(ctx context.Context) []string {
+	const op = opLog + ".ListAvailableDates"
+	dates, err := uc.logRepository.ListDates(ctx)
 	if err != nil {
+		logutils.Warn(ctx, logutils.LayerUsecase, op, "日付一覧取得失敗、空配列を返却", slog.String("err", err.Error()))
 		return []string{}
 	}
+	logutils.Debug(ctx, logutils.LayerUsecase, op, "処理完了", slog.Int("count", len(dates)))
 	return dates
 }
 
-func (uc *LogUsecase) IssueAll(userUUID string) (*IssueResult, error) {
-	names, err := uc.logRepository.ListNames()
+func (uc *LogUsecase) IssueAll(ctx context.Context, userUUID string) (*IssueResult, error) {
+	const op = opLog + ".IssueAll"
+	logutils.Debug(ctx, logutils.LayerUsecase, op, "処理開始", slog.String("user_uuid", userUUID))
+	names, err := uc.logRepository.ListNames(ctx)
 	if err != nil {
+		usecase.LogRepoPropagation(ctx, op, "ログファイル一覧取得失敗", err, slog.String("user_uuid", userUUID))
 		return nil, fmt.Errorf("ログファイルの取得に失敗しました: %w", err)
 	}
 	if len(names) == 0 {
+		usecase.LogBusinessWarn(ctx, op, "ダウンロード可能なログなし", fmt.Errorf("ダウンロード可能なログがありません"), slog.String("user_uuid", userUUID))
 		return nil, fmt.Errorf("ダウンロード可能なログがありません")
 	}
 
-	return uc.issueTicket(userUUID, entity.DownloadKindAll, time.Time{}, "solvi-logs-all.zip")
-}
-
-func (uc *LogUsecase) IssueDate(userUUID string, date string) (*IssueResult, error) {
-	parsed, err := parseDate(date)
+	result, err := uc.issueTicket(ctx, userUUID, entity.DownloadKindAll, time.Time{}, "solvi-logs-all.zip")
 	if err != nil {
 		return nil, err
 	}
-	names, err := uc.logRepository.ListByDate(parsed)
+	logutils.Info(ctx, logutils.LayerUsecase, op, "ログダウンロード発行成功", slog.String("user_uuid", userUUID), slog.String("download_key", result.DownloadKey))
+	return result, nil
+}
+
+func (uc *LogUsecase) IssueDate(ctx context.Context, userUUID string, date string) (*IssueResult, error) {
+	const op = opLog + ".IssueDate"
+	logutils.Debug(ctx, logutils.LayerUsecase, op, "処理開始", slog.String("user_uuid", userUUID), slog.String("date", date))
+	parsed, err := parseDate(date)
 	if err != nil {
+		usecase.LogBusinessWarn(ctx, op, "日付形式不正", err, slog.String("date", date))
+		return nil, err
+	}
+	names, err := uc.logRepository.ListByDate(ctx, parsed)
+	if err != nil {
+		usecase.LogRepoPropagation(ctx, op, "ログファイル取得失敗", err, slog.String("user_uuid", userUUID), slog.String("date", date))
 		return nil, fmt.Errorf("ログファイルの取得に失敗しました: %w", err)
 	}
 	if len(names) == 0 {
+		usecase.LogBusinessWarn(ctx, op, "対象日付のログなし", fmt.Errorf("対象日付のログファイルが見つかりません"), slog.String("date", date))
 		return nil, fmt.Errorf("対象日付のログファイルが見つかりません")
 	}
 
 	filename := fmt.Sprintf("solvi-logs-%s.zip", parsed.Format("20060102"))
-	return uc.issueTicket(userUUID, entity.DownloadKindDate, parsed, filename)
+	result, err := uc.issueTicket(ctx, userUUID, entity.DownloadKindDate, parsed, filename)
+	if err != nil {
+		return nil, err
+	}
+	logutils.Info(ctx, logutils.LayerUsecase, op, "ログダウンロード発行成功", slog.String("user_uuid", userUUID), slog.String("date", date), slog.String("download_key", result.DownloadKey))
+	return result, nil
 }
 
-func (uc *LogUsecase) LookupTicket(key, userUUID string) (entity.DownloadTicket, error) {
-	return uc.lookupTicket(key, userUUID)
-}
-
-func (uc *LogUsecase) Stream(writer io.Writer, key, userUUID string) error {
+func (uc *LogUsecase) LookupTicket(ctx context.Context, key, userUUID string) (entity.DownloadTicket, error) {
+	const op = opLog + ".LookupTicket"
+	logutils.Debug(ctx, logutils.LayerUsecase, op, "チケット照会", slog.String("key", key), slog.String("user_uuid", userUUID))
 	ticket, err := uc.lookupTicket(key, userUUID)
 	if err != nil {
-		return err
+		usecase.LogBusinessWarn(ctx, op, "チケット照会失敗", err, slog.String("key", key), slog.String("user_uuid", userUUID))
 	}
+	return ticket, err
+}
 
-	names, err := uc.resolveNames(ticket)
+func (uc *LogUsecase) Stream(ctx context.Context, writer io.Writer, key, userUUID string) error {
+	const op = opLog + ".Stream"
+	logutils.Info(ctx, logutils.LayerUsecase, op, "ログストリーム開始", slog.String("key", key), slog.String("user_uuid", userUUID))
+	ticket, err := uc.lookupTicket(key, userUUID)
 	if err != nil {
+		usecase.LogBusinessWarn(ctx, op, "チケット照会失敗", err, slog.String("key", key), slog.String("user_uuid", userUUID))
 		return err
 	}
 
-	if err := uc.streamZip(writer, names, ticket.Password); err != nil {
+	names, err := uc.resolveNames(ctx, ticket)
+	if err != nil {
+		usecase.LogRepoPropagation(ctx, op, "ログファイル解決失敗", err, slog.String("key", key))
+		return err
+	}
+
+	if err := uc.streamZip(ctx, writer, names, ticket.Password); err != nil {
+		logutils.Error(ctx, logutils.LayerUsecase, op, "ログストリーム失敗", slog.String("key", key), slog.String("user_uuid", userUUID), slog.String("err", err.Error()))
 		return fmt.Errorf("ログファイルの暗号圧縮に失敗しました: %w", err)
 	}
 
 	uc.deleteTicket(key)
+	logutils.Info(ctx, logutils.LayerUsecase, op, "ログストリーム完了", slog.String("key", key), slog.String("user_uuid", userUUID), slog.String("filename", ticket.Filename))
 	return nil
 }
 
-func (uc *LogUsecase) issueTicket(userUUID string, kind entity.DownloadKind, date time.Time, filename string) (*IssueResult, error) {
+func (uc *LogUsecase) issueTicket(ctx context.Context, userUUID string, kind entity.DownloadKind, date time.Time, filename string) (*IssueResult, error) {
 	uc.cleanupExpiredTickets()
 
 	key := uuid.NewString()
@@ -113,6 +155,7 @@ func (uc *LogUsecase) issueTicket(userUUID string, kind entity.DownloadKind, dat
 	uc.tickets[key] = ticket
 	uc.mu.Unlock()
 
+	logutils.Debug(ctx, logutils.LayerUsecase, opLog+".issueTicket", "チケット発行", slog.String("key", key), slog.String("user_uuid", userUUID))
 	return &IssueResult{
 		DownloadKey: key,
 		Password:    password,
@@ -156,10 +199,10 @@ func (uc *LogUsecase) cleanupExpiredTickets() {
 	uc.mu.Unlock()
 }
 
-func (uc *LogUsecase) resolveNames(ticket entity.DownloadTicket) ([]string, error) {
+func (uc *LogUsecase) resolveNames(ctx context.Context, ticket entity.DownloadTicket) ([]string, error) {
 	switch ticket.Kind {
 	case entity.DownloadKindAll:
-		names, err := uc.logRepository.ListNames()
+		names, err := uc.logRepository.ListNames(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -168,7 +211,7 @@ func (uc *LogUsecase) resolveNames(ticket entity.DownloadTicket) ([]string, erro
 		}
 		return names, nil
 	case entity.DownloadKindDate:
-		names, err := uc.logRepository.ListByDate(ticket.Date)
+		names, err := uc.logRepository.ListByDate(ctx, ticket.Date)
 		if err != nil {
 			return nil, err
 		}
@@ -181,10 +224,10 @@ func (uc *LogUsecase) resolveNames(ticket entity.DownloadTicket) ([]string, erro
 	}
 }
 
-func (uc *LogUsecase) streamZip(writer io.Writer, names []string, password string) error {
+func (uc *LogUsecase) streamZip(ctx context.Context, writer io.Writer, names []string, password string) error {
 	zipWriter := zip.NewWriter(writer)
 	for _, name := range names {
-		rc, err := uc.logRepository.Open(name)
+		rc, err := uc.logRepository.Open(ctx, name)
 		if err != nil {
 			zipWriter.Close()
 			return err

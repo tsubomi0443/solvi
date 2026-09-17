@@ -1,6 +1,7 @@
 package management_usecase_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -22,14 +23,14 @@ func TestListUsers_IncludesAdminExcludesSystem(t *testing.T) {
 	userRepo := repomock.NewMockUserRepository(ctrl)
 
 	adminUUID := uuid.New()
-	userRepo.EXPECT().ListAll().Return([]entity.User{
+	userRepo.EXPECT().ListAll(gomock.Any()).Return([]entity.User{
 		{Name: "System", Email: "system@solvi.local"},
 		{Name: "Admin", Email: "admin@solvi.local", UUID: adminUUID, IsAdmin: true},
 		{Name: "User", Email: "user@example.com", UUID: uuid.New()},
 	}, nil)
 
 	uc := mnguc.NewManagementUsecase(userRepo)
-	users, err := uc.ListUsers()
+	users, err := uc.ListUsers(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,12 +47,12 @@ func TestUpdateUser_PreventsSelfDemotion(t *testing.T) {
 	userRepo := repomock.NewMockUserRepository(ctrl)
 
 	targetUUID := uuid.New().String()
-	userRepo.EXPECT().GetByUUID(targetUUID).Return(&entity.User{
+	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID).Return(&entity.User{
 		UUID: uuid.MustParse(targetUUID), IsAdmin: true,
 	}, nil)
 
 	uc := mnguc.NewManagementUsecase(userRepo)
-	err := uc.UpdateUser(targetUUID, targetUUID, mnguc.UserUpdateInput{
+	err := uc.UpdateUser(context.Background(), targetUUID, targetUUID, mnguc.UserUpdateInput{
 		IsAdmin: boolPtr(false),
 	})
 	if err == nil {
@@ -64,13 +65,13 @@ func TestUpdateUser_PreventsRemovingLastAdmin(t *testing.T) {
 	userRepo := repomock.NewMockUserRepository(ctrl)
 
 	targetUUID := uuid.New().String()
-	userRepo.EXPECT().GetByUUID(targetUUID).Return(&entity.User{
+	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID).Return(&entity.User{
 		UUID: uuid.MustParse(targetUUID), IsAdmin: true,
 	}, nil)
-	userRepo.EXPECT().CountAdmins().Return(1, nil)
+	userRepo.EXPECT().CountAdmins(gomock.Any()).Return(1, nil)
 
 	uc := mnguc.NewManagementUsecase(userRepo)
-	err := uc.UpdateUser(targetUUID, uuid.New().String(), mnguc.UserUpdateInput{
+	err := uc.UpdateUser(context.Background(), targetUUID, uuid.New().String(), mnguc.UserUpdateInput{
 		IsAdmin: boolPtr(false),
 	})
 	if err == nil {
@@ -84,8 +85,8 @@ func TestUpdateUser_UpdatesFlags(t *testing.T) {
 
 	targetUUID := uuid.New().String()
 	user := &entity.User{UUID: uuid.MustParse(targetUUID), IsAdmin: false, IsSupporter: false}
-	userRepo.EXPECT().GetByUUID(targetUUID).Return(user, nil)
-	userRepo.EXPECT().Update(gomock.Any()).DoAndReturn(func(u *entity.User) error {
+	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID).Return(user, nil)
+	userRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, u *entity.User) error {
 		if !u.IsAdmin || !u.IsSupporter || !u.IsSupporterOverridden {
 			t.Fatalf("unexpected user: %+v", u)
 		}
@@ -93,7 +94,7 @@ func TestUpdateUser_UpdatesFlags(t *testing.T) {
 	})
 
 	uc := mnguc.NewManagementUsecase(userRepo)
-	if err := uc.UpdateUser(targetUUID, uuid.New().String(), mnguc.UserUpdateInput{
+	if err := uc.UpdateUser(context.Background(), targetUUID, uuid.New().String(), mnguc.UserUpdateInput{
 		IsAdmin:     boolPtr(true),
 		IsSupporter: boolPtr(true),
 	}); err != nil {

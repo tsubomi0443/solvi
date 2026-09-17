@@ -1,13 +1,14 @@
 package repository
 
 import (
+	"context"
 	"io"
 	"time"
 )
 
 type LogRepository interface {
-	ListNames() ([]string, error)
-	Open(name string) (io.ReadCloser, error)
-	ListDates() ([]string, error)
-	ListByDate(date time.Time) ([]string, error)
+	ListNames(ctx context.Context) ([]string, error)
+	Open(ctx context.Context, name string) (io.ReadCloser, error)
+	ListDates(ctx context.Context) ([]string, error)
+	ListByDate(ctx context.Context, date time.Time) ([]string, error)
 }

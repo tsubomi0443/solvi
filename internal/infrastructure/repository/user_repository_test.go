@@ -18,10 +18,10 @@ func TestUserRepository_CreateAndGetByEmail(t *testing.T) {
 
 	repo := repository.NewUserRepository(db)
 	user := &entity.User{Name: "Test", Email: "test-repo@solvi.local"}
-	if err := repo.Create(user); err != nil {
+	if err := repo.Create(ctx, user); err != nil {
 		t.Fatal(err)
 	}
-	got, err := repo.GetByEmail("test-repo@solvi.local")
+	got, err := repo.GetByEmail(ctx, "test-repo@solvi.local")
 	if err != nil {
 		t.Fatal(err)
 	}
