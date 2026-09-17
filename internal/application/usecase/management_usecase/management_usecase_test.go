@@ -147,6 +147,74 @@ func TestDeleteUser_SoftDeletes(t *testing.T) {
 	}
 }
 
+func TestUpdateUser_RequiresAtLeastOneField(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	uc := mnguc.NewManagementUsecase(userRepo)
+	err := uc.UpdateUser(context.Background(), uuid.New().String(), uuid.New().String(), mnguc.UserUpdateInput{})
+	if err == nil {
+		t.Fatal("expected error when no fields provided")
+	}
+}
+
+func TestUpdateUser_AllowsDemotingAdminWhenMultipleAdminsExist(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	targetUUID := uuid.New().String()
+	actorUUID := uuid.New().String()
+	user := &entity.User{UUID: uuid.MustParse(targetUUID), IsAdmin: true}
+	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID).Return(user, nil)
+	userRepo.EXPECT().CountAdmins(gomock.Any()).Return(int64(2), nil)
+	userRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, u *entity.User) error {
+		if u.IsAdmin {
+			t.Fatal("expected admin flag to be false")
+		}
+		return nil
+	})
+
+	uc := mnguc.NewManagementUsecase(userRepo)
+	if err := uc.UpdateUser(context.Background(), targetUUID, actorUUID, mnguc.UserUpdateInput{
+		IsAdmin: boolPtr(false),
+	}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestDeleteUser_PreventsSystemUserDelete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	targetUUID := uuid.New().String()
+	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID).Return(&entity.User{
+		UUID: uuid.MustParse(targetUUID), Email: "system@solvi.local",
+	}, nil)
+
+	uc := mnguc.NewManagementUsecase(userRepo)
+	err := uc.DeleteUser(context.Background(), targetUUID, uuid.New().String())
+	if err == nil {
+		t.Fatal("expected error for system user delete")
+	}
+}
+
+func TestDeleteUser_AllowsDeletingAdminWhenMultipleAdminsExist(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	targetUUID := uuid.New().String()
+	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID).Return(&entity.User{
+		UUID: uuid.MustParse(targetUUID), Email: "admin2@solvi.local", IsAdmin: true,
+	}, nil)
+	userRepo.EXPECT().CountAdmins(gomock.Any()).Return(int64(2), nil)
+	userRepo.EXPECT().SoftDeleteByUUID(gomock.Any(), targetUUID).Return(nil)
+
+	uc := mnguc.NewManagementUsecase(userRepo)
+	if err := uc.DeleteUser(context.Background(), targetUUID, uuid.New().String()); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func boolPtr(v bool) *bool {
 	return &v
 }

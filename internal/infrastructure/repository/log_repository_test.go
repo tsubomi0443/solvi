@@ -48,4 +48,33 @@ func TestLogRepository_listNewAndLegacyNames(t *testing.T) {
 	if len(got) != 4 {
 		t.Fatalf("ListByDate = %v", got)
 	}
+
+	// Open existing file
+	rc, err := repo.Open(ctx, "application-20260917.log")
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	_ = rc.Close()
+
+	// Open non-existing file
+	if _, err := repo.Open(ctx, "not-found.log"); err == nil {
+		t.Fatal("expected error opening missing log")
+	}
+
+	// ListByDate with no matching files
+	dayNone := time.Date(2020, 1, 1, 0, 0, 0, 0, time.Local)
+	none, err := repo.ListByDate(ctx, dayNone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(none) != 0 {
+		t.Fatalf("expected 0 files, got %d", len(none))
+	}
+}
+
+func TestLogRepository_InvalidRootPath(t *testing.T) {
+	_, err := NewLogRepository(filepath.Join(t.TempDir(), "nonexistent-dir"))
+	if err == nil {
+		t.Fatal("expected error for nonexistent directory")
+	}
 }

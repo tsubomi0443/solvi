@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
+	"gorm.io/gorm"
 )
 
 func TestUploadIcon_ReplacesOldIcon(t *testing.T) {
@@ -167,5 +168,112 @@ func TestDeleteIcon_RejectsPathTraversal(t *testing.T) {
 	}
 	if user.Icon == nil || *user.Icon != traversalName {
 		t.Fatalf("user.Icon should have remained unchanged, got %v", user.Icon)
+	}
+}
+
+func TestDeleteIcon_WithoutExistingIconClearsSilently(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+	uploadDir := t.TempDir()
+
+	user := &entity.User{Icon: nil}
+	user.ID = 1
+
+	userRepo.EXPECT().GetByID(gomock.Any(), uint(1)).Return(user, nil)
+	userRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
+
+	uc := setuc.NewSettingUsecase(userRepo, uploadDir)
+	if err := uc.DeleteIcon(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+	if user.Icon != nil {
+		t.Fatalf("expected nil icon, got %v", user.Icon)
+	}
+}
+
+func TestUpdateProfile_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	user := &entity.User{
+		Name:  "Old",
+		Email: "old@example.com",
+	}
+	user.ID = 10
+	user.UUID = uuid.New()
+
+	userRepo.EXPECT().GetByID(gomock.Any(), uint(10)).Return(user, nil)
+	userRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, u *entity.User) error {
+		if u.Name != "New Name" || u.Email != "new@example.com" {
+			t.Fatalf("unexpected updated user: %+v", u)
+		}
+		return nil
+	})
+
+	uc := setuc.NewSettingUsecase(userRepo, t.TempDir())
+	out, err := uc.UpdateProfile(context.Background(), 10, "New Name", "new@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Name != "New Name" || out.Email != "new@example.com" {
+		t.Fatalf("unexpected output: %+v", out)
+	}
+}
+
+func TestGetProfile_SuccessAndNotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	targetUUID := uuid.New()
+	user := &entity.User{
+		Name:  "Target",
+		Email: "target@example.com",
+	}
+	user.ID = 2
+	user.UUID = targetUUID
+
+	userRepo.EXPECT().GetByID(gomock.Any(), uint(2)).Return(user, nil)
+	userRepo.EXPECT().GetByID(gomock.Any(), uint(99)).Return(nil, gorm.ErrRecordNotFound)
+
+	uc := setuc.NewSettingUsecase(userRepo, t.TempDir())
+	out, err := uc.GetProfile(context.Background(), 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.Name != "Target" {
+		t.Fatalf("unexpected out: %+v", out)
+	}
+
+	if _, err := uc.GetProfile(context.Background(), 99); err == nil {
+		t.Fatal("expected error when user not found")
+	}
+}
+
+func TestGetProfileByUUID_SuccessAndNotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	targetUUID := uuid.New()
+	user := &entity.User{
+		Name:  "UUID User",
+		Email: "uuid@example.com",
+	}
+	user.ID = 3
+	user.UUID = targetUUID
+
+	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID.String()).Return(user, nil)
+	userRepo.EXPECT().GetByUUID(gomock.Any(), "missing").Return(nil, gorm.ErrRecordNotFound)
+
+	uc := setuc.NewSettingUsecase(userRepo, t.TempDir())
+	out, err := uc.GetProfileByUUID(context.Background(), targetUUID.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.UUID != targetUUID.String() {
+		t.Fatalf("unexpected out: %+v", out)
+	}
+
+	if _, err := uc.GetProfileByUUID(context.Background(), "missing"); err == nil {
+		t.Fatal("expected error when uuid not found")
 	}
 }
