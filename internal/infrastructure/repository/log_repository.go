@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"regexp"
 	"sort"
@@ -17,6 +18,7 @@ type LogRepository struct {
 func NewLogRepository(logDirectoryRootPath string) (*LogRepository, error) {
 	root, err := os.OpenRoot(logDirectoryRootPath)
 	if err != nil {
+		slog.Error("root directory could not be found", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("ログディレクトリのルートが参照できませんでした: %w", err)
 	}
 	return &LogRepository{
@@ -59,6 +61,7 @@ func (repo *LogRepository) ListNames() ([]string, error) {
 func (repo *LogRepository) Open(name string) (io.ReadCloser, error) {
 	f, err := repo.logDirectory.OpenFile(name, os.O_RDONLY, 0)
 	if err != nil {
+		slog.Error("")
 		return nil, fmt.Errorf("ログファイルを開けませんでした: %w", err)
 	}
 	return f, nil
@@ -67,6 +70,7 @@ func (repo *LogRepository) Open(name string) (io.ReadCloser, error) {
 func (repo *LogRepository) ListDates() ([]string, error) {
 	names, err := repo.ListNames()
 	if err != nil {
+		slog.Error("")
 		return nil, err
 	}
 
@@ -90,6 +94,7 @@ func (repo *LogRepository) ListDates() ([]string, error) {
 func (repo *LogRepository) ListByDate(date time.Time) ([]string, error) {
 	names, err := repo.ListNames()
 	if err != nil {
+		slog.Error("")
 		return nil, err
 	}
 
