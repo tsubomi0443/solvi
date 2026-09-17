@@ -15,9 +15,9 @@
         <div class="flex min-w-0 flex-1 min-h-0 flex-col">
             {{template "header" dict "Breadcrumb" "質問一覧" "User" .User}}
             <main class="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
-                <div class="mb-4 flex flex-wrap justify-end gap-4">
-                    <div class="flex flex-wrap items-center gap-2 justify-between">
-                        <div class="join">
+                <div class="mb-4 flex flex-wrap justify-end gap-4 w-full">
+                    <div class="flex items-center gap-2 w-full justify-between">
+                        <div class="join flex flex-wrap w-full justify-start">
                             <button type="button" class="btn btn-sm join-item"
                                 :class="viewMode === 'table' ? 'btn-active' : 'btn-outline'"
                                 @click="setViewMode('table')">表</button>

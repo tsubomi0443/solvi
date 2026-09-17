@@ -20,7 +20,10 @@ type SettingUsecase struct {
 }
 
 func NewSettingUsecase(userRepo repo.UserRepository, uploadDir string) *SettingUsecase {
-	return &SettingUsecase{userRepo: userRepo, uploadDir: uploadDir}
+	return &SettingUsecase{
+		userRepo:  userRepo,
+		uploadDir: uploadDir,
+	}
 }
 
 func (uc *SettingUsecase) UpdateProfile(userID uint, name, email string) (outputmodel.UserOutput, error) {

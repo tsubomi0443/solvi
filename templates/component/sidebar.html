@@ -3,10 +3,7 @@
     :class="$store.ui.sidebarOpen ? 'w-64' : 'w-20'">
     <div class="flex h-16 items-center gap-3 border-b border-base-300 px-5">
         <div class="grid h-8 w-8 place-items-center rounded-xl bg-primary text-primary-content">
-            <div>
-                <object type="image/svg+xml" data="/static/img/logo.svg" class="text-primary"
-                    class="object-cover h-full w-full"></object>
-            </div>
+            {{ .Logo }}
         </div>
         <div x-show="$store.ui.sidebarOpen" x-transition.opacity>
             <div class="font-display text-sm font-semibold">Solvi</div>

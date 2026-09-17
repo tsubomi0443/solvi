@@ -57,7 +57,73 @@ func (h *Handler) baseData(c *echo.Context, active string) map[string]interface{
 		"IsSupporter": claims.IsSupporter,
 		"IsAdmin":     claims.IsAdmin,
 		"CanViewAll":  claims.IsSupporter || claims.IsAdmin,
+		"Logo":        template.HTML(h.logo()),
 	}
+}
+
+func (h *Handler) logo() string {
+	return `
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 380" role="img" aria-labelledby="title desc">
+				<title id="title">Information sparkle app logo</title>
+		<desc id="desc">DaisyUI 4 theme-aware app logo. Use this SVG inline, not through an img element.</desc>
+		<style>
+			/* DaisyUI 5 variables first; DaisyUI 4 variables and original colors are fallbacks. */
+			.du-bg-start { stop-color: var(--color-base-200, hsl(var(--b2, 216 63% 29%))); }
+			.du-bg-end { stop-color: var(--color-base-300, hsl(var(--b3, 220 70% 21%))); }
+			.du-bg-highlight { stop-color: var(--color-primary, hsl(var(--p, 216 68% 35%))); }
+			.du-ring-start { stop-color: var(--color-primary, hsl(var(--p, 179 69% 46%))); }
+			.du-ring-end { stop-color: var(--color-secondary, hsl(var(--s, 184 76% 39%))); }
+			.du-i-light { stop-color: var(--color-base-100, hsl(var(--b1, 0 0% 100%))); }
+			.du-i-shadow { stop-color: var(--color-base-300, hsl(var(--b3, 210 24% 89%))); }
+			.du-i-shadow-fill { fill: var(--color-base-300, hsl(var(--b3, 210 24% 89%))); }
+			.du-star-light { stop-color: var(--color-accent, hsl(var(--a, 47 100% 68%))); }
+			.du-star-main { stop-color: var(--color-accent, hsl(var(--a, 43 100% 62%))); }
+			.du-star-shadow { stop-color: var(--color-accent, hsl(var(--a, 38 89% 53%))); opacity: .74; }
+			.du-star-glow { flood-color: var(--color-accent, hsl(var(--a, 41 100% 61%))); }
+		</style>
+		<defs>
+			<linearGradient id="background-gradient" x1="31" y1="20" x2="350" y2="364" gradientUnits="userSpaceOnUse">
+			<stop class="du-bg-start" stop-color="#1c417a"/>
+			<stop offset=".48" class="du-bg-start" stop-color="#15356d"/>
+			<stop offset="1" class="du-bg-end" stop-color="#102a5a"/>
+			</linearGradient>
+			<radialGradient id="background-highlight" cx="0" cy="0" r="1" gradientTransform="translate(238 147) rotate(111) scale(265 243)" gradientUnits="userSpaceOnUse">
+			<stop class="du-bg-highlight" stop-color="#2a5690" stop-opacity=".20"/>
+			<stop offset="1" class="du-bg-end" stop-color="#102a5a" stop-opacity="0"/>
+			</radialGradient>
+			<linearGradient id="ring-gradient" x1="95" y1="72" x2="300" y2="294" gradientUnits="userSpaceOnUse">
+			<stop class="du-ring-start" stop-color="#25c5c3"/>
+			<stop offset="1" class="du-ring-end" stop-color="#18a2ad"/>
+			</linearGradient>
+			<linearGradient id="i-gradient" x1="170" y1="173" x2="191" y2="329" gradientUnits="userSpaceOnUse">
+			<stop class="du-i-light" stop-color="#ffffff"/>
+			<stop offset=".6" class="du-i-light" stop-color="#ffffff"/>
+			<stop offset="1" class="du-i-shadow" stop-color="#dce5ec"/>
+			</linearGradient>
+			<radialGradient id="dot-gradient" cx="0" cy="0" r="1" gradientTransform="translate(193 119) rotate(48) scale(39)" gradientUnits="userSpaceOnUse">
+			<stop class="du-i-light" stop-color="#ffffff"/>
+			<stop offset="1" class="du-i-shadow" stop-color="#dce5ec"/>
+			</radialGradient>
+			<linearGradient id="star-gradient" x1="270" y1="44" x2="297" y2="130" gradientUnits="userSpaceOnUse">
+			<stop class="du-star-light" stop-color="#ffdc5d"/>
+			<stop offset=".58" class="du-star-main" stop-color="#ffc13a"/>
+			<stop offset="1" class="du-star-shadow" stop-color="#f2a31b"/>
+			</linearGradient>
+			<filter id="star-glow" x="215" y="18" width="134" height="139" filterUnits="userSpaceOnUse">
+			<feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur"/>
+			<feFlood class="du-star-glow" flood-color="#ffbd36" flood-opacity=".52"/>
+			<feComposite in2="blur" operator="in"/>
+			<feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+			</filter>
+		</defs>
+		<g id="background"><rect width="380" height="380" rx="83" fill="url(#background-gradient)"/><rect width="380" height="380" rx="83" fill="url(#background-highlight)"/></g>
+		<g id="ring" fill="url(#ring-gradient)">
+			<path d="M231 57.5 214 70.8a105.6 105.6 0 0 0-31.9-4.9c-45.2 0-84.2 31.4-93.9 75.6a105.5 105.5 0 0 0 14.7 87.3l-10.5 31.8 24.1-5.9 18.8 18.7L57 301l18.2-61.2a134.7 134.7 0 0 1-17.7-102.9C69.6 81.4 119.1 41 176 40.4c20.5-.2 40.7 4.3 55 17.1Z"/>
+			<path d="M312.3 119.9c12 22.9 16.1 49.5 11.8 75.2-9.7 59.6-59.9 105-120.1 110.8l-6.9.5 9.5-28.8c39.9-6.8 72.6-37 82.5-76.2a96.5 96.5 0 0 0-1-51.8l20.2-27.8c1.7-2.4 2.9-3.5 4-1.9Z"/>
+		</g>
+		<path id="star" filter="url(#star-glow)" fill="url(#star-gradient)" d="M279.8 43.7c1-2.8 4.9-2.8 5.9 0l11 30.5a8.8 8.8 0 0 0 5.3 5.3l22.5 5.7c3.2.8 3.2 5.3 0 6.2l-22.5 5.7a8.8 8.8 0 0 0-5.3 5.3l-11 29.6c-1 2.9-4.9 2.9-5.9 0l-11-29.6a8.8 8.8 0 0 0-5.3-5.3L240.9 91c-3.2-.9-3.2-5.4 0-6.2l22.6-5.7a8.8 8.8 0 0 0 5.3-5.3l11-30.1Z"/>
+		<g id="information-mark"><circle cx="203.8" cy="131.5" r="24.5" fill="url(#dot-gradient)"/><path class="du-i-shadow-fill" fill="#dce5ec" d="M177 172.7c-14.9 0-25.2 10.5-28.3 29.5h22.7l6.6-29.5H177Z"/><path fill="url(#i-gradient)" d="M176.9 172.7h40.2l-35.8 128c-5.5 19.7-21.2 29-48.4 29l33-127.5 11-29.5Z"/></g>
+		</svg>`
 }
 
 func navHomeLabel(isSupporter bool) string {

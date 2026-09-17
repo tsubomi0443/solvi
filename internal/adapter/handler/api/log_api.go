@@ -48,7 +48,7 @@ func (h *Handler) StreamLogDownload(c *echo.Context) error {
 
 	slog.Info("/api/v1/log/download/:key", slog.String("stream", "start"), slog.String("key", key), logutils.LogAny("request", *c.Request()), logutils.LogAny("claims", *claims))
 	if err := h.deps.Log.Stream(res, key, claims.UUID); err != nil {
-		slog.Info("/api/v1/log/download/:key", slog.String("stream", "failed"), slog.String("key", key), logutils.LogAny("request", *c.Request()), logutils.LogAny("claims", *claims))
+		slog.Error("failed to stream zip download", slog.String("stream", "failed"), slog.String("key", key), logutils.LogAny("request", *c.Request()), logutils.LogAny("claims", *claims))
 		return err
 	}
 	slog.Info("/api/v1/log/download/:key", slog.String("stream", "success"), slog.String("key", key), logutils.LogAny("request", *c.Request()), logutils.LogAny("claims", *claims))

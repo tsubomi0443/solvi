@@ -1,21 +1,20 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 380" role="img" aria-labelledby="title desc">
   <title id="title">Information sparkle app logo</title>
   <desc id="desc">DaisyUI 4 theme-aware app logo. Use this SVG inline, not through an img element.</desc>
   <style>
-    /* DaisyUI 4: values become active when this SVG is inline under [data-theme]. */
-    .du-bg-start { stop-color: hsl(var(--b2)); }
-    .du-bg-end { stop-color: hsl(var(--b3)); }
-    .du-bg-highlight { stop-color: hsl(var(--p)); }
-    .du-ring-start { stop-color: hsl(var(--p)); }
-    .du-ring-end { stop-color: hsl(var(--s)); }
-    .du-i-light { stop-color: hsl(var(--b1)); }
-    .du-i-shadow { stop-color: hsl(var(--b3)); }
-    .du-i-shadow-fill { fill: hsl(var(--b3)); }
-    .du-star-light { stop-color: hsl(var(--a)); }
-    .du-star-main { stop-color: hsl(var(--a)); }
-    .du-star-shadow { stop-color: hsl(var(--a)); opacity: .74; }
-    .du-star-glow { flood-color: hsl(var(--a)); }
+    /* DaisyUI 5 variables first; DaisyUI 4 variables and original colors are fallbacks. */
+    .du-bg-start { stop-color: var(--color-base-200, hsl(var(--b2, 216 63% 29%))); }
+    .du-bg-end { stop-color: var(--color-base-300, hsl(var(--b3, 220 70% 21%))); }
+    .du-bg-highlight { stop-color: var(--color-primary, hsl(var(--p, 216 68% 35%))); }
+    .du-ring-start { stop-color: var(--color-primary, hsl(var(--p, 179 69% 46%))); }
+    .du-ring-end { stop-color: var(--color-secondary, hsl(var(--s, 184 76% 39%))); }
+    .du-i-light { stop-color: var(--color-base-100, hsl(var(--b1, 0 0% 100%))); }
+    .du-i-shadow { stop-color: var(--color-base-300, hsl(var(--b3, 210 24% 89%))); }
+    .du-i-shadow-fill { fill: var(--color-base-300, hsl(var(--b3, 210 24% 89%))); }
+    .du-star-light { stop-color: var(--color-accent, hsl(var(--a, 47 100% 68%))); }
+    .du-star-main { stop-color: var(--color-accent, hsl(var(--a, 43 100% 62%))); }
+    .du-star-shadow { stop-color: var(--color-accent, hsl(var(--a, 38 89% 53%))); opacity: .74; }
+    .du-star-glow { flood-color: var(--color-accent, hsl(var(--a, 41 100% 61%))); }
   </style>
   <defs>
     <linearGradient id="background-gradient" x1="31" y1="20" x2="350" y2="364" gradientUnits="userSpaceOnUse">

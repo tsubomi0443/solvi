@@ -8,7 +8,7 @@ document.addEventListener("alpine:init", () => {
             content: "",
             tagsText: "",
             answerDue: "",
-            isRequireHumanSupport: false,
+            isRequireHumanSupport: true,
         },
 
         init() {
