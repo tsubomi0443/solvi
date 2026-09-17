@@ -84,6 +84,7 @@ func RegisterRoutes(e *echo.Echo, deps Deps, auditLogger *slog.Logger) {
 	apiAuth.DELETE("/setting/icon", ah.DeleteIcon, auditLogging(auditLogger, false))
 	apiAuth.GET("/management/users", ah.ListUsers, AdminOnlyAPI, auditLogging(auditLogger, false))
 	apiAuth.PUT("/management/users/:uuid", ah.UpdateUser, AdminOnlyAPI, auditLogging(auditLogger, false))
+	apiAuth.DELETE("/management/users/:uuid", ah.DeleteUser, AdminOnlyAPI, auditLogging(auditLogger, false))
 	apiAuth.GET("/tags", ah.ListTags, SupporterOnly, auditLogging(auditLogger, false))
 	apiAuth.PUT("/tags", ah.RenameTag, SupporterOnly, auditLogging(auditLogger, false))
 	apiAuth.DELETE("/tags", ah.DeleteTag, SupporterOnly, auditLogging(auditLogger, false))

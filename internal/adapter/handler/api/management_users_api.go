@@ -43,3 +43,15 @@ func (h *Handler) UpdateUser(c *echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, map[string]string{"ok": "true"})
 }
+
+func (h *Handler) DeleteUser(c *echo.Context) error {
+	const op = "api.DeleteUser"
+	ctx := requestCtx(c)
+	claims := authctx.Claims(c)
+	targetUUID := c.Param("uuid")
+	if err := h.deps.Management.DeleteUser(ctx, targetUUID, claims.UUID); err != nil {
+		logHandlerDebug(ctx, op, "ユーザ削除失敗", http.StatusBadRequest, append(handlerAttrs(c), slog.String("target_uuid", targetUUID))...)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]string{"ok": "true"})
+}

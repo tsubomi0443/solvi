@@ -29,3 +29,23 @@ func TestUserRepository_CreateAndGetByEmail(t *testing.T) {
 		t.Fatalf("unexpected user: %+v", got)
 	}
 }
+
+func TestUserRepository_SoftDeleteByUUID(t *testing.T) {
+	ctx := context.Background()
+	db, err := database.DB(ctx)
+	if err != nil {
+		t.Skipf("postgres testcontainer unavailable: %v", err)
+	}
+
+	repo := repository.NewUserRepository(db)
+	user := &entity.User{Name: "DeleteMe", Email: "delete-repo@solvi.local"}
+	if err := repo.Create(ctx, user); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SoftDeleteByUUID(ctx, user.UUID.String()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.GetByEmail(ctx, "delete-repo@solvi.local"); err == nil {
+		t.Fatal("expected deleted user to be hidden")
+	}
+}

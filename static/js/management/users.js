@@ -9,6 +9,11 @@ document.addEventListener("alpine:init", () => {
         adminConfirmText: "",
         adminConfirming: false,
         adminConfirmPhrase: "確認しました",
+        showDeleteConfirm: false,
+        pendingDeleteUser: null,
+        deleteConfirmText: "",
+        deleteConfirming: false,
+        deleteConfirmPhrase: "確認しました",
 
         init() {
             const el = document.getElementById("users-json");
@@ -23,6 +28,13 @@ document.addEventListener("alpine:init", () => {
             return (
                 this.adminConfirmText === this.adminConfirmPhrase &&
                 !this.adminConfirming
+            );
+        },
+
+        get canConfirmDelete() {
+            return (
+                this.deleteConfirmText === this.deleteConfirmPhrase &&
+                !this.deleteConfirming
             );
         },
 
@@ -103,6 +115,55 @@ document.addEventListener("alpine:init", () => {
             const ok = await this.updateUser(user, { isAdmin: next });
             if (ok) user.isAdmin = next;
             return ok;
+        },
+
+        openDeleteConfirm(user) {
+            if (this.isSelf(user)) return;
+            this.pendingDeleteUser = user;
+            this.deleteConfirmText = "";
+            this.deleteConfirming = false;
+            this.showDeleteConfirm = true;
+            this.$nextTick(() => {
+                this.$refs.deleteConfirmInput?.focus();
+            });
+        },
+
+        closeDeleteConfirm() {
+            if (this.deleteConfirming) return;
+            this.showDeleteConfirm = false;
+            this.pendingDeleteUser = null;
+            this.deleteConfirmText = "";
+        },
+
+        async confirmDeleteUser() {
+            if (!this.canConfirmDelete || !this.pendingDeleteUser) return;
+            this.deleteConfirming = true;
+            const user = this.pendingDeleteUser;
+            let deleted = false;
+            try {
+                const res = await fetch(`/api/v1/management/users/${user.uuid}`, {
+                    method: "DELETE",
+                });
+                if (!res.ok) {
+                    const msg = await res
+                        .json()
+                        .catch(() => ({ error: "削除に失敗しました" }));
+                    window.notice.show({
+                        message: msg.error || "削除に失敗しました",
+                        type: "error",
+                    });
+                    return;
+                }
+                this.users = this.users.filter((u) => u.uuid !== user.uuid);
+                window.notice.show({
+                    message: "削除しました",
+                    type: "success",
+                });
+                deleted = true;
+            } finally {
+                this.deleteConfirming = false;
+            }
+            if (deleted) this.closeDeleteConfirm();
         },
     }));
 });

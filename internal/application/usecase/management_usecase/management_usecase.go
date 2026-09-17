@@ -93,3 +93,40 @@ func (uc *ManagementUsecase) UpdateUser(ctx context.Context, targetUUID, actorUU
 	logutils.Info(ctx, logutils.LayerUsecase, op, "ユーザ更新成功", slog.String("target_uuid", targetUUID), slog.Uint64("user_id", uint64(user.ID)))
 	return nil
 }
+
+func (uc *ManagementUsecase) DeleteUser(ctx context.Context, targetUUID, actorUUID string) error {
+	const op = opManagement + ".DeleteUser"
+	logutils.Debug(ctx, logutils.LayerUsecase, op, "処理開始", slog.String("target_uuid", targetUUID), slog.String("actor_uuid", actorUUID))
+	if targetUUID == actorUUID {
+		usecase.LogBusinessWarn(ctx, op, "自己削除不可", fmt.Errorf("自分自身は削除できません"), slog.String("target_uuid", targetUUID))
+		return fmt.Errorf("自分自身は削除できません")
+	}
+
+	user, err := uc.userRepo.GetByUUID(ctx, targetUUID)
+	if err != nil {
+		usecase.LogRepoPropagation(ctx, op, "ユーザ取得失敗", err, slog.String("target_uuid", targetUUID))
+		return err
+	}
+	if user.Email == config.GetSystemUserEmail() {
+		usecase.LogBusinessWarn(ctx, op, "システムユーザ削除不可", fmt.Errorf("システムユーザは削除できません"), slog.String("target_uuid", targetUUID))
+		return fmt.Errorf("システムユーザは削除できません")
+	}
+	if user.IsAdmin {
+		count, err := uc.userRepo.CountAdmins(ctx)
+		if err != nil {
+			usecase.LogRepoPropagation(ctx, op, "管理者数取得失敗", err)
+			return err
+		}
+		if count <= 1 {
+			usecase.LogBusinessWarn(ctx, op, "最後の管理者削除不可", fmt.Errorf("最後の管理者は削除できません"), slog.String("target_uuid", targetUUID))
+			return fmt.Errorf("最後の管理者は削除できません")
+		}
+	}
+
+	if err := uc.userRepo.SoftDeleteByUUID(ctx, targetUUID); err != nil {
+		usecase.LogRepoPropagation(ctx, op, "ユーザ削除失敗", err, slog.String("target_uuid", targetUUID))
+		return err
+	}
+	logutils.Info(ctx, logutils.LayerUsecase, op, "ユーザ削除成功", slog.String("target_uuid", targetUUID), slog.Uint64("user_id", uint64(user.ID)))
+	return nil
+}

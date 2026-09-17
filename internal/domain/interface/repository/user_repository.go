@@ -16,4 +16,5 @@ type UserRepository interface {
 	CountAdmins(ctx context.Context) (int64, error)
 	Create(ctx context.Context, user *entity.User) error
 	Update(ctx context.Context, user *entity.User) error
+	SoftDeleteByUUID(ctx context.Context, uuid string) error
 }

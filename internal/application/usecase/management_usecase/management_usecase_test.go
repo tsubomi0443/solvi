@@ -102,6 +102,51 @@ func TestUpdateUser_UpdatesFlags(t *testing.T) {
 	}
 }
 
+func TestDeleteUser_PreventsSelfDelete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	targetUUID := uuid.New().String()
+	uc := mnguc.NewManagementUsecase(userRepo)
+	err := uc.DeleteUser(context.Background(), targetUUID, targetUUID)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestDeleteUser_PreventsRemovingLastAdmin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	targetUUID := uuid.New().String()
+	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID).Return(&entity.User{
+		UUID: uuid.MustParse(targetUUID), Email: "admin@solvi.local", IsAdmin: true,
+	}, nil)
+	userRepo.EXPECT().CountAdmins(gomock.Any()).Return(1, nil)
+
+	uc := mnguc.NewManagementUsecase(userRepo)
+	err := uc.DeleteUser(context.Background(), targetUUID, uuid.New().String())
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestDeleteUser_SoftDeletes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	userRepo := repomock.NewMockUserRepository(ctrl)
+
+	targetUUID := uuid.New().String()
+	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID).Return(&entity.User{
+		UUID: uuid.MustParse(targetUUID), Email: "user@example.com",
+	}, nil)
+	userRepo.EXPECT().SoftDeleteByUUID(gomock.Any(), targetUUID).Return(nil)
+
+	uc := mnguc.NewManagementUsecase(userRepo)
+	if err := uc.DeleteUser(context.Background(), targetUUID, uuid.New().String()); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func boolPtr(v bool) *bool {
 	return &v
 }

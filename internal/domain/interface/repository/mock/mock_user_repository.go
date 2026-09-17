@@ -274,6 +274,44 @@ func (c *MockUserRepositoryListAllCall) DoAndReturn(f func(context.Context) ([]e
 	return c
 }
 
+// SoftDeleteByUUID mocks base method.
+func (m *MockUserRepository) SoftDeleteByUUID(ctx context.Context, uuid string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SoftDeleteByUUID", ctx, uuid)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SoftDeleteByUUID indicates an expected call of SoftDeleteByUUID.
+func (mr *MockUserRepositoryMockRecorder) SoftDeleteByUUID(ctx, uuid any) *MockUserRepositorySoftDeleteByUUIDCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SoftDeleteByUUID", reflect.TypeOf((*MockUserRepository)(nil).SoftDeleteByUUID), ctx, uuid)
+	return &MockUserRepositorySoftDeleteByUUIDCall{Call: call}
+}
+
+// MockUserRepositorySoftDeleteByUUIDCall wrap *gomock.Call
+type MockUserRepositorySoftDeleteByUUIDCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockUserRepositorySoftDeleteByUUIDCall) Return(arg0 error) *MockUserRepositorySoftDeleteByUUIDCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockUserRepositorySoftDeleteByUUIDCall) Do(f func(context.Context, string) error) *MockUserRepositorySoftDeleteByUUIDCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockUserRepositorySoftDeleteByUUIDCall) DoAndReturn(f func(context.Context, string) error) *MockUserRepositorySoftDeleteByUUIDCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // Update mocks base method.
 func (m *MockUserRepository) Update(ctx context.Context, user *entity.User) error {
 	m.ctrl.T.Helper()

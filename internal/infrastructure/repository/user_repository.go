@@ -149,6 +149,16 @@ func (r *UserRepository) Update(ctx context.Context, user *entity.User) error {
 	return nil
 }
 
+func (r *UserRepository) SoftDeleteByUUID(ctx context.Context, uuid string) error {
+	const op = opUserRepo + ".SoftDeleteByUUID"
+	logutils.Debug(ctx, logutils.LayerRepository, op, "DB削除", slog.String("user_uuid", uuid))
+	if err := r.db.WithContext(ctx).Where("uuid = ?", uuid).Delete(&entity.User{}).Error; err != nil {
+		logutils.Error(ctx, logutils.LayerRepository, op, "DB削除失敗", slog.String("user_uuid", uuid), slog.String("err", err.Error()))
+		return err
+	}
+	return nil
+}
+
 func getIconBlob(user *entity.User) ([]byte, error) {
 	iconPath := filepath.Join(config.GetUploadDir(), *user.Icon)
 	iconFile, err := os.Open(iconPath)
