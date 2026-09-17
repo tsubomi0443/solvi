@@ -5,6 +5,7 @@ type QuestionListItemOutput struct {
 	Title                  string   `json:"title"`
 	SupportStatus          string   `json:"supportStatus"`
 	IsRequireHumanSupport  bool     `json:"isRequireHumanSupport"`
+	QuestionUserUUID       string   `json:"questionUserUUID"`
 	QuestionUserName       string   `json:"questionUserName"`
 	QuestionUserDepartment string   `json:"questionUserDepartment"`
 	AnswerDue              string   `json:"answerDue,omitempty"`

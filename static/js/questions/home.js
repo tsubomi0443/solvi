@@ -39,6 +39,7 @@ document.addEventListener("alpine:init", () => {
         isAdmin: window.solviIsAdmin === "true",
         canViewAll: window.solviCanViewAll === "true",
         statusOptions: STATUS_OPTIONS,
+        userIconMap: {},
 
         init() {
             const savedView = localStorage.getItem(VIEW_MODE_KEY);
@@ -188,6 +189,35 @@ document.addEventListener("alpine:init", () => {
                 month: "2-digit",
                 day: "2-digit",
             });
+        },
+
+        initial(name) {
+            return (name || "?").slice(0, 1);
+        },
+
+        async userIcon(uuid) {
+            if (uuid in this.userIconMap) {
+                return this.userIconMap[uuid];
+            }
+
+            this.userIconMap[uuid] = (async () => {
+                try {
+                    const res = await fetch(`/api/v1/user/icon/${uuid}`, {
+                        method: "GET",
+                    });
+                    if (!res.ok) {
+                        throw new Error("ユーザアイコンの取得に失敗しました");
+                    }
+                    const data = await res.json();
+                    return data["icon"];
+                } catch (err) {
+                    delete this.userIconMap[uuid];
+                    console.error(err);
+                    throw err;
+                }
+            })();
+
+            return this.userIconMap[uuid];
         },
 
         statusLabel,

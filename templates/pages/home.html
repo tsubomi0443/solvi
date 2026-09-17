@@ -114,8 +114,12 @@
                         <thead>
                             <tr>
                                 <th>件名</th>
-                                <th :class="isSupporter ? '': 'hidden'">質問者</th>
-                                <th :class="isSupporter ? '': 'hidden'">部署</th>
+                                <template x-if="isSupporter || isAdmin">
+                                    <th>質問者</th>
+                                </template>
+                                <template x-if="isSupporter || isAdmin">
+                                    <th>部署</th>
+                                </template>
                                 <th>期日</th>
                                 <th>ステータス</th>
                                 <th>タグ</th>
@@ -128,11 +132,32 @@
                                     <td class="max-w-[16rem] font-medium">
                                         <span class="line-clamp-2" x-text="q.title"></span>
                                     </td>
-                                    <td class="whitespace-nowrap text-sm" :class="isSupporter ? '': 'hidden'"
-                                        x-text="q.questionUserName || '質問者名'"></td>
-                                    <td class="whitespace-nowrap text-sm" :class="isSupporter ? '': 'hidden'"
-                                        x-text="q.questionUserDepartment || '部署名'">
-                                    </td>
+                                    <template x-if="isSupporter || isAdmin">
+                                        <td>
+                                            <div class="flex flex-1 gap-2" x-data="{ icon: '' }"
+                                                x-init="icon = await userIcon(q.questionUserUUID)">
+                                                <span
+                                                    class="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-content">
+                                                    <template x-if="!icon || icon === ''">
+                                                        <span x-text="initial(q.questionUserName)"></span>
+                                                    </template>
+                                                    <template x-if="icon || icon !== ''">
+                                                        <div class="w-full h-full mask mask-circle">
+                                                            <img :src="icon" :alt="q.questionUserName"
+                                                                class="w-full h-full object-cover">
+                                                        </div>
+                                                    </template>
+                                                </span>
+                                                <span class="whitespace-nowrap text-sm"
+                                                    x-text="q.questionUserName || '質問者名'"></span>
+                                            </div>
+                                        </td>
+                                    </template>
+                                    <template x-if="isSupporter || isAdmin">
+                                        <td class="whitespace-nowrap text-sm"
+                                            x-text="q.questionUserDepartment || '部署名'">
+                                        </td>
+                                    </template>
                                     <td class="whitespace-nowrap text-sm" x-text="formatDue(q.answerDue)"></td>
                                     <td class="whitespace-nowrap">
                                         <span class="badge badge-sm" :class="statusBadge(q.supportStatus)"

@@ -20,6 +20,7 @@ func QuestionEntityToListItem(q *entity.Question) outputmodel.QuestionListItemOu
 		Title:                  q.Title,
 		SupportStatus:          q.SupportStatus.String(),
 		IsRequireHumanSupport:  q.IsRequireHumanSupport,
+		QuestionUserUUID:       q.QuestionUser.UUID.String(),
 		QuestionUserName:       q.QuestionUser.Name,
 		QuestionUserDepartment: q.QuestionUser.DepartmentName,
 		AnswerDue:              due,

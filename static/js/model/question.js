@@ -58,6 +58,7 @@ export class QuestionListItem {
         title = "",
         supportStatus = "",
         isRequireHumanSupport = false,
+        questionUserUUID = "",
         questionUserName = "",
         questionUserDepartment = "",
         answerDue = "",
@@ -67,6 +68,7 @@ export class QuestionListItem {
         this.title = title;
         this.supportStatus = supportStatus;
         this.isRequireHumanSupport = isRequireHumanSupport;
+        this.questionUserUUID = questionUserUUID;
         this.questionUserName = questionUserName;
         this.questionUserDepartment = questionUserDepartment;
         this.answerDue = answerDue;
@@ -80,6 +82,7 @@ export class QuestionListItem {
             title: dto.title ?? "",
             supportStatus: dto.supportStatus ?? "",
             isRequireHumanSupport: Boolean(dto.isRequireHumanSupport),
+            questionUserUUID: dto.questionUserUUID ?? "",
             questionUserName: dto.questionUserName ?? "",
             questionUserDepartment: dto.questionUserDepartment ?? "",
             answerDue: dto.answerDue ?? "",
