@@ -144,8 +144,8 @@
                             </button>
                         </div>
                         <div class="shrink-0 border-t border-base-300 p-4">
-                            <template x-if="isSupporter || isAdmin">
-                                <div class="mb-3 flex flex-wrap items-center gap-2">
+                            <div class="mb-3 flex flex-wrap items-center gap-2">
+                                <template x-if="isSupporter || isAdmin">
                                     <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleMemoList()"
                                         :class="currentShowList === 'memo' ? 'bg-slate-200':''">
                                         <i data-lucide="list" class="h-4 w-4"></i>
@@ -153,14 +153,15 @@
                                         <span class="badge badge-sm badge-ghost"
                                             x-text="(question.memos || []).length"></span>
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleReferList()"
-                                        :class="currentShowList === 'refer' ? 'bg-slate-200':''">
-                                        <i data-lucide="list" class="h-4 w-4"></i>
-                                        引用情報一覧
-                                        <span class="badge badge-sm badge-ghost"
-                                            x-text="(question.refers || []).length"></span>
-                                    </button>
-                            </template>
+                                </template>
+                                <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleReferList()"
+                                    :class="currentShowList === 'refer' ? 'bg-slate-200':''">
+                                    <i data-lucide="list" class="h-4 w-4"></i>
+                                    引用情報一覧
+                                    <span class="badge badge-sm badge-ghost"
+                                        x-text="(question.refers || []).length"></span>
+                                </button>
+                            </div>
                             <div x-show="showReferList" x-transition
                                 class="mb-3 max-h-40 overflow-y-auto rounded-xl border border-base-300 bg-base-200/50 p-3">
                                 <template x-if="!(question.refers || []).length">
@@ -218,7 +219,7 @@
                                     </ul>
                                 </div>
                             </template>
-                            <template x-if="!isAdmin || (isAdmin && isSupporter)">
+                            <template x-if="!isAdmin || (isAdmin && (isSupporter || isMyselfQuestion ))">
                                 <textarea class=" textarea textarea-bordered mb-3 w-full text-sm" rows="3"
                                     x-model=" composerText" placeholder="メッセージを入力..."></textarea>
                             </template>
@@ -431,8 +432,8 @@
                     <span class="label-text text-xs font-semibold text-base-content/70">質問の要約 <span
                             class="text-error">*</span></span>
                     <textarea class="textarea textarea-bordered mt-1 h-24 w-full text-sm leading-relaxed"
-                        x-model="doneSummaryContent" x-ref="doneSummaryContentInput"
-                        placeholder="質問内容の要約を入力してください" :disabled="submittingDone"></textarea>
+                        x-model="doneSummaryContent" x-ref="doneSummaryContentInput" placeholder="質問内容の要約を入力してください"
+                        :disabled="submittingDone"></textarea>
                 </label>
                 <label class="form-control w-full">
                     <span class="label-text text-xs font-semibold text-base-content/70">対応の要約 <span

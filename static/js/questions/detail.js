@@ -27,6 +27,7 @@ document.addEventListener("alpine:init", () => {
         currentUser: {},
         isSupporter: window.solviIsSupporter === "true",
         isAdmin: window.solviIsAdmin === "true",
+        isMyselfQuestion: false,
         canViewAll: window.solviCanViewAll === "true",
         composerText: "",
         editTitle: "",
@@ -62,14 +63,18 @@ document.addEventListener("alpine:init", () => {
         init() {
             const qEl = document.getElementById("question-json");
             const uEl = document.getElementById("user-json");
-            if (qEl)
+            if (qEl) {
                 this.question = Question.fromJSON(
                     JSON.parse(qEl.textContent || "{}"),
                 );
-            if (uEl)
+            }
+            if (uEl) {
                 this.currentUser = User.fromJSON(
                     JSON.parse(uEl.textContent || "{}"),
                 );
+            }
+            this.isMyselfQuestion =
+                this.question.questionUserUuid === this.currentUser.uuid;
             this.syncMetaFields();
             if (typeof lucide !== "undefined") lucide.createIcons();
             [
@@ -211,14 +216,15 @@ document.addEventListener("alpine:init", () => {
         },
 
         canDeleteItem(item) {
+            const isMyselfItem = this.isSelfItem(item);
+            if (this.isAdmin || isMyselfItem) return true;
             if (
                 item.kind !== "answer" &&
                 item.kind !== "memo" &&
                 item.kind !== "refer"
             )
                 return false;
-            if (this.isAdmin) return true;
-            return this.isSupporter && this.isSelfItem(item);
+            return this.isSupporter && isMyselfItem;
         },
 
         deleteModalMessage() {
@@ -435,7 +441,11 @@ document.addEventListener("alpine:init", () => {
             this.doneSummaryContent = sum?.content || "";
             this.doneSummaryAnswer = sum?.answer || "";
             const currentRefers = this.question.refers || [];
-            if (sum && Array.isArray(sum.references) && sum.references.length > 0) {
+            if (
+                sum &&
+                Array.isArray(sum.references) &&
+                sum.references.length > 0
+            ) {
                 const matchedUuids = [];
                 sum.references.forEach((savedRef) => {
                     const match = currentRefers.find(
