@@ -18,11 +18,11 @@ type LDAPSetting struct {
 func GetLDAPSetting() (*LDAPSetting, error) {
 	required := map[string]string{
 		"LDAP_URL":              os.Getenv("LDAP_URL"),
-		"LDAP_BASE_DN":            os.Getenv("LDAP_BASE_DN"),
-		"LDAP_BIND_DN":            os.Getenv("LDAP_BIND_DN"),
-		"LDAP_BIND_DN_PASSWORD":   os.Getenv("LDAP_BIND_DN_PASSWORD"),
-		"LDAP_SEARCH_ATTR":        os.Getenv("LDAP_SEARCH_ATTR"),
-		"LDAP_SEARCH_FILTER":      os.Getenv("LDAP_SEARCH_FILTER"),
+		"LDAP_BASE_DN":          os.Getenv("LDAP_BASE_DN"),
+		"LDAP_BIND_DN":          os.Getenv("LDAP_BIND_DN"),
+		"LDAP_BIND_DN_PASSWORD": os.Getenv("LDAP_BIND_DN_PASSWORD"),
+		"LDAP_SEARCH_ATTR":      os.Getenv("LDAP_SEARCH_ATTR"),
+		"LDAP_SEARCH_FILTER":    os.Getenv("LDAP_SEARCH_FILTER"),
 	}
 	for k, v := range required {
 		if v == "" {

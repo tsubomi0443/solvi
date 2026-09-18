@@ -144,22 +144,23 @@
                             </button>
                         </div>
                         <div class="shrink-0 border-t border-base-300 p-4">
-                            <div class="mb-3 flex flex-wrap items-center gap-2">
-                                <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleMemoList()"
-                                    :class="currentShowList === 'memo' ? 'bg-slate-200':''">
-                                    <i data-lucide="list" class="h-4 w-4"></i>
-                                    メモ一覧
-                                    <span class="badge badge-sm badge-ghost"
-                                        x-text="(question.memos || []).length"></span>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleReferList()"
-                                    :class="currentShowList === 'refer' ? 'bg-slate-200':''">
-                                    <i data-lucide="list" class="h-4 w-4"></i>
-                                    引用情報一覧
-                                    <span class="badge badge-sm badge-ghost"
-                                        x-text="(question.refers || []).length"></span>
-                                </button>
-                            </div>
+                            <template x-if="isSupporter || isAdmin">
+                                <div class="mb-3 flex flex-wrap items-center gap-2">
+                                    <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleMemoList()"
+                                        :class="currentShowList === 'memo' ? 'bg-slate-200':''">
+                                        <i data-lucide="list" class="h-4 w-4"></i>
+                                        メモ一覧
+                                        <span class="badge badge-sm badge-ghost"
+                                            x-text="(question.memos || []).length"></span>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-ghost gap-1" @click="toggleReferList()"
+                                        :class="currentShowList === 'refer' ? 'bg-slate-200':''">
+                                        <i data-lucide="list" class="h-4 w-4"></i>
+                                        引用情報一覧
+                                        <span class="badge badge-sm badge-ghost"
+                                            x-text="(question.refers || []).length"></span>
+                                    </button>
+                            </template>
                             <div x-show="showReferList" x-transition
                                 class="mb-3 max-h-40 overflow-y-auto rounded-xl border border-base-300 bg-base-200/50 p-3">
                                 <template x-if="!(question.refers || []).length">
@@ -185,36 +186,38 @@
                                     </template>
                                 </ul>
                             </div>
-                            <div x-show="showMemoList" x-transition
-                                class="mb-3 max-h-40 overflow-y-auto rounded-xl border border-base-300 bg-base-200/50 p-3">
-                                <template x-if="!(question.memos || []).length">
-                                    <p class="text-xs text-base-content/50">まだメモはありません</p>
-                                </template>
-                                <ul class="space-y-2" x-show="(question.memos || []).length">
-                                    <template x-for="memo in question.memos" :key="memo.uuid">
-                                        <li class="flex items-center gap-2 rounded-lg bg-base-100 px-3 py-2 text-sm cursor-pointer"
-                                            x-data="{showContent: false}"
-                                            @click="if(isExistsMemoNextLine(memo.content)) showContent = !showContent;"
-                                            x-cloak>
-                                            <i data-lucide="sticky-note"
-                                                class="h-4 w-4 shrink-0 text-base-content/40"></i>
-                                            <div class="flex min-w-0 flex-1 flex-col">
-                                                <p x-text="showMemoFirstLine(memo.content)" x-show="!showContent"
-                                                    x-cloak>
-                                                </p>
-                                                <p x-text="memo.content" x-transition x-show="showContent" x-cloak
-                                                    class="whitespace-pre-wrap text-sm truncate block mt-1">
-                                                </p>
-                                            </div>
-                                            <template x-if="canDeleteItem({...memo, kind: 'memo'})">
-                                                <button type="button"
-                                                    class="btn btn-ghost btn-xs shrink-0 text-error hover:bg-error/10"
-                                                    @click.stop="openDeleteModal({...memo, kind: 'memo'})">削除</button>
-                                            </template>
-                                        </li>
+                            <template x-if="isSupporter || isAdmin">
+                                <div x-show="showMemoList" x-transition
+                                    class="mb-3 max-h-40 overflow-y-auto rounded-xl border border-base-300 bg-base-200/50 p-3">
+                                    <template x-if="!(question.memos || []).length">
+                                        <p class="text-xs text-base-content/50">まだメモはありません</p>
                                     </template>
-                                </ul>
-                            </div>
+                                    <ul class="space-y-2" x-show="(question.memos || []).length">
+                                        <template x-for="memo in question.memos" :key="memo.uuid">
+                                            <li class="flex items-center gap-2 rounded-lg bg-base-100 px-3 py-2 text-sm cursor-pointer"
+                                                x-data="{showContent: false}"
+                                                @click="if(isExistsMemoNextLine(memo.content)) showContent = !showContent;"
+                                                x-cloak>
+                                                <i data-lucide="sticky-note"
+                                                    class="h-4 w-4 shrink-0 text-base-content/40"></i>
+                                                <div class="flex min-w-0 flex-1 flex-col">
+                                                    <p x-text="showMemoFirstLine(memo.content)" x-show="!showContent"
+                                                        x-cloak>
+                                                    </p>
+                                                    <p x-text="memo.content" x-transition x-show="showContent" x-cloak
+                                                        class="whitespace-pre-wrap text-sm truncate block mt-1">
+                                                    </p>
+                                                </div>
+                                                <template x-if="canDeleteItem({...memo, kind: 'memo'})">
+                                                    <button type="button"
+                                                        class="btn btn-ghost btn-xs shrink-0 text-error hover:bg-error/10"
+                                                        @click.stop="openDeleteModal({...memo, kind: 'memo'})">削除</button>
+                                                </template>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
                             <template x-if="!isAdmin || (isAdmin && isSupporter)">
                                 <textarea class=" textarea textarea-bordered mb-3 w-full text-sm" rows="3"
                                     x-model=" composerText" placeholder="メッセージを入力..."></textarea>
@@ -295,7 +298,8 @@
                             </div>
                             <label class="label cursor-pointer justify-start gap-3 px-0">
                                 <input type="checkbox" class="checkbox checkbox-sm" x-model="editRequireHuman"
-                                    @change="saveRequireHuman()" :disabled="savingMeta">
+                                    @change="saveRequireHuman()" :disabled="savingMeta || true" disabled="disabled"
+                                    checked="checked">
                                 <span class="label-text text-sm">人による対応を希望する</span>
                             </label>
                             <template x-if="isSupporter || isAdmin">
