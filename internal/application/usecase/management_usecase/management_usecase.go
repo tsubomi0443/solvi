@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"solvi/internal/application/converter"
+	outputmodel "solvi/internal/application/model/output_model"
 	"solvi/internal/application/usecase"
-	"solvi/internal/application/model/output_model"
 	repo "solvi/internal/domain/interface/repository"
 	"solvi/internal/shared/config"
 	logutils "solvi/internal/shared/logUtils"
@@ -34,7 +34,7 @@ func (uc *ManagementUsecase) ListUsers(ctx context.Context) ([]outputmodel.UserO
 	sysEmail := config.GetSystemUserEmail()
 	out := make([]outputmodel.UserOutput, 0, len(users))
 	for _, u := range users {
-		if u.Email == sysEmail {
+		if u.Email == sysEmail || u.DepartmentName == "" {
 			continue
 		}
 		out = append(out, converter.UserEntityToOutput(&u))
