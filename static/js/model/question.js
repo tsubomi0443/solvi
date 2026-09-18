@@ -109,7 +109,11 @@ export class QuestionListItem {
         questionUserName = "",
         questionUserDepartment = "",
         answerDue = "",
+        answerDueDate = "",
         tags = [],
+        createdAt = "",
+        createdDate = "",
+        createdTime = "",
     } = {}) {
         this.uuid = uuid;
         this.title = title;
@@ -120,7 +124,11 @@ export class QuestionListItem {
         this.questionUserName = questionUserName;
         this.questionUserDepartment = questionUserDepartment;
         this.answerDue = answerDue;
+        this.answerDueDate = answerDueDate;
         this.tags = tags;
+        this.createdAt = createdAt;
+        this.createdDate = createdDate;
+        this.createdTime = createdTime;
     }
 
     static fromJSON(dto) {
@@ -134,8 +142,12 @@ export class QuestionListItem {
             questionUserUUID: dto.questionUserUUID ?? "",
             questionUserName: dto.questionUserName ?? "",
             questionUserDepartment: dto.questionUserDepartment ?? "",
+            answerDueDate: dto.answerDueDate ?? "",
             answerDue: dto.answerDue ?? "",
             tags: Array.isArray(dto.tags) ? dto.tags.slice() : [],
+            createdAt: dto.createdAt ?? "",
+            createdDate: dto.createdDate ?? "",
+            createdTime: dto.createdTime ?? "",
         });
     }
 }

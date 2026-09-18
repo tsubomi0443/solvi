@@ -10,7 +10,11 @@ type QuestionListItemOutput struct {
 	QuestionUserName       string   `json:"questionUserName"`
 	QuestionUserDepartment string   `json:"questionUserDepartment"`
 	AnswerDue              string   `json:"answerDue,omitempty"`
+	AnswerDueDate          string   `json:"answerDueDate,omitempty"`
 	Tags                   []string `json:"tags"`
+	CreatedAt              string   `json:"createdAt"`
+	CreatedDate            string   `json:"createdDate"`
+	CreatedTime            string   `json:"createdTime"`
 }
 
 type QuestionDetailOutput struct {
@@ -32,10 +36,10 @@ type QuestionDetailOutput struct {
 }
 
 type SummaryOutput struct {
-	UUID       string                    `json:"uuid"`
-	Title      string                    `json:"title"`
-	Content    string                    `json:"content"`
-	Answer     string                    `json:"answer"`
+	UUID       string                   `json:"uuid"`
+	Title      string                   `json:"title"`
+	Content    string                   `json:"content"`
+	Answer     string                   `json:"answer"`
 	References []SummaryReferenceOutput `json:"references"`
 }
 

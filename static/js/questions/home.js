@@ -31,7 +31,8 @@ document.addEventListener("alpine:init", () => {
         questions: [],
         filter: "",
         viewMode: "table",
-        sortDir: "asc",
+        sortDir: "due_asc",
+        selectedDues: [],
         selectedTags: [],
         selectedStatuses: [],
         supportKind: "all",
@@ -102,6 +103,14 @@ document.addEventListener("alpine:init", () => {
             localStorage.setItem(VIEW_MODE_KEY, mode);
         },
 
+        toggleDue(due) {
+            if (this.selectedDues.includes(due)) {
+                this.selectedDues = this.selectedDues.filter((t) => t !== due);
+            } else {
+                this.selectedDues = [...this.selectedDues, due];
+            }
+        },
+
         toggleTag(tag) {
             if (this.selectedTags.includes(tag)) {
                 this.selectedTags = this.selectedTags.filter((t) => t !== tag);
@@ -118,6 +127,29 @@ document.addEventListener("alpine:init", () => {
             } else {
                 this.selectedStatuses = [...this.selectedStatuses, status];
             }
+        },
+
+        availableDues() {
+            const dues = new Set();
+            for (const q of this.questions.sort((a, b) =>
+                this.compareDate("asc", a.answerDue, b.answerDue),
+            )) {
+                if (q.answerDueDate === "") continue;
+                dues.add(q.answerDueDate);
+            }
+
+            return Array.from(dues).sort((a, b) => {
+                this.parseYYYYMMDD(a).getTime() -
+                    this.parseYYYYMMDD(b).getTime();
+            });
+        },
+
+        /**
+         * @returns {Date}
+         */
+        parseYYYYMMDD(v) {
+            const [year, month, day] = v.split("/").map(Number);
+            return new Date(year, month - 1, day);
         },
 
         availableTags() {
@@ -142,6 +174,12 @@ document.addEventListener("alpine:init", () => {
                 );
             }
 
+            if (this.selectedDues.length > 0) {
+                items = items.filter((item) =>
+                    this.selectedDues.includes(item.answerDueDate),
+                );
+            }
+
             if (this.selectedTags.length > 0) {
                 items = items.filter((item) =>
                     (item.tags || []).some((t) =>
@@ -162,11 +200,24 @@ document.addEventListener("alpine:init", () => {
                 items = items.filter((item) => !item.isRequireHumanSupport);
             }
 
-            items.sort((a, b) => this.compareDue(a.answerDue, b.answerDue));
+            if (this.sortDir.split(".").length > 1) {
+                const key = this.sortDir.split(".")[0];
+                const order = this.sortDir.split(".")[1];
+                if (key === "due") {
+                    items.sort((a, b) =>
+                        this.compareDate(a.answerDue, b.answerDue),
+                    );
+                } else if (key === "created") {
+                    items.sort((a, b) =>
+                        this.compareDate(order, a.createdAt, b.createdAt),
+                    );
+                }
+            }
+
             return items;
         },
 
-        compareDue(a, b) {
+        compareDate(order = "", a, b) {
             const aTime = a ? Date.parse(a) : NaN;
             const bTime = b ? Date.parse(b) : NaN;
             const aMissing = Number.isNaN(aTime);
@@ -177,7 +228,7 @@ document.addEventListener("alpine:init", () => {
             if (bMissing) return -1;
 
             const diff = aTime - bTime;
-            return this.sortDir === "desc" ? -diff : diff;
+            return order === "desc" ? -diff : diff;
         },
 
         formatDue(iso) {
