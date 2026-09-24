@@ -268,3 +268,56 @@ func (r *QuestionRepository) UpsertSummary(ctx context.Context, questionID uint,
 	}
 	return err
 }
+
+func (r *QuestionRepository) ListSummaries(ctx context.Context) ([]entity.QuestionSummary, error) {
+	const op = opQuestionRepo + ".ListSummaries"
+	logutils.Debug(ctx, logutils.LayerRepository, op, "DB検索")
+	var summaries []entity.QuestionSummary
+	err := r.db.WithContext(ctx).
+		Preload("References").
+		Order("created_at DESC").
+		Find(&summaries).Error
+	if err != nil {
+		logutils.Error(ctx, logutils.LayerRepository, op, "DB検索失敗", slog.String("err", err.Error()))
+		return nil, err
+	}
+	logutils.Debug(ctx, logutils.LayerRepository, op, "DB検索完了", slog.Int("count", len(summaries)))
+	return summaries, nil
+}
+
+func (r *QuestionRepository) ListTagsByQuestionIDs(ctx context.Context, questionIDs []uint) (map[uint][]string, error) {
+	const op = opQuestionRepo + ".ListTagsByQuestionIDs"
+	if len(questionIDs) == 0 {
+		return map[uint][]string{}, nil
+	}
+	logutils.Debug(ctx, logutils.LayerRepository, op, "DB検索", slog.Int("question_count", len(questionIDs)))
+	var tags []entity.QuestionTag
+	if err := r.db.WithContext(ctx).Where("question_id IN ?", questionIDs).Order("id ASC").Find(&tags).Error; err != nil {
+		logutils.Error(ctx, logutils.LayerRepository, op, "DB検索失敗", slog.String("err", err.Error()))
+		return nil, err
+	}
+	out := make(map[uint][]string, len(questionIDs))
+	for _, t := range tags {
+		out[t.QuestionID] = append(out[t.QuestionID], t.Name)
+	}
+	return out, nil
+}
+
+func (r *QuestionRepository) SoftDeleteSummaryByUUID(ctx context.Context, uuid string) error {
+	const op = opQuestionRepo + ".SoftDeleteSummaryByUUID"
+	logutils.Debug(ctx, logutils.LayerRepository, op, "DB削除", slog.String("summary_uuid", uuid))
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var summary entity.QuestionSummary
+		if err := tx.Where("uuid = ?", uuid).First(&summary).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("question_summary_id = ?", summary.ID).Delete(&entity.QuestionSummaryReference{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&summary).Error
+	})
+	if err != nil {
+		logutils.Error(ctx, logutils.LayerRepository, op, "DB削除失敗", slog.String("summary_uuid", uuid), slog.String("err", err.Error()))
+	}
+	return err
+}

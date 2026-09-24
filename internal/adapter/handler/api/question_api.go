@@ -274,6 +274,18 @@ func (h *Handler) DeleteRefer(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"ok": "true"})
 }
 
+func (h *Handler) DeleteFAQ(c *echo.Context) error {
+	const op = "api.DeleteFAQ"
+	ctx := requestCtx(c)
+	claims := authctx.Claims(c)
+	uuid := c.Param("uuid")
+	if err := h.deps.Question.DeleteSummary(ctx, claims.IsAdmin, uuid); err != nil {
+		logHandlerDebug(ctx, op, "FAQ削除失敗", http.StatusForbidden, append(handlerAttrs(c), slog.String("summary_uuid", uuid))...)
+		return c.JSON(http.StatusForbidden, map[string]string{"error": err.Error()})
+	}
+	return c.JSON(http.StatusOK, map[string]string{"ok": "true"})
+}
+
 func (h *Handler) DeleteQuestion(c *echo.Context) error {
 	const op = "api.DeleteQuestion"
 	ctx := requestCtx(c)

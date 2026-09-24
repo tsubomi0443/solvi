@@ -56,6 +56,7 @@ func RegisterRoutes(e *echo.Echo, deps Deps, auditLogger *slog.Logger) {
 
 	auth := e.Group("", JWTConfig(auditLogger))
 	auth.GET("/", ph.HomePage, auditLogging(auditLogger, false))
+	auth.GET("/faq", ph.FAQPage, auditLogging(auditLogger, false))
 	auth.GET("/questions/new", ph.QuestionNewPage, auditLogging(auditLogger, false))
 	auth.GET("/questions/:uuid", ph.QuestionDetailPage, auditLogging(auditLogger, false))
 	auth.GET("/setting", ph.SettingPage, auditLogging(auditLogger, false))
@@ -73,6 +74,7 @@ func RegisterRoutes(e *echo.Echo, deps Deps, auditLogger *slog.Logger) {
 	apiAuth.POST("/questions/:uuid/contents", ah.AppendContent, auditLogging(auditLogger, false))
 	apiAuth.POST("/questions/:uuid/answers", ah.AddAnswer, SupporterOnly, auditLogging(auditLogger, false))
 	apiAuth.DELETE("/questions/:uuid", ah.DeleteQuestion, AdminOnlyAPI, auditLogging(auditLogger, false))
+	apiAuth.DELETE("/faqs/:uuid", ah.DeleteFAQ, AdminOnlyAPI, auditLogging(auditLogger, false))
 	apiAuth.DELETE("/questions/:uuid/answers/:answerUuid", ah.DeleteAnswer, SupporterOrAdmin, auditLogging(auditLogger, false))
 	apiAuth.POST("/questions/:uuid/memos", ah.AddMemo, SupporterOnly, auditLogging(auditLogger, false))
 	apiAuth.DELETE("/questions/:uuid/memos/:memoUuid", ah.DeleteMemo, SupporterOrAdmin, auditLogging(auditLogger, false))

@@ -114,3 +114,28 @@ func QuestionEntityToDetail(q *entity.Question, includeMemos bool) outputmodel.Q
 	}
 	return out
 }
+
+func QuestionSummaryToListItem(s *entity.QuestionSummary, tags []string) outputmodel.SummaryListItemOutput {
+	if tags == nil {
+		tags = []string{}
+	}
+	refs := make([]outputmodel.SummaryReferenceOutput, 0, len(s.References))
+	for _, ref := range s.References {
+		refs = append(refs, outputmodel.SummaryReferenceOutput{
+			UUID: ref.UUID.String(),
+			Name: ref.Name,
+			URL:  ref.URL,
+		})
+	}
+	return outputmodel.SummaryListItemOutput{
+		UUID:        s.UUID.String(),
+		Title:       s.Title,
+		Content:     s.Content,
+		Answer:      s.Answer,
+		Tags:        tags,
+		References:  refs,
+		CreatedAt:   s.CreatedAt.Format(time.RFC3339),
+		CreatedDate: s.CreatedAt.Format("2006/01/02"),
+		CreatedTime: s.CreatedAt.Format("15:04:05"),
+	}
+}

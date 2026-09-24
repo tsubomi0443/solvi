@@ -977,3 +977,65 @@ func TestRunAI_SuccessAndFailure(t *testing.T) {
 		quc.RunAIForTest(uc, qid.String(), "title", "content")
 	})
 }
+
+func TestListSummaries_ReturnsTagsAndReferences(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	summaryUUID := uuid.New()
+	qRepo.EXPECT().ListSummaries(gomock.Any()).Return([]entity.QuestionSummary{
+		{
+			Model:      gorm.Model{ID: 1, CreatedAt: time.Now()},
+			UUID:       summaryUUID,
+			Title:      "FAQ title",
+			Content:    "question body",
+			Answer:     "final answer",
+			QuestionID: 10,
+			References: []entity.QuestionSummaryReference{
+				{UUID: uuid.New(), Name: "Doc", URL: "http://doc"},
+			},
+		},
+	}, nil)
+	qRepo.EXPECT().ListTagsByQuestionIDs(gomock.Any(), []uint{10}).Return(map[uint][]string{
+		10: {"人事", "給与"},
+	}, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	items, err := uc.ListSummaries(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("unexpected count: %+v", items)
+	}
+	if items[0].Title != "FAQ title" || len(items[0].Tags) != 2 || len(items[0].References) != 1 {
+		t.Fatalf("unexpected item: %+v", items[0])
+	}
+}
+
+func TestDeleteSummary_DeniesNonAdmin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	err := uc.DeleteSummary(context.Background(), false, uuid.New().String())
+	if err == nil {
+		t.Fatal("expected permission error")
+	}
+}
+
+func TestDeleteSummary_AllowsAdmin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	summaryUUID := uuid.New().String()
+	qRepo.EXPECT().SoftDeleteSummaryByUUID(gomock.Any(), summaryUUID).Return(nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.DeleteSummary(context.Background(), true, summaryUUID); err != nil {
+		t.Fatal(err)
+	}
+}

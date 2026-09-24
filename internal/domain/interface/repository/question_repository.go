@@ -25,4 +25,7 @@ type QuestionRepository interface {
 	ReplaceTags(ctx context.Context, questionID uint, tags []entity.QuestionTag) error
 	CreateSummary(ctx context.Context, summary *entity.QuestionSummary, refs []entity.QuestionSummaryReference) error
 	UpsertSummary(ctx context.Context, questionID uint, title, content, answer string, refs []entity.QuestionSummaryReference) error
+	ListSummaries(ctx context.Context) ([]entity.QuestionSummary, error)
+	ListTagsByQuestionIDs(ctx context.Context, questionIDs []uint) (map[uint][]string, error)
+	SoftDeleteSummaryByUUID(ctx context.Context, uuid string) error
 }
