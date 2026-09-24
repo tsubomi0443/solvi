@@ -11,9 +11,10 @@ func QuestionEntityToListItem(q *entity.Question) outputmodel.QuestionListItemOu
 	for _, t := range q.Tags {
 		tags = append(tags, t.Name)
 	}
-	due := ""
+	due, dueDate := "", ""
 	if q.AnswerDue != nil {
 		due = q.AnswerDue.Format(time.RFC3339)
+		dueDate = q.AnswerDue.Format("2006/01/02")
 	}
 	content := ""
 	if len(q.Contents) > 0 {
@@ -29,7 +30,11 @@ func QuestionEntityToListItem(q *entity.Question) outputmodel.QuestionListItemOu
 		QuestionUserName:       q.QuestionUser.Name,
 		QuestionUserDepartment: q.QuestionUser.DepartmentName,
 		AnswerDue:              due,
+		AnswerDueDate:          dueDate,
 		Tags:                   tags,
+		CreatedAt:              q.CreatedAt.Format(time.RFC3339),
+		CreatedDate:            q.CreatedAt.Format("2006/01/02"),
+		CreatedTime:            q.CreatedAt.Format("15:04:05"),
 	}
 }
 
