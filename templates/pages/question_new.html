@@ -25,11 +25,10 @@
                         <textarea class="textarea textarea-bordered min-h-40 w-full" x-model="form.content"
                             required></textarea>
                     </label>
-                    <label class=" form-control w-full">
-                        <span class="label-text">タグ（カンマ区切り）</span>
-                        <input type="text" class="input input-bordered w-full placeholder-base-content/60"
-                            x-model="form.tagsText" placeholder="例: 給与, 勤怠">
-                    </label>
+                    <div class="form-control w-full">
+                        <span class="label-text">タグ</span>
+                        {{template "tag-picker" .}}
+                    </div>
                     <label class="label cursor-pointer justify-start gap-3">
                         <input type="checkbox" class="checkbox checkbox-sm" x-model="form.isRequireHumanSupport"
                             :checked="{{.isHumanSupportRequired}}" :disabled="{{.isHumanSupportRequired}}"
@@ -53,6 +52,8 @@
             </main>
         </div>
     </div>
+
+    {{template "tag-picker-modal" .}}
 </body>
 
 </html>

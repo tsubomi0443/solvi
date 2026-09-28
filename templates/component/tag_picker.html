@@ -1,0 +1,84 @@
+{{define "tag-picker"}}
+<div class="flex items-start gap-2" :class="tagPickerDisabled() ? 'pointer-events-none opacity-60' : ''">
+    <div class="relative min-w-0 flex-1" @click.outside="closeTagMenu()">
+        <button type="button" class="input input-bordered flex h-auto min-h-12 w-full items-center gap-2 py-2 text-left"
+            @click="toggleTagMenu()" :aria-expanded="tagMenuOpen" aria-haspopup="listbox"
+            :disabled="tagPickerDisabled()">
+            <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+                <template x-if="selectedTags.length === 0">
+                    <span class="text-base-content/60">タグを選択</span>
+                </template>
+                <template x-for="tag in selectedTags" :key="tag">
+                    <span class="badge badge-outline badge-sm max-w-full gap-1">
+                        <span class="truncate" x-text="tag"></span>
+                        <span role="button" tabindex="0" class="cursor-pointer rounded-full px-0.5 hover:text-error"
+                            @click.stop="removeSelectedTag(tag)" @keydown.enter.stop.prevent="removeSelectedTag(tag)"
+                            aria-label="タグを外す">×</span>
+                    </span>
+                </template>
+            </span>
+            <svg class="h-4 w-4 shrink-0 opacity-60 transition-transform" :class="tagMenuOpen ? 'rotate-180' : ''"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6" />
+            </svg>
+        </button>
+        <div x-show="tagMenuOpen" x-cloak x-transition.origin.top
+            class="absolute left-0 right-0 z-30 mt-1 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+            <input type="search" x-ref="tagSearch"
+                class="input input-bordered input-sm w-full placeholder-base-content/60" placeholder="タグを検索"
+                x-model="tagQuery" @keydown.enter.prevent @keydown.escape.stop.prevent="closeTagMenu()">
+            <div class="relative mt-2 h-48 min-[1650px]:h-96 overflow-y-auto">
+                <template x-if="filteredTagOptions().length === 0">
+                    <p class="absolute inset-0 flex items-center justify-center px-2 text-center text-sm text-base-content/50"
+                        x-text="tagListMessage()"></p>
+                </template>
+                <ul x-show="filteredTagOptions().length > 0" role="listbox" class="menu menu-sm p-0">
+                    <template x-for="tag in filteredTagOptions()" :key="tag">
+                        <li>
+                            <button type="button" role="option"
+                                class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-base-200"
+                                :class="selectedTags.includes(tag) ? 'bg-base-200' : ''"
+                                :aria-selected="selectedTags.includes(tag)" @click="toggleTag(tag)">
+                                <span
+                                    class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] leading-none"
+                                    :class="selectedTags.includes(tag) ? 'border-primary bg-primary text-primary-content' : 'border-base-300'">
+                                    <template x-if="selectedTags.includes(tag)">
+                                        <span>✓</span>
+                                    </template>
+                                </span>
+                                <span class="min-w-0 break-all" x-text="tag"></span>
+                            </button>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn h-12 min-h-12 shrink-0 px-3" @click="openNewTagModal()" aria-label="新しいタグを追加"
+        :disabled="tagPickerDisabled()">
+        <i data-lucide="circle-plus" class="h-5 w-5"></i>
+    </button>
+</div>
+{{end}}
+
+{{define "tag-picker-modal"}}
+<div class="modal backdrop-blur-sm" :class="{ 'modal-open': showNewTagModal }" role="dialog" aria-modal="true"
+    aria-labelledby="new-tag-modal-title" @keydown.escape.window="onTagPickerEscape()">
+    <div class="modal-box max-w-sm rounded-2xl bg-base-100 shadow-2xl">
+        <h3 id="new-tag-modal-title" class="text-lg font-bold">タグを追加</h3>
+        <p class="mt-1 text-sm text-base-content/60">一覧にないタグ名を入力します。</p>
+        <label class="form-control mt-4 w-full">
+            <span class="label-text">タグ名</span>
+            <input type="text" x-ref="newTagInput"
+                class="input input-bordered input-sm w-full placeholder-base-content/60" x-model="newTagName"
+                maxlength="100" placeholder="例: 勤怠" @keydown.enter.prevent="addCustomTag()">
+        </label>
+        <div class="modal-action">
+            <button type="button" class="btn btn-ghost" @click="closeNewTagModal()">キャンセル</button>
+            <button type="button" class="btn btn-primary" @click="addCustomTag()"
+                :disabled="!newTagName.trim() || tagPickerDisabled()">追加</button>
+        </div>
+    </div>
+    <div class="modal-backdrop bg-opacity-100" @click="closeNewTagModal()"></div>
+</div>
+{{end}}

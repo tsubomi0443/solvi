@@ -1,5 +1,6 @@
 import { Question } from "../model/question.js";
 import { User } from "../model/user.js";
+import { tagPickerState } from "./tag_picker.js";
 
 function statusLabel(s) {
     return { pending: "未対応", supporting: "対応中", done: "完了" }[s] || s;
@@ -17,6 +18,7 @@ function statusBadge(s) {
 
 document.addEventListener("alpine:init", () => {
     Alpine.data("solviDetail", () => ({
+        ...tagPickerState(),
         question: {},
         currentUser: {},
         isSupporter: window.solviIsSupporter === "true",
@@ -28,7 +30,6 @@ document.addEventListener("alpine:init", () => {
         editStatus: "",
         editAnswerDue: "",
         editRequireHuman: false,
-        newTag: "",
         savingMeta: false,
         showScrollToBottom: false,
         chatAtBottom: true,
@@ -54,7 +55,7 @@ document.addEventListener("alpine:init", () => {
         doneSelectedReferUuids: [],
         submittingDone: false,
 
-        init() {
+        async init() {
             const qEl = document.getElementById("question-json");
             const uEl = document.getElementById("user-json");
             if (qEl) {
@@ -70,6 +71,7 @@ document.addEventListener("alpine:init", () => {
             this.isMyselfQuestion =
                 this.question.questionUserUuid === this.currentUser.uuid;
             this.syncMetaFields();
+            await this.loadAvailableTags();
             if (typeof lucide !== "undefined") lucide.createIcons();
             [
                 "create-content",
@@ -133,6 +135,28 @@ document.addEventListener("alpine:init", () => {
             this.editRequireHuman = Boolean(
                 this.question.isRequireHumanSupport,
             );
+            this.selectedTags = [...(this.question.tags || [])];
+            this.includeAvailableTags(this.question.tags);
+        },
+
+        tagPickerDisabled() {
+            return this.savingMeta;
+        },
+
+        async applyTagSelection(tags) {
+            if (this.savingMeta) return;
+            const current = this.question.tags || [];
+            this.selectedTags = tags;
+            if (
+                tags.length === current.length &&
+                tags.every((tag, index) => tag === current[index])
+            ) {
+                return;
+            }
+            const ok = await this.saveTags(tags);
+            if (!ok) {
+                this.selectedTags = [...(this.question.tags || [])];
+            }
         },
 
         initial(name) {
@@ -541,23 +565,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         async saveTags(tags) {
-            await this.updateQuestion({ tags });
-        },
-
-        async addTag() {
-            const tag = this.newTag.trim();
-            if (!tag) return;
-            if ((this.question.tags || []).includes(tag)) {
-                this.newTag = "";
-                return;
-            }
-            this.newTag = "";
-            await this.saveTags([...(this.question.tags || []), tag]);
-        },
-
-        async removeTag(tag) {
-            const tags = (this.question.tags || []).filter((t) => t !== tag);
-            await this.saveTags(tags);
+            return this.updateQuestion({ tags });
         },
 
         async appendContent() {

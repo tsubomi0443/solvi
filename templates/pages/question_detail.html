@@ -247,8 +247,8 @@
                         </div>
                     </div>
                     <!-- 右サイドメタ -->
-                    <div class="w-full shrink-0 lg:w-80 lg:max-h-full lg:overflow-y-auto"
-                        :class="metaPanelOpen ? 'max-h-[50vh] overflow-y-auto lg:max-h-full' : ''">
+                    <div class="w-full shrink-0 lg:w-80 lg:max-h-full"
+                        :class="tagMenuOpen ? 'overflow-visible' : (metaPanelOpen ? 'max-h-[50vh] overflow-y-auto lg:max-h-full lg:overflow-y-auto' : 'lg:overflow-y-auto')">
                         <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                             <button type="button"
                                 class="flex w-full items-center justify-between gap-3 px-5 py-4 text-left lg:hidden"
@@ -309,31 +309,24 @@
                                             x-text="statusLabel(question.supportStatus)"></span>
                                     </div>
                                 </template>
-                                <div>
-                                    <p class="mb-1 text-xs font-semibold text-base-content/60">タグ</p>
-                                    <div class="mb-2 flex flex-wrap gap-1">
-                                        <template x-for="tag in (question.tags || [])" :key="tag">
-                                            <span class="badge badge-outline badge-sm gap-1 pr-1">
-                                                <span x-text="tag"></span>
-                                                <button type="button" class="rounded-full px-0.5 hover:text-error"
-                                                    x-show="isSupporter || isAdmin" @click="removeTag(tag)"
-                                                    :disabled="savingMeta" aria-label="タグを削除">×</button>
-                                            </span>
-                                        </template>
-                                        <span class="text-xs text-base-content/50"
-                                            x-show="!(question.tags || []).length">なし</span>
+                                <template x-if="isSupporter || isAdmin">
+                                    <div>
+                                        <p class="mb-1 text-xs font-semibold text-base-content/60">タグ</p>
+                                        {{template "tag-picker" .}}
                                     </div>
-                                    <template x-if="isSupporter || isAdmin">
-                                        <div class="flex gap-2">
-                                            <input type="text"
-                                                class="input input-bordered input-sm min-w-0 flex-1 placeholder-base-content/60"
-                                                x-model="newTag" placeholder="タグを追加" @keydown.enter.prevent="addTag()"
-                                                :disabled="savingMeta">
-                                            <button type="button" class="btn btn-outline btn-sm shrink-0"
-                                                @click="addTag()" :disabled="savingMeta || !newTag.trim()">追加</button>
+                                </template>
+                                <template x-if="!isSupporter && !isAdmin">
+                                    <div>
+                                        <p class="mb-1 text-xs font-semibold text-base-content/60">タグ</p>
+                                        <div class="flex flex-wrap gap-1">
+                                            <template x-for="tag in (question.tags || [])" :key="tag">
+                                                <span class="badge badge-outline badge-sm" x-text="tag"></span>
+                                            </template>
+                                            <span class="text-xs text-base-content/50"
+                                                x-show="!(question.tags || []).length">なし</span>
                                         </div>
-                                    </template>
-                                </div>
+                                    </div>
+                                </template>
                                 <label class="label cursor-pointer justify-start gap-3 px-0">
                                     <input type="checkbox" class="checkbox checkbox-sm" x-model="editRequireHuman"
                                         @change="saveRequireHuman()" :disabled="savingMeta || true" disabled="disabled"
@@ -474,14 +467,16 @@
                 <label class="form-control w-full">
                     <span class="label-text text-xs font-semibold text-base-content/70">質問の要約 <span
                             class="text-error">*</span></span>
-                    <textarea class="textarea textarea-bordered mt-1 h-24 w-full text-sm leading-relaxed"
+                    <textarea
+                        class="textarea textarea-bordered mt-1 h-24 w-full text-sm leading-relaxed placeholder-base-content/60"
                         x-model="doneSummaryContent" x-ref="doneSummaryContentInput" placeholder="質問内容の要約を入力してください"
                         :disabled="submittingDone"></textarea>
                 </label>
                 <label class="form-control w-full">
                     <span class="label-text text-xs font-semibold text-base-content/70">対応の要約 <span
                             class="text-error">*</span></span>
-                    <textarea class="textarea textarea-bordered mt-1 h-24 w-full text-sm leading-relaxed"
+                    <textarea
+                        class="textarea textarea-bordered mt-1 h-24 w-full text-sm leading-relaxed placeholder-base-content/60"
                         x-model="doneSummaryAnswer" placeholder="回答・対応内容の要約を入力してください"
                         :disabled="submittingDone"></textarea>
                 </label>
@@ -507,7 +502,7 @@
             <div class="modal-action">
                 <button type="button" class="btn btn-ghost font-bold" @click="closeDoneModal()"
                     :disabled="submittingDone">キャンセル</button>
-                <button type="button" class="btn btn-primary font-bold text-white" @click="submitDone()"
+                <button type="button" class="btn btn-primary font-bold text-base-content" @click="submitDone()"
                     :disabled="!canSubmitDone()">
                     <span class="loading loading-spinner loading-sm" x-show="submittingDone"></span>
                     完了へと変更
@@ -516,6 +511,8 @@
         </div>
         <div class="modal-backdrop bg-opacity-100" @click="closeDoneModal()"></div>
     </div>
+
+    {{template "tag-picker-modal" .}}
 
     <script type="module" src="/static/js/sse.js"></script>
 

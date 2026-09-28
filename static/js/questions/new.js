@@ -1,34 +1,32 @@
 import { Question } from "../model/question.js";
+import { tagPickerState } from "./tag_picker.js";
 
 document.addEventListener("alpine:init", () => {
     Alpine.data("solviQuestionNew", () => ({
+        ...tagPickerState(),
         loading: false,
         form: {
             title: "",
             content: "",
-            tagsText: "",
             answerDue: "",
             isRequireHumanSupport: true,
         },
 
-        init() {
+        async init() {
+            await this.loadAvailableTags();
             if (typeof lucide !== "undefined") lucide.createIcons();
         },
 
         async submit() {
             this.loading = true;
             try {
-                const tags = this.form.tagsText
-                    .split(",")
-                    .map((t) => t.trim())
-                    .filter(Boolean);
                 const res = await fetch("/api/v1/questions", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         title: this.form.title,
                         content: this.form.content,
-                        tags,
+                        tags: this.selectedTags,
                         answerDue: this.form.answerDue,
                         isRequireHumanSupport: this.form.isRequireHumanSupport,
                     }),
