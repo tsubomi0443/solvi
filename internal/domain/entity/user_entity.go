@@ -17,4 +17,5 @@ type User struct {
 	IsSupporter           bool      `gorm:"not null;default:false"`
 	IsSupporterOverridden bool      `gorm:"not null;default:false"`
 	IsAdmin               bool      `gorm:"not null;default:false"`
+	LineWorksLoginID      string    `gorm:"type:text"`
 }

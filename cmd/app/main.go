@@ -11,6 +11,7 @@ import (
 	ssehub "solvi/internal/adapter/handler/sse"
 	"solvi/internal/application/converter"
 	authuc "solvi/internal/application/usecase/auth_usecase"
+	lwuc "solvi/internal/application/usecase/lineworks_usecase"
 	loguc "solvi/internal/application/usecase/log_usecase"
 	mnguc "solvi/internal/application/usecase/management_usecase"
 	quc "solvi/internal/application/usecase/question_usecase"
@@ -18,6 +19,7 @@ import (
 	taguc "solvi/internal/application/usecase/tag_usecase"
 	"solvi/internal/infrastructure/external/bedrock"
 	"solvi/internal/infrastructure/external/ldap"
+	lwclient "solvi/internal/infrastructure/external/lineworks"
 	applogger "solvi/internal/infrastructure/logger"
 	"solvi/internal/infrastructure/postgresql"
 	"solvi/internal/infrastructure/repository"
@@ -116,6 +118,31 @@ func main() {
 		hub.SendToQuestion("create-answer", detail, q.QuestionUserID)
 		hub.SendToQuestion("update-question", detail, q.QuestionUserID)
 	})
+
+	if lwSetting, ok := config.LoadLineWorks(); ok {
+		lwClient, err := lwclient.NewClient(lwSetting)
+		if err != nil {
+			slog.Error("LINE WORKSの初期化に失敗しました", "err", err)
+		} else {
+			questionUC.ConfigureLineWorks(quc.LineWorksOptions{
+				Enabled:    true,
+				AppBaseURL: lwSetting.AppBaseURL,
+				Debounce:   lwSetting.CommentDebounce,
+			})
+			worker := lwuc.New(repository.NewLineWorksNotificationRepository(db), lwClient)
+			go func() {
+				ticker := time.NewTicker(5 * time.Second)
+				defer ticker.Stop()
+				for range ticker.C {
+					if err := worker.ProcessDue(context.Background()); err != nil {
+						slog.Error("LINE WORKS通知の送信に失敗しました", "err", err)
+					}
+				}
+			}()
+		}
+	} else {
+		slog.Warn("LINE WORKSは未設定です")
+	}
 
 	deps := handler.Deps{
 		Auth:       authuc.NewAuthUsecase(ldapClient, userRepo),

@@ -2,6 +2,7 @@ package database
 
 import (
 	"solvi/internal/domain/entity"
+	"solvi/internal/domain/entity/lineworks"
 
 	"gorm.io/gorm"
 )
@@ -19,5 +20,7 @@ func (AutoMigrator) Apply(db *gorm.DB) error {
 		&entity.QuestionRefer{},
 		&entity.QuestionSummary{},
 		&entity.QuestionSummaryReference{},
+		&lineworks.Notification{},
+		&lineworks.NotificationAttempt{},
 	)
 }

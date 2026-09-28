@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 	entity "solvi/internal/domain/entity"
+	lineworks "solvi/internal/domain/entity/lineworks"
 
 	gomock "go.uber.org/mock/gomock"
 )
@@ -764,6 +765,134 @@ func (c *MockQuestionRepositorySoftDeleteSummaryByUUIDCall) Do(f func(context.Co
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockQuestionRepositorySoftDeleteSummaryByUUIDCall) DoAndReturn(f func(context.Context, string) error) *MockQuestionRepositorySoftDeleteSummaryByUUIDCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+func (m *MockQuestionRepository) CreateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateWithNotification", ctx, question, notice)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (mr *MockQuestionRepositoryMockRecorder) CreateWithNotification(ctx, question, notice any) *MockQuestionRepositoryCreateWithNotificationCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithNotification", reflect.TypeOf((*MockQuestionRepository)(nil).CreateWithNotification), ctx, question, notice)
+	return &MockQuestionRepositoryCreateWithNotificationCall{Call: call}
+}
+
+type MockQuestionRepositoryCreateWithNotificationCall struct {
+	*gomock.Call
+}
+
+func (c *MockQuestionRepositoryCreateWithNotificationCall) Return(arg0 error) *MockQuestionRepositoryCreateWithNotificationCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+func (c *MockQuestionRepositoryCreateWithNotificationCall) Do(f func(context.Context, *entity.Question, *lineworks.Notification) error) *MockQuestionRepositoryCreateWithNotificationCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+func (c *MockQuestionRepositoryCreateWithNotificationCall) DoAndReturn(f func(context.Context, *entity.Question, *lineworks.Notification) error) *MockQuestionRepositoryCreateWithNotificationCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+func (m *MockQuestionRepository) UpdateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateWithNotification", ctx, question, notice)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (mr *MockQuestionRepositoryMockRecorder) UpdateWithNotification(ctx, question, notice any) *MockQuestionRepositoryUpdateWithNotificationCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateWithNotification", reflect.TypeOf((*MockQuestionRepository)(nil).UpdateWithNotification), ctx, question, notice)
+	return &MockQuestionRepositoryUpdateWithNotificationCall{Call: call}
+}
+
+type MockQuestionRepositoryUpdateWithNotificationCall struct {
+	*gomock.Call
+}
+
+func (c *MockQuestionRepositoryUpdateWithNotificationCall) Return(arg0 error) *MockQuestionRepositoryUpdateWithNotificationCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+func (c *MockQuestionRepositoryUpdateWithNotificationCall) Do(f func(context.Context, *entity.Question, *lineworks.Notification) error) *MockQuestionRepositoryUpdateWithNotificationCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+func (c *MockQuestionRepositoryUpdateWithNotificationCall) DoAndReturn(f func(context.Context, *entity.Question, *lineworks.Notification) error) *MockQuestionRepositoryUpdateWithNotificationCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+func (m *MockQuestionRepository) CompleteWithNotification(ctx context.Context, question *entity.Question, summaryTitle, summaryContent, summaryAnswer string, refs []entity.QuestionSummaryReference, notice *lineworks.Notification) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CompleteWithNotification", ctx, question, summaryTitle, summaryContent, summaryAnswer, refs, notice)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (mr *MockQuestionRepositoryMockRecorder) CompleteWithNotification(ctx, question, summaryTitle, summaryContent, summaryAnswer, refs, notice any) *MockQuestionRepositoryCompleteWithNotificationCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteWithNotification", reflect.TypeOf((*MockQuestionRepository)(nil).CompleteWithNotification), ctx, question, summaryTitle, summaryContent, summaryAnswer, refs, notice)
+	return &MockQuestionRepositoryCompleteWithNotificationCall{Call: call}
+}
+
+type MockQuestionRepositoryCompleteWithNotificationCall struct {
+	*gomock.Call
+}
+
+func (c *MockQuestionRepositoryCompleteWithNotificationCall) Return(arg0 error) *MockQuestionRepositoryCompleteWithNotificationCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+func (c *MockQuestionRepositoryCompleteWithNotificationCall) Do(f func(context.Context, *entity.Question, string, string, string, []entity.QuestionSummaryReference, *lineworks.Notification) error) *MockQuestionRepositoryCompleteWithNotificationCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+func (c *MockQuestionRepositoryCompleteWithNotificationCall) DoAndReturn(f func(context.Context, *entity.Question, string, string, string, []entity.QuestionSummaryReference, *lineworks.Notification) error) *MockQuestionRepositoryCompleteWithNotificationCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+func (m *MockQuestionRepository) AddContentWithReopenAggregate(ctx context.Context, content *entity.QuestionContent, followUp *lineworks.ReopenFollowUp) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddContentWithReopenAggregate", ctx, content, followUp)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (mr *MockQuestionRepositoryMockRecorder) AddContentWithReopenAggregate(ctx, content, followUp any) *MockQuestionRepositoryAddContentWithReopenAggregateCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddContentWithReopenAggregate", reflect.TypeOf((*MockQuestionRepository)(nil).AddContentWithReopenAggregate), ctx, content, followUp)
+	return &MockQuestionRepositoryAddContentWithReopenAggregateCall{Call: call}
+}
+
+type MockQuestionRepositoryAddContentWithReopenAggregateCall struct {
+	*gomock.Call
+}
+
+func (c *MockQuestionRepositoryAddContentWithReopenAggregateCall) Return(arg0 error) *MockQuestionRepositoryAddContentWithReopenAggregateCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+func (c *MockQuestionRepositoryAddContentWithReopenAggregateCall) Do(f func(context.Context, *entity.QuestionContent, *lineworks.ReopenFollowUp) error) *MockQuestionRepositoryAddContentWithReopenAggregateCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+func (c *MockQuestionRepositoryAddContentWithReopenAggregateCall) DoAndReturn(f func(context.Context, *entity.QuestionContent, *lineworks.ReopenFollowUp) error) *MockQuestionRepositoryAddContentWithReopenAggregateCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
