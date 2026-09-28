@@ -14,6 +14,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@alpinejs/persist": "^3.17.4",
     "alpinejs": "3.15.10",
     "es-toolkit": "1.45.1",
     "htmx-ext-sse": "2.2.4",
@@ -24,7 +25,7 @@
     "dev": "bunx tailwindcss -i ./global.css -o ../static/css/output.css --watch",
     "build:css": "bunx tailwindcss -i ./global.css -o ../static/css/output.css",
     "fetch:dicebear": "curl -l https://esm.sh/@dicebear/notionists@9.4.2/es2022/notionists.mjs > ../static/vendor/dicebear-notionists.min.js && curl -l https://esm.sh/@dicebear/core@9.4.2/es2022/core.mjs > ../static/vendor/dicebear-core.min.js",
-    "copy:htmx_alpinejs": "cp ./node_modules/htmx.org/dist/htmx.min.js ../static/vendor/htmx.min.js && cp ./node_modules/alpinejs/dist/cdn.min.js ../static/vendor/alpine.min.js && cp ./node_modules/htmx-ext-sse/dist/sse.min.js ../static/vendor/sse.min.js",
+    "copy:htmx_alpinejs": "cp ./node_modules/htmx.org/dist/htmx.min.js ../static/vendor/htmx.min.js && cp ./node_modules/alpinejs/dist/cdn.min.js ../static/vendor/alpine.min.js && cp ./node_modules/@alpinejs/persist/dist/cdn.min.js ../static/vendor/alpine.persist.min.js",
     "copy:lucide": "cp ./node_modules/lucide/dist/umd/lucide.min.js ../static/vendor/lucide.min.js && cp ./node_modules/lucide/dist/umd/lucide.min.js.map ../static/vendor/lucide.min.js.map",
     "copy:estoolkit": "cp ./node_modules/es-toolkit/dist/browser.global.js ../static/vendor/es-toolkit-global.js",
     "copy:vendor": "bun run copy:htmx_alpinejs && bun run copy:lucide && bun run copy:estoolkit",
