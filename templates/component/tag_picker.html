@@ -27,7 +27,8 @@
             <input type="search" x-ref="tagSearch"
                 class="input input-bordered input-sm w-full placeholder-base-content/60" placeholder="タグを検索"
                 x-model="tagQuery" @keydown.enter.prevent @keydown.escape.stop.prevent="closeTagMenu()">
-            <div class="relative mt-2 h-48 min-[1650px]:h-96 overflow-y-auto">
+            <div class="relative mt-2 overflow-y-auto"
+                :class="filteredTagOptions().length >= 6 : 'h-48 min-[1650px]:h-96' : ''">
                 <template x-if="filteredTagOptions().length === 0">
                     <p class="absolute inset-0 flex items-center justify-center px-2 text-center text-sm text-base-content/50"
                         x-text="tagListMessage()"></p>
