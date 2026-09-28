@@ -213,6 +213,7 @@ func (h *Handler) UpdateQuestion(c *echo.Context) error {
 	}
 	q, _ := h.deps.Question.Get(ctx, claims.UserID, claims.IsSupporter, claims.IsAdmin, uuid)
 	h.deps.Hub.SendToQuestion("update-question", q, q.QuestionUserID)
+	h.deps.Hub.SendToAll("update-faq", faqUpdateFromDetail(q))
 	return c.JSON(http.StatusOK, q)
 }
 
@@ -278,11 +279,12 @@ func (h *Handler) DeleteFAQ(c *echo.Context) error {
 	const op = "api.DeleteFAQ"
 	ctx := requestCtx(c)
 	claims := authctx.Claims(c)
-	uuid := c.Param("uuid")
-	if err := h.deps.Question.DeleteSummary(ctx, claims.IsAdmin, uuid); err != nil {
-		logHandlerDebug(ctx, op, "FAQ削除失敗", http.StatusForbidden, append(handlerAttrs(c), slog.String("summary_uuid", uuid))...)
+	summaryUUID := c.Param("uuid")
+	if err := h.deps.Question.DeleteSummary(ctx, claims.IsAdmin, summaryUUID); err != nil {
+		logHandlerDebug(ctx, op, "FAQ削除失敗", http.StatusForbidden, append(handlerAttrs(c), slog.String("summary_uuid", summaryUUID))...)
 		return c.JSON(http.StatusForbidden, map[string]string{"error": err.Error()})
 	}
+	h.deps.Hub.SendToAll("update-faq", faqUpdateRemoved(summaryUUID))
 	return c.JSON(http.StatusOK, map[string]string{"ok": "true"})
 }
 

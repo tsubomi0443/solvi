@@ -10,6 +10,7 @@ const SOLVI_SSE_EVENTS = [
     "create-memo",
     "create-refer",
     "update-question",
+    "update-faq",
     "update-user",
     "delete-question",
 ];

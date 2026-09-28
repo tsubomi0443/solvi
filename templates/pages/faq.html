@@ -9,7 +9,7 @@
 <body class="bg-base-200 font-sans antialiased" x-data="solviFAQ" x-init="init()">
     {{template "notices" .}}
     <script type="application/json" id="summaries-json">{{.SummariesJSON}}</script>
-    <script>window.solviIsAdmin = "{{.IsAdmin}}";</script>
+    <script>window.solviSSEEnabled = true; window.solviIsAdmin = "{{.IsAdmin}}";</script>
     <div class="flex h-screen overflow-hidden">
         {{template "sidebar" .}}
         <div class="flex min-w-0 flex-1 min-h-0 flex-col">
@@ -211,6 +211,7 @@
         <div class="modal-backdrop bg-opacity-100" @click="closeDetail()"></div>
     </div>
 
+    <script type="module" src="/static/js/sse.js"></script>
     <div class="modal backdrop-blur-sm" :class="{'modal-open': showDeleteModal}">
         <div class="modal-box bg-white rounded-2xl shadow-2xl max-w-lg">
             <h3 class="text-lg font-bold">FAQを削除</h3>

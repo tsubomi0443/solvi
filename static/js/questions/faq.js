@@ -33,7 +33,57 @@ document.addEventListener("alpine:init", () => {
                     SummaryListItem.fromJSON(dto),
                 );
             }
-            if (typeof lucide !== "undefined") lucide.createIcons();
+            this.$nextTick(() => {
+                if (typeof lucide !== "undefined") lucide.createIcons();
+            });
+
+            document.addEventListener("update-faq", (e) => {
+                this.applyFAQUpdate(e.detail);
+                this.$nextTick(() => {
+                    if (typeof lucide !== "undefined") lucide.createIcons();
+                });
+            });
+        },
+
+        applyFAQUpdate(detail) {
+            if (!detail) return;
+            const summary = detail.summary;
+            const summaryUUID = summary?.uuid;
+            if (detail.supportStatus === "done" && summaryUUID) {
+                const item = SummaryListItem.fromJSON(summary);
+                const idx = this.summaries.findIndex(
+                    (s) => s.uuid === summaryUUID,
+                );
+                if (idx >= 0) {
+                    this.summaries = [
+                        ...this.summaries.slice(0, idx),
+                        item,
+                        ...this.summaries.slice(idx + 1),
+                    ];
+                } else {
+                    this.summaries = [item, ...this.summaries];
+                }
+                if (
+                    this.selectedSummary?.uuid === summaryUUID &&
+                    this.showDetailModal
+                ) {
+                    this.selectedSummary = item;
+                }
+                return;
+            }
+            if (!summaryUUID) return;
+            this.removeSummaryByUUID(summaryUUID);
+        },
+
+        removeSummaryByUUID(summaryUUID) {
+            this.summaries = this.summaries.filter(
+                (s) => s.uuid !== summaryUUID,
+            );
+            if (this.selectedSummary?.uuid === summaryUUID) {
+                this.showDetailModal = false;
+                this.showDeleteModal = false;
+                this.selectedSummary = null;
+            }
         },
 
         setViewMode(mode) {
@@ -48,6 +98,9 @@ document.addEventListener("alpine:init", () => {
             } else {
                 this.selectedTags = [...this.selectedTags, tag];
             }
+            this.$nextTick(() => {
+                if (typeof lucide !== "undefined") lucide.createIcons();
+            });
         },
 
         availableTags() {
@@ -55,7 +108,6 @@ document.addEventListener("alpine:init", () => {
             for (const item of this.summaries) {
                 for (const tag of item.tags || []) tags.add(tag);
             }
-            console.log(tags)
             return Array.from(tags).sort((a, b) => a.localeCompare(b, "ja"));
         },
 

@@ -119,6 +119,10 @@ func TestQuestionRepository_Integration(t *testing.T) {
 	if err := qRepo.ReplaceTags(ctx, question.ID, tagsWithNames); err != nil {
 		t.Fatalf("ReplaceTags for summary test failed: %v", err)
 	}
+	question.SupportStatus = valueobject.SupportStatusDone
+	if err := qRepo.Update(ctx, question); err != nil {
+		t.Fatalf("Update question to done failed: %v", err)
+	}
 	summaries, err := qRepo.ListSummaries(ctx)
 	if err != nil || len(summaries) == 0 {
 		t.Fatalf("ListSummaries failed: %v, len: %d", err, len(summaries))

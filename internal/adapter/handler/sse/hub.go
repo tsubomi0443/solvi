@@ -106,3 +106,8 @@ func (h *Hub) SendMemo(event string, payload interface{}) {
 		}
 	}
 }
+
+func (h *Hub) SendToAll(event string, payload interface{}) {
+	data, _ := json.Marshal(payload)
+	h.broadcastAll(Event{Event: event, Data: string(data)})
+}

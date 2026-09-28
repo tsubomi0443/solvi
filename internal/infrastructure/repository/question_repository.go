@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"solvi/internal/domain/entity"
+	"solvi/internal/domain/valueobject"
 	logutils "solvi/internal/shared/logUtils"
 
 	"gorm.io/gorm"
@@ -273,8 +274,12 @@ func (r *QuestionRepository) ListSummaries(ctx context.Context) ([]entity.Questi
 	const op = opQuestionRepo + ".ListSummaries"
 	logutils.Debug(ctx, logutils.LayerRepository, op, "DB検索")
 	var summaries []entity.QuestionSummary
+	doneQuestionIDs := r.db.Model(&entity.Question{}).
+		Select("id").
+		Where("support_status = ?", valueobject.SupportStatusDone)
 	err := r.db.WithContext(ctx).
 		Preload("References").
+		Where("question_id IN (?)", doneQuestionIDs).
 		Order("created_at DESC").
 		Find(&summaries).Error
 	if err != nil {

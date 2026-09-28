@@ -105,13 +105,39 @@ func QuestionEntityToDetail(q *entity.Question, includeMemos bool) outputmodel.Q
 			})
 		}
 		out.Summary = &outputmodel.SummaryOutput{
-			UUID:       q.Summary.UUID.String(),
-			Title:      q.Summary.Title,
-			Content:    q.Summary.Content,
-			Answer:     q.Summary.Answer,
-			References: refs,
+			UUID:        q.Summary.UUID.String(),
+			Title:       q.Summary.Title,
+			Content:     q.Summary.Content,
+			Answer:      q.Summary.Answer,
+			References:  refs,
+			CreatedAt:   q.Summary.CreatedAt.Format(time.RFC3339),
+			CreatedDate: q.Summary.CreatedAt.Format("2006/01/02"),
+			CreatedTime: q.Summary.CreatedAt.Format("15:04:05"),
 		}
 	}
+	return out
+}
+
+func QuestionDetailToFAQUpdate(q outputmodel.QuestionDetailOutput) outputmodel.FAQUpdateOutput {
+	out := outputmodel.FAQUpdateOutput{SupportStatus: q.SupportStatus}
+	if q.Summary == nil {
+		return out
+	}
+	if q.SupportStatus == "done" {
+		out.Summary = &outputmodel.SummaryListItemOutput{
+			UUID:        q.Summary.UUID,
+			Title:       q.Summary.Title,
+			Content:     q.Summary.Content,
+			Answer:      q.Summary.Answer,
+			Tags:        q.Tags,
+			References:  q.Summary.References,
+			CreatedAt:   q.Summary.CreatedAt,
+			CreatedDate: q.Summary.CreatedDate,
+			CreatedTime: q.Summary.CreatedTime,
+		}
+		return out
+	}
+	out.Summary = &outputmodel.SummaryListItemOutput{UUID: q.Summary.UUID}
 	return out
 }
 

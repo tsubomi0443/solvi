@@ -36,11 +36,19 @@ type QuestionDetailOutput struct {
 }
 
 type SummaryOutput struct {
-	UUID       string                   `json:"uuid"`
-	Title      string                   `json:"title"`
-	Content    string                   `json:"content"`
-	Answer     string                   `json:"answer"`
-	References []SummaryReferenceOutput `json:"references"`
+	UUID        string                   `json:"uuid"`
+	Title       string                   `json:"title"`
+	Content     string                   `json:"content"`
+	Answer      string                   `json:"answer"`
+	References  []SummaryReferenceOutput `json:"references"`
+	CreatedAt   string                   `json:"createdAt,omitempty"`
+	CreatedDate string                   `json:"createdDate,omitempty"`
+	CreatedTime string                   `json:"createdTime,omitempty"`
+}
+
+type FAQUpdateOutput struct {
+	SupportStatus string                 `json:"supportStatus"`
+	Summary       *SummaryListItemOutput `json:"summary,omitempty"`
 }
 
 type SummaryReferenceOutput struct {
