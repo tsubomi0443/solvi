@@ -12,8 +12,9 @@
     <div class="ml-auto flex items-center gap-2">
         {{ template "theme-select" }}
         <div class="dropdown dropdown-end">
-            <button type="button" tabindex="0" class="btn btn-ghost btn-sm gap-2 rounded-full border border-base-300">
-                <span class="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-content">
+            <button type="button" tabindex="0" class="btn btn-ghost btn-sm gap-2">
+                <span
+                    class="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-content">
                     {{ if or (eq .User.Icon nil) (eq .User.Icon "") }}
                     {{ if .User.Name }}{{ printf "%.1s" .User.Name }}{{ else }}?{{ end }}
                     {{ else }}
