@@ -430,6 +430,50 @@ func TestUpdate_AskerUpdatesRequireHuman(t *testing.T) {
 	}
 }
 
+func TestUpdate_OwnerReopensDoneToSupporting(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusDone,
+	}
+	status := "supporting"
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, updated *entity.Question) error {
+		if updated.SupportStatus != valueobject.SupportStatusSupporting {
+			t.Fatalf("status=%v", updated.SupportStatus)
+		}
+		return nil
+	})
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.Update(context.Background(), 5, false, false, qid.String(), nil, &status, nil, nil, nil, false, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdate_OwnerCannotChangeStatusExceptReopen(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusDone,
+	}
+	status := "pending"
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(q, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.Update(context.Background(), 5, false, false, qid.String(), nil, &status, nil, nil, nil, false, nil); err == nil {
+		t.Fatal("expected permission error")
+	}
+}
+
 func TestList_AdminSeesAll(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	qRepo := repomock.NewMockQuestionRepository(ctrl)

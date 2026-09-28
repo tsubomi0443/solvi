@@ -454,6 +454,26 @@ func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, is
 			usecase.LogBusinessWarn(ctx, op, "権限なし", fmt.Errorf("権限がありません"), slog.String("question_uuid", uuid))
 			return fmt.Errorf("権限がありません")
 		}
+		if status != nil && q.SupportStatus == valueobject.SupportStatusDone {
+			parsed, err := valueobject.ParseSupportStatus(supportStatusToInt(*status))
+			if err != nil {
+				usecase.LogBusinessWarn(ctx, op, "ステータス不正", err, slog.String("question_uuid", uuid))
+				return err
+			}
+			if parsed == valueobject.SupportStatusSupporting {
+				if title != nil || due != nil || tags != nil || requireHuman != nil {
+					usecase.LogBusinessWarn(ctx, op, "権限なし", fmt.Errorf("権限がありません"), slog.String("question_uuid", uuid))
+					return fmt.Errorf("権限がありません")
+				}
+				q.SupportStatus = parsed
+				if err := uc.questionRepo.Update(ctx, q); err != nil {
+					usecase.LogRepoPropagation(ctx, op, "更新失敗", err, slog.String("question_uuid", uuid))
+					return err
+				}
+				logutils.Info(ctx, logutils.LayerUsecase, op, "質問更新成功", slog.String("question_uuid", uuid))
+				return nil
+			}
+		}
 		if title != nil || status != nil || due != nil || tags != nil {
 			usecase.LogBusinessWarn(ctx, op, "権限なし", fmt.Errorf("権限がありません"), slog.String("question_uuid", uuid))
 			return fmt.Errorf("権限がありません")

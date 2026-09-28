@@ -54,6 +54,43 @@ document.addEventListener("alpine:init", () => {
         doneSummaryAnswer: "",
         doneSelectedReferUuids: [],
         submittingDone: false,
+        showNewQuestionModal: false,
+        reopeningQuestion: false,
+
+        isDoneStatus() {
+            return this.question.supportStatus === "done";
+        },
+
+        openNewQuestionModal() {
+            this.showNewQuestionModal = true;
+        },
+
+        closeNewQuestionModal() {
+            if (this.reopeningQuestion) return;
+            this.showNewQuestionModal = false;
+        },
+
+        confirmNewQuestionYes() {
+            window.location.href = "/questions/new";
+        },
+
+        async confirmNewQuestionNo() {
+            this.reopeningQuestion = true;
+            try {
+                this.editStatus = "supporting";
+                await this.saveStatus();
+                if (this.question.supportStatus === "supporting") {
+                    this.showNewQuestionModal = false;
+                }
+            } finally {
+                this.reopeningQuestion = false;
+            }
+        },
+
+        async reopenToSupporting() {
+            this.editStatus = "supporting";
+            await this.saveStatus();
+        },
 
         async init() {
             const qEl = document.getElementById("question-json");

@@ -220,9 +220,30 @@
                                 </div>
                             </template>
                             <template x-if="!isAdmin || (isAdmin && (isSupporter || isMyselfQuestion ))">
-                                <textarea
-                                    class=" textarea textarea-bordered mb-3 w-full text-sm placeholder-base-content/60"
-                                    rows="3" x-model=" composerText" placeholder="メッセージを入力..."></textarea>
+                                <div class="dropdown dropdown-top mb-3 w-full"
+                                    :class="isDoneStatus() ? 'dropdown-hover' : ''">
+                                    <textarea tabindex="0"
+                                        class="textarea textarea-bordered w-full text-sm placeholder-base-content/60"
+                                        rows="3" x-model="composerText" placeholder="メッセージを入力..."
+                                        :disabled="isDoneStatus()"
+                                        :class="isDoneStatus() ? 'cursor-not-allowed opacity-60' : ''"></textarea>
+                                    <div x-show="isDoneStatus()" class="absolute inset-0" aria-hidden="true"></div>
+                                    <div tabindex="0" x-show="isDoneStatus()"
+                                        class="dropdown-content z-20 mb-0 w-full rounded-xl border border-base-300 bg-base-100 p-4 shadow-lg x-transition">
+                                        <p class="text-sm text-base-content/80">
+                                            お手数をおかけしますが、追加の質問は新規に質問を起票してください。
+                                        </p>
+                                        <template x-if="isMyselfQuestion">
+                                            <button type="button" class="btn btn-primary btn-sm mt-3"
+                                                @click.stop="openNewQuestionModal()">質問を作成する</button>
+                                        </template>
+                                        <template x-if="!isMyselfQuestion && isSupporter">
+                                            <button type="button" class="btn btn-primary btn-sm mt-3"
+                                                @click.stop="reopenToSupporting()"
+                                                :disabled="savingMeta">ステータスを対応中に戻す</button>
+                                        </template>
+                                    </div>
+                                </div>
                             </template>
                             <div class="flex flex-wrap justify-between gap-2">
                                 <button type="button" class="btn btn-sm btn-outline gap-1" x-show="isSupporter"
@@ -233,13 +254,13 @@
                                 <div>
                                     <button type="button" class="btn btn-sm btn-outline"
                                         x-show="!isSupporter && !isAdmin" @click="appendContent()"
-                                        :disabled="!composerText.trim()">追記</button>
+                                        :disabled="!composerText.trim() || isDoneStatus()">追記</button>
                                     <template x-if="isSupporter">
                                         <div class="flex gap-2">
                                             <button type="button" class="btn btn-sm btn-outline" @click="addMemo()"
-                                                :disabled="!composerText.trim()">メモ登録</button>
+                                                :disabled="!composerText.trim() || isDoneStatus()">メモ登録</button>
                                             <button type="button" class="btn btn-primary btn-sm" @click="addAnswer()"
-                                                :disabled="!composerText.trim()">回答送信</button>
+                                                :disabled="!composerText.trim() || isDoneStatus()">回答送信</button>
                                         </div>
                                     </template>
                                 </div>
@@ -510,6 +531,25 @@
             </div>
         </div>
         <div class="modal-backdrop bg-opacity-100" @click="closeDoneModal()"></div>
+    </div>
+
+    <div class="modal backdrop-blur-sm" :class="{'modal-open': showNewQuestionModal}">
+        <div class="modal-box bg-white rounded-2xl shadow-2xl max-w-md">
+            <h3 class="font-bold text-lg mb-4 tracking-tight">別件での質問ですか？</h3>
+            <p class="text-xs text-base-content/60 mb-6">
+                同じ質問内容で解決しなかった場合は、「いいえ」を選択してください
+            </p>
+            <div class="modal-action">
+                <button type="button" class="btn btn-outline font-bold" @click="confirmNewQuestionNo()"
+                    :disabled="reopeningQuestion">
+                    <span class="loading loading-spinner loading-sm" x-show="reopeningQuestion"></span>
+                    いいえ
+                </button>
+                <button type="button" class="btn btn-primary font-bold" @click="confirmNewQuestionYes()"
+                    :disabled="reopeningQuestion">はい</button>
+            </div>
+        </div>
+        <div class="modal-backdrop bg-opacity-100" @click="closeNewQuestionModal()"></div>
     </div>
 
     {{template "tag-picker-modal" .}}
