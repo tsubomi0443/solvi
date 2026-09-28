@@ -32,11 +32,10 @@
                 <div
                     class="mb-4 flex flex-col gap-3 rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm xl:flex-row xl:items-end">
                     <div class="w-full shrink-0 xl:w-56">
-                        <input type="search" class="input input-bordered w-full"
-                            placeholder="キーワードで絞り込み" x-model="filter">
+                        <input type="search" class="input input-bordered w-full" placeholder="キーワードで絞り込み"
+                            x-model="filter">
                     </div>
-                    <div
-                        class="grid min-w-0 flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
+                    <div class="grid min-w-0 flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-3">
                         <div class="form-control min-w-0">
                             <label class="label py-1">
                                 <span class="label-text text-xs">ソート</span>
@@ -240,8 +239,8 @@
                                     <div class="min-w-0 flex-1">
                                         <p class="truncate text-xs text-base-content/60"
                                             x-text="q.questionUserDepartment"></p>
-                                        <p class="truncate text-xs text-base-content/60"
-                                            x-text="q.questionUserName"></p>
+                                        <p class="truncate text-xs text-base-content/60" x-text="q.questionUserName">
+                                        </p>
                                     </div>
                                 </div>
                                 <div class="flex flex-col gap-1">
