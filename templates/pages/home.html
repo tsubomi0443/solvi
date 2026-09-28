@@ -15,51 +15,51 @@
         <div class="flex min-w-0 flex-1 min-h-0 flex-col">
             {{template "header" dict "Breadcrumb" "質問一覧" "User" .User}}
             <main class="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
-                <div class="mb-4 flex flex-wrap justify-end gap-4 w-full">
-                    <div class="flex items-center gap-2 w-full justify-between">
-                        <div class="join flex flex-wrap w-full justify-start">
-                            <button type="button" class="btn btn-sm join-item"
-                                :class="viewMode === 'table' ? 'btn-active' : 'btn-outline'"
-                                @click="setViewMode('table')">表</button>
-                            <button type="button" class="btn btn-sm join-item"
-                                :class="viewMode === 'card' ? 'btn-active' : 'btn-outline'"
-                                @click="setViewMode('card')">カード</button>
-                        </div>
-                        <a href="/questions/new" class="btn btn-primary btn-sm">
-                            <i data-lucide="plus" class="h-4 w-4"></i> 新規質問
-                        </a>
+                <div class="mb-4 flex w-full flex-wrap items-center justify-between gap-3">
+                    <div class="join">
+                        <button type="button" class="btn btn-sm join-item"
+                            :class="viewMode === 'table' ? 'btn-active' : 'btn-outline'"
+                            @click="setViewMode('table')">表</button>
+                        <button type="button" class="btn btn-sm join-item"
+                            :class="viewMode === 'card' ? 'btn-active' : 'btn-outline'"
+                            @click="setViewMode('card')">カード</button>
                     </div>
+                    <a href="/questions/new" class="btn btn-primary btn-sm shrink-0">
+                        <i data-lucide="plus" class="h-4 w-4"></i> 新規質問
+                    </a>
                 </div>
 
                 <div
-                    class="flex flex-row justify-around mb-4 flex-wrap items-end gap-3 rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
-                    <div class="flex-1">
-                        <input type="search" class="input input-bordered w-full min-w-full max-w-xs"
+                    class="mb-4 flex flex-col gap-3 rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm xl:flex-row xl:items-end">
+                    <div class="w-full shrink-0 xl:w-56">
+                        <input type="search" class="input input-bordered w-full"
                             placeholder="キーワードで絞り込み" x-model="filter">
                     </div>
-                    <div class="flex justify-end w-2/3 flex-row items-end gap-3">
-                        <div class="form-control min-w-[8rem]">
+                    <div
+                        class="grid min-w-0 flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
+                        <div class="form-control min-w-0">
                             <label class="label py-1">
                                 <span class="label-text text-xs">ソート</span>
                             </label>
-                            <select class="select select-bordered select-sm w-full" x-model="sortDir">
+                            <select class="select select-bordered select-sm w-full max-w-full" x-model="sortDir">
                                 <option value="due.asc">期日（昇順）</option>
                                 <option value="due.desc">期日（降順）</option>
                                 <option value="created.asc">作成日（昇順）</option>
                                 <option value="created.desc">作成日（降順）</option>
                             </select>
                         </div>
-                        <div class="form-control min-w-[8rem]">
+                        <div class="form-control min-w-0">
                             <label class="label py-1">
                                 <span class="label-text text-xs">回答期日</span>
                             </label>
-                            <div class="dropdown">
+                            <div class="dropdown w-full">
                                 <div tabindex="0" role="button"
-                                    class="select select-bordered select-sm flex w-full min-w-[8rem] items-center justify-between">
-                                    <span x-text="selectedDues.length ? selectedDues.length + '件選択' : 'すべて'"></span>
+                                    class="select select-bordered select-sm flex w-full items-center justify-between gap-2">
+                                    <span class="truncate"
+                                        x-text="selectedDues.length ? selectedDues.length + '件選択' : 'すべて'"></span>
                                 </div>
                                 <ul tabindex="0"
-                                    class="dropdown-content menu z-10 mt-1 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+                                    class="dropdown-content menu z-10 mt-1 w-full min-w-52 max-w-[calc(100vw-2rem)] rounded-box border border-base-300 bg-base-100 p-2 shadow">
                                     <template x-for="due in availableDues()" :key="due">
                                         <li>
                                             <label class="flex cursor-pointer items-center gap-2 px-2 py-1">
@@ -72,18 +72,18 @@
                                 </ul>
                             </div>
                         </div>
-                        <div class="form-control min-w-[8rem]">
+                        <div class="form-control min-w-0">
                             <label class="label py-1">
                                 <span class="label-text text-xs">ステータス</span>
                             </label>
-                            <div class="dropdown">
+                            <div class="dropdown w-full">
                                 <div tabindex="0" role="button"
-                                    class="select select-bordered select-sm flex w-full min-w-[8rem] items-center justify-between">
-                                    <span
+                                    class="select select-bordered select-sm flex w-full items-center justify-between gap-2">
+                                    <span class="truncate"
                                         x-text="selectedStatuses.length ? selectedStatuses.length + '件選択' : 'すべて'"></span>
                                 </div>
                                 <ul tabindex="0"
-                                    class="dropdown-content menu z-10 mt-1 w-52 rounded-box border border-base-300 bg-base-100 p-2 shadow">
+                                    class="dropdown-content menu z-10 mt-1 w-full min-w-52 max-w-[calc(100vw-2rem)] rounded-box border border-base-300 bg-base-100 p-2 shadow">
                                     <template x-for="opt in statusOptions" :key="opt.value">
                                         <li>
                                             <label class="flex cursor-pointer items-center gap-2 px-2 py-1">
@@ -97,33 +97,34 @@
                                 </ul>
                             </div>
                         </div>
-                        <div class="form-control min-w-[8rem]">
+                        <div class="form-control min-w-0">
                             <label class="label py-1">
                                 <span class="label-text text-xs">対応種別</span>
                             </label>
-                            <select class="select select-bordered select-sm w-full" x-model="supportKind">
+                            <select class="select select-bordered select-sm w-full max-w-full" x-model="supportKind">
                                 <option value="all">すべて</option>
                                 <option value="human">人対応のみ</option>
                                 <option value="ai">AI対応のみ</option>
                             </select>
                         </div>
-                        <div class="form-control min-w-[8rem]" x-show="availableTags().length > 0">
+                        <div class="form-control min-w-0" x-show="availableTags().length > 0">
                             <label class="label py-1">
                                 <span class="label-text text-xs">タグ</span>
                             </label>
-                            <div class="dropdown">
+                            <div class="dropdown w-full">
                                 <div tabindex="0" role="button"
-                                    class="select select-bordered select-sm flex w-full min-w-[8rem] items-center justify-between">
-                                    <span x-text="selectedTags.length ? selectedTags.length + '件選択' : 'すべて'"></span>
+                                    class="select select-bordered select-sm flex w-full items-center justify-between gap-2">
+                                    <span class="truncate"
+                                        x-text="selectedTags.length ? selectedTags.length + '件選択' : 'すべて'"></span>
                                 </div>
                                 <ul tabindex="0"
-                                    class="dropdown-content menu z-10 mt-1 w-52 max-h-60 overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow">
+                                    class="dropdown-content menu z-10 mt-1 max-h-60 w-full min-w-52 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow">
                                     <template x-for="tag in availableTags()" :key="tag">
                                         <li>
                                             <label class="flex cursor-pointer items-center gap-2 px-2 py-1">
                                                 <input type="checkbox" class="checkbox checkbox-sm"
                                                     :checked="selectedTags.includes(tag)" @change="toggleTag(tag)">
-                                                <span class="text-sm" x-text="tag"></span>
+                                                <span class="min-w-0 break-all text-sm" x-text="tag"></span>
                                             </label>
                                         </li>
                                     </template>
@@ -134,7 +135,7 @@
                 </div>
 
                 <div x-show="viewMode === 'table'"
-                    class="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+                    class="max-w-full overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <table class="table">
                         <thead>
                             <tr>
@@ -207,67 +208,56 @@
                     </table>
                 </div>
 
-                <div x-show="viewMode === 'card'" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div x-show="viewMode === 'card'" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     <template x-for="q in visibleQuestions()" :key="q.uuid">
                         <a :href="'/questions/' + q.uuid"
-                            class="card border border-base-300 bg-base-100 shadow-sm transition hover:shadow-md">
-                            <div class="card-body gap-2">
-                                <div class="flex flex-col">
-                                    <div class="flex flex-1 justify-between align-middle">
-                                        <div class="flex flex-1 gap-1">
-                                            <span class="text-xs text-base-content/60">質問日時</span>
-                                            <span class="text-xs text-base-content/60"
-                                                x-text="q.createdDate + ' ' + q.createdTime"></span>
-                                        </div>
-                                        <div>
-                                            <span class="badge badge-sm" :class="statusBadge(q.supportStatus)"
-                                                x-text="statusLabel(q.supportStatus)"></span>
-                                        </div>
+                            class="card min-w-0 border border-base-300 bg-base-100 shadow-sm transition hover:shadow-md">
+                            <div class="card-body gap-3">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <div class="flex min-w-0 flex-wrap gap-x-1">
+                                        <span class="text-xs text-base-content/60">質問日時</span>
+                                        <span class="text-xs text-base-content/60"
+                                            x-text="q.createdDate + ' ' + q.createdTime"></span>
                                     </div>
-                                    <div class="flex items-start justify-between gap-2">
-                                        <h2 class="card-title text-base" x-text="q.title"></h2>
-                                    </div>
+                                    <span class="badge badge-sm shrink-0" :class="statusBadge(q.supportStatus)"
+                                        x-text="statusLabel(q.supportStatus)"></span>
                                 </div>
-                                <div class="flex flex-1 h-12" x-text="showContentFirstLine(q.content)">質問の本文（１行目）が表示
-                                </div>
-                                <div class="flex flex-1 gap-2 align-middle justify-between">
-                                    <div class="flex gap-2 w-1/2" x-data="{ icon: '' }"
-                                        x-init="icon = await userIcon(q.questionUserUUID)">
-                                        <span
-                                            class="h-10 w-10 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-content">
-                                            <template x-if="!icon || icon === ''">
-                                                <span x-text="initial(q.questionUserName)"></span>
-                                            </template>
-                                            <template x-if="icon || icon !== ''">
-                                                <div class="w-full h-full mask mask-circle">
-                                                    <img :src="icon" :alt="q.questionUserName"
-                                                        class="w-full h-full object-cover">
-                                                </div>
-                                            </template>
-                                        </span>
-                                        <div class="flex flex-1 flex-col gap-1 w-1/2">
-                                            <span class="text-xs text-base-content/60"
-                                                x-text="q.questionUserDepartment"></span>
-                                            <span class="text-xs text-base-content/60"
-                                                x-text="q.questionUserName"></span>
-                                        </div>
+                                <h2 class="card-title break-words text-base" x-text="q.title"></h2>
+                                <p class="line-clamp-2 min-h-10 break-words text-sm text-base-content/80"
+                                    x-text="showContentFirstLine(q.content)"></p>
+                                <div class="flex min-w-0 items-center gap-2" x-data="{ icon: '' }"
+                                    x-init="icon = await userIcon(q.questionUserUUID)">
+                                    <span
+                                        class="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-xs font-semibold text-primary-content">
+                                        <template x-if="!icon">
+                                            <span x-text="initial(q.questionUserName)"></span>
+                                        </template>
+                                        <template x-if="icon">
+                                            <img :src="icon" :alt="q.questionUserName"
+                                                class="h-full w-full object-cover">
+                                        </template>
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-xs text-base-content/60"
+                                            x-text="q.questionUserDepartment"></p>
+                                        <p class="truncate text-xs text-base-content/60"
+                                            x-text="q.questionUserName"></p>
                                     </div>
                                 </div>
-                                <div class="flex flex-col flex-1 gap-1">
+                                <div class="flex flex-col gap-1">
                                     <template x-if="q.isRequireHumanSupport && (isSupporter || isAdmin)">
-                                        <span class="text-xs text-warning text-right"
-                                            :text="isSupporter ? '人的対応が必要':'担当者による回答を希望'">
-                                            人的対応が必要</span>
+                                        <span class="text-right text-xs text-warning">人的対応が必要</span>
                                     </template>
                                     <template x-if="q.tags && q.tags.length > 0">
-                                        <div class="flex flex-1 gap-1 w-full justify-end">
+                                        <div class="flex flex-wrap justify-end gap-1">
                                             <template x-for="tag in (q.tags || [])" :key="tag">
-                                                <span class="badge badge-outline badge-sm" x-text="tag"></span>
+                                                <span class="badge badge-outline badge-sm max-w-full break-all"
+                                                    x-text="tag"></span>
                                             </template>
                                         </div>
                                     </template>
                                 </div>
-                                <div class="flex flex-1 justify-end align-bottom gap-2 h-4">
+                                <div class="mt-auto flex flex-wrap items-center justify-end gap-2">
                                     <span class="text-xs text-base-content/50">回答期日</span>
                                     <span class="text-xs text-base-content/60" x-text="formatDue(q.answerDue)"></span>
                                 </div>
