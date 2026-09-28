@@ -333,8 +333,8 @@ document.addEventListener("alpine:init", () => {
         },
 
         chatBubbleClass(kind) {
-            if (kind === "memo") return "chat-bubble-accent";
             if (kind === "content") return "chat-bubble-secondary";
+            if (kind === "answer") return "chat-bubble-primary";
             return "";
         },
 

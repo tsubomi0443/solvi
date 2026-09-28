@@ -113,7 +113,7 @@
                                                         <span x-text="item.userName"></span>
                                                         <time class="ml-2" x-text="formatDate(item.createdAt)"></time>
                                                     </div>
-                                                    <div class="chat-bubble whitespace-pre-wrap text-sm leading-relaxed"
+                                                    <div class="chat-bubble whitespace-pre-wrap text-sm leading-relaxed text-base-content bg-base-100"
                                                         :class="chatBubbleClass(item.kind)" x-text="item.content"></div>
                                                     <template x-if="item.refers && item.refers.length">
                                                         <div class="chat-footer w-full max-w-md">
@@ -220,8 +220,9 @@
                                 </div>
                             </template>
                             <template x-if="!isAdmin || (isAdmin && (isSupporter || isMyselfQuestion ))">
-                                <textarea class=" textarea textarea-bordered mb-3 w-full text-sm" rows="3"
-                                    x-model=" composerText" placeholder="メッセージを入力..."></textarea>
+                                <textarea
+                                    class=" textarea textarea-bordered mb-3 w-full text-sm placeholder-base-content/60"
+                                    rows="3" x-model=" composerText" placeholder="メッセージを入力..."></textarea>
                             </template>
                             <div class="flex flex-wrap justify-between gap-2">
                                 <button type="button" class="btn btn-sm btn-outline gap-1" x-show="isSupporter"
@@ -324,7 +325,8 @@
                                     </div>
                                     <template x-if="isSupporter || isAdmin">
                                         <div class="flex gap-2">
-                                            <input type="text" class="input input-bordered input-sm min-w-0 flex-1"
+                                            <input type="text"
+                                                class="input input-bordered input-sm min-w-0 flex-1 placeholder-base-content/60"
                                                 x-model="newTag" placeholder="タグを追加" @keydown.enter.prevent="addTag()"
                                                 :disabled="savingMeta">
                                             <button type="button" class="btn btn-outline btn-sm shrink-0"
@@ -462,7 +464,7 @@
     </div>
 
     <div class="modal backdrop-blur-sm" :class="{'modal-open': showDoneModal}">
-        <div class="modal-box bg-white rounded-2xl shadow-2xl max-w-xl">
+        <div class="modal-box rounded-2xl shadow-2xl max-w-xl">
             <h3 class="font-bold text-lg mb-3 tracking-tight">対応完了の確認</h3>
             <p class="text-sm text-base-content/70 mb-4">
                 対応完了の要約と、実際に活用した引用情報を確認してください。
@@ -505,7 +507,7 @@
             <div class="modal-action">
                 <button type="button" class="btn btn-ghost font-bold" @click="closeDoneModal()"
                     :disabled="submittingDone">キャンセル</button>
-                <button type="button" class="btn btn-success font-bold text-white" @click="submitDone()"
+                <button type="button" class="btn btn-primary font-bold text-white" @click="submitDone()"
                     :disabled="!canSubmitDone()">
                     <span class="loading loading-spinner loading-sm" x-show="submittingDone"></span>
                     完了へと変更
