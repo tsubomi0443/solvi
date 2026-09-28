@@ -29,8 +29,8 @@
                 <div
                     class="mb-4 flex flex-col gap-3 rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm xl:flex-row xl:items-end">
                     <div class="w-full shrink-0 xl:w-72">
-                        <input type="search" class="input input-bordered w-full"
-                            placeholder="キーワードで絞り込み（タイトル・質問・回答）" x-model="filter">
+                        <input type="search" class="input input-bordered w-full" placeholder="キーワードで絞り込み（タイトル・質問・回答）"
+                            x-model="filter">
                     </div>
                     <div class="form-control min-w-0 flex-1" x-show="availableTags().length > 0">
                         <label class="label py-1">
@@ -216,8 +216,7 @@
             <h3 class="text-lg font-bold">FAQを削除</h3>
             <p class="py-4 text-sm">このFAQ要約を削除します。元の質問データは残ります。</p>
             <div class="modal-action">
-                <button type="button" class="btn btn-ghost" @click="closeDeleteModal()"
-                    :disabled="deleting">取消</button>
+                <button type="button" class="btn btn-ghost" @click="closeDeleteModal()" :disabled="deleting">取消</button>
                 <button type="button" class="btn btn-error font-bold" @click="confirmDelete()" :disabled="deleting">
                     <span x-show="deleting" class="loading loading-spinner loading-sm"></span>
                     削除
