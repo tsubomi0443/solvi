@@ -42,6 +42,7 @@ document.addEventListener("alpine:init", () => {
         showMemoList: false,
         hideChatRefers: false,
         hideChatMemos: false,
+        metaPanelOpen: false,
         referRows: [{ name: "", url: "" }],
         savingRefers: false,
         deleteTarget: null,
@@ -364,6 +365,27 @@ document.addEventListener("alpine:init", () => {
             return new Intl.DateTimeFormat("en-CA", {
                 timeZone: "Asia/Tokyo",
             }).format(date);
+        },
+
+        isValidRefers() {
+            return this.referRows.every((refer) => {
+                return refer.name && refer.url && this.validateUrl(refer.url);
+            });
+        },
+
+        validateUrl(value) {
+            if (!value?.trim()) {
+                return false;
+            }
+
+            try {
+                const url = new URL(value);
+                if (["http:", "https:", "file:"].includes(url.protocol)) {
+                    return true;
+                }
+            } catch (_) {}
+
+            return false;
         },
 
         async fetchQuestion() {
