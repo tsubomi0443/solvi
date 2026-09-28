@@ -49,6 +49,18 @@ type SummaryReferenceOutput struct {
 	URL  string `json:"url"`
 }
 
+type SummaryListItemOutput struct {
+	UUID         string                   `json:"uuid"`
+	Title        string                   `json:"title"`
+	Content      string                   `json:"content"`
+	Answer       string                   `json:"answer"`
+	Tags         []string                 `json:"tags"`
+	References   []SummaryReferenceOutput `json:"references"`
+	CreatedAt    string                   `json:"createdAt"`
+	CreatedDate  string                   `json:"createdDate"`
+	CreatedTime  string                   `json:"createdTime"`
+}
+
 type TimelineOutput struct {
 	UUID      string `json:"uuid"`
 	Content   string `json:"content"`

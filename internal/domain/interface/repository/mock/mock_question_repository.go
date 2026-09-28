@@ -651,3 +651,119 @@ func (c *MockQuestionRepositoryUpsertSummaryCall) DoAndReturn(f func(context.Con
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
+
+// ListSummaries mocks base method.
+func (m *MockQuestionRepository) ListSummaries(ctx context.Context) ([]entity.QuestionSummary, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListSummaries", ctx)
+	ret0, _ := ret[0].([]entity.QuestionSummary)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListSummaries indicates an expected call of ListSummaries.
+func (mr *MockQuestionRepositoryMockRecorder) ListSummaries(ctx any) *MockQuestionRepositoryListSummariesCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSummaries", reflect.TypeOf((*MockQuestionRepository)(nil).ListSummaries), ctx)
+	return &MockQuestionRepositoryListSummariesCall{Call: call}
+}
+
+// MockQuestionRepositoryListSummariesCall wrap *gomock.Call
+type MockQuestionRepositoryListSummariesCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockQuestionRepositoryListSummariesCall) Return(arg0 []entity.QuestionSummary, arg1 error) *MockQuestionRepositoryListSummariesCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockQuestionRepositoryListSummariesCall) Do(f func(context.Context) ([]entity.QuestionSummary, error)) *MockQuestionRepositoryListSummariesCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockQuestionRepositoryListSummariesCall) DoAndReturn(f func(context.Context) ([]entity.QuestionSummary, error)) *MockQuestionRepositoryListSummariesCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// ListTagsByQuestionIDs mocks base method.
+func (m *MockQuestionRepository) ListTagsByQuestionIDs(ctx context.Context, questionIDs []uint) (map[uint][]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListTagsByQuestionIDs", ctx, questionIDs)
+	ret0, _ := ret[0].(map[uint][]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListTagsByQuestionIDs indicates an expected call of ListTagsByQuestionIDs.
+func (mr *MockQuestionRepositoryMockRecorder) ListTagsByQuestionIDs(ctx, questionIDs any) *MockQuestionRepositoryListTagsByQuestionIDsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListTagsByQuestionIDs", reflect.TypeOf((*MockQuestionRepository)(nil).ListTagsByQuestionIDs), ctx, questionIDs)
+	return &MockQuestionRepositoryListTagsByQuestionIDsCall{Call: call}
+}
+
+// MockQuestionRepositoryListTagsByQuestionIDsCall wrap *gomock.Call
+type MockQuestionRepositoryListTagsByQuestionIDsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockQuestionRepositoryListTagsByQuestionIDsCall) Return(arg0 map[uint][]string, arg1 error) *MockQuestionRepositoryListTagsByQuestionIDsCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockQuestionRepositoryListTagsByQuestionIDsCall) Do(f func(context.Context, []uint) (map[uint][]string, error)) *MockQuestionRepositoryListTagsByQuestionIDsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockQuestionRepositoryListTagsByQuestionIDsCall) DoAndReturn(f func(context.Context, []uint) (map[uint][]string, error)) *MockQuestionRepositoryListTagsByQuestionIDsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// SoftDeleteSummaryByUUID mocks base method.
+func (m *MockQuestionRepository) SoftDeleteSummaryByUUID(ctx context.Context, uuid string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SoftDeleteSummaryByUUID", ctx, uuid)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SoftDeleteSummaryByUUID indicates an expected call of SoftDeleteSummaryByUUID.
+func (mr *MockQuestionRepositoryMockRecorder) SoftDeleteSummaryByUUID(ctx, uuid any) *MockQuestionRepositorySoftDeleteSummaryByUUIDCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SoftDeleteSummaryByUUID", reflect.TypeOf((*MockQuestionRepository)(nil).SoftDeleteSummaryByUUID), ctx, uuid)
+	return &MockQuestionRepositorySoftDeleteSummaryByUUIDCall{Call: call}
+}
+
+// MockQuestionRepositorySoftDeleteSummaryByUUIDCall wrap *gomock.Call
+type MockQuestionRepositorySoftDeleteSummaryByUUIDCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockQuestionRepositorySoftDeleteSummaryByUUIDCall) Return(arg0 error) *MockQuestionRepositorySoftDeleteSummaryByUUIDCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockQuestionRepositorySoftDeleteSummaryByUUIDCall) Do(f func(context.Context, string) error) *MockQuestionRepositorySoftDeleteSummaryByUUIDCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockQuestionRepositorySoftDeleteSummaryByUUIDCall) DoAndReturn(f func(context.Context, string) error) *MockQuestionRepositorySoftDeleteSummaryByUUIDCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}

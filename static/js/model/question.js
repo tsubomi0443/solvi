@@ -98,6 +98,47 @@ export class QuestionSummary {
     }
 }
 
+export class SummaryListItem {
+    constructor({
+        uuid = "",
+        title = "",
+        content = "",
+        answer = "",
+        tags = [],
+        references = [],
+        createdAt = "",
+        createdDate = "",
+        createdTime = "",
+    } = {}) {
+        this.uuid = uuid;
+        this.title = title;
+        this.content = content;
+        this.answer = answer;
+        this.tags = tags;
+        this.references = references;
+        this.createdAt = createdAt;
+        this.createdDate = createdDate;
+        this.createdTime = createdTime;
+    }
+
+    static fromJSON(dto) {
+        if (!dto) return new SummaryListItem();
+        return new SummaryListItem({
+            uuid: dto.uuid ?? "",
+            title: dto.title ?? "",
+            content: dto.content ?? "",
+            answer: dto.answer ?? "",
+            tags: Array.isArray(dto.tags) ? dto.tags.slice() : [],
+            references: (dto.references || []).map((r) =>
+                QuestionSummaryReference.fromJSON(r),
+            ),
+            createdAt: dto.createdAt ?? "",
+            createdDate: dto.createdDate ?? "",
+            createdTime: dto.createdTime ?? "",
+        });
+    }
+}
+
 export class QuestionListItem {
     constructor({
         uuid = "",

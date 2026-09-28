@@ -107,8 +107,38 @@ func TestQuestionRepository_Integration(t *testing.T) {
 	}
 
 	// 8. UpsertSummary (update branch)
-	if err := qRepo.UpsertSummary(ctx, question.ID, "New Summary Title", "New Content", "New Answer", summaryRefs); err != nil {
+	upsertRefs := []entity.QuestionSummaryReference{
+		{Name: "Ref A", URL: "http://ref-a"},
+	}
+	if err := qRepo.UpsertSummary(ctx, question.ID, "New Summary Title", "New Content", "New Answer", upsertRefs); err != nil {
 		t.Fatalf("UpsertSummary update failed: %v", err)
+	}
+
+	// 8b. ReplaceTags and ListSummaries / ListTagsByQuestionIDs
+	tagsWithNames := []entity.QuestionTag{{Name: "FAQTag", QuestionID: question.ID}}
+	if err := qRepo.ReplaceTags(ctx, question.ID, tagsWithNames); err != nil {
+		t.Fatalf("ReplaceTags for summary test failed: %v", err)
+	}
+	summaries, err := qRepo.ListSummaries(ctx)
+	if err != nil || len(summaries) == 0 {
+		t.Fatalf("ListSummaries failed: %v, len: %d", err, len(summaries))
+	}
+	tagMap, err := qRepo.ListTagsByQuestionIDs(ctx, []uint{question.ID})
+	if err != nil || len(tagMap[question.ID]) != 1 || tagMap[question.ID][0] != "FAQTag" {
+		t.Fatalf("ListTagsByQuestionIDs failed: %v, map: %+v", err, tagMap)
+	}
+	summaryUUID := summaries[0].UUID.String()
+	if err := qRepo.SoftDeleteSummaryByUUID(ctx, summaryUUID); err != nil {
+		t.Fatalf("SoftDeleteSummaryByUUID failed: %v", err)
+	}
+	afterDelete, err := qRepo.ListSummaries(ctx)
+	if err != nil {
+		t.Fatalf("ListSummaries after delete failed: %v", err)
+	}
+	for _, s := range afterDelete {
+		if s.UUID.String() == summaryUUID {
+			t.Fatal("deleted summary still listed")
+		}
 	}
 
 	// 9. Soft deletes

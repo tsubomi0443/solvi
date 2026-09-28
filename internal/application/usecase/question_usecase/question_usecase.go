@@ -352,6 +352,46 @@ func (uc *QuestionUsecase) DeleteRefer(ctx context.Context, actorID uint, isSupp
 	return nil
 }
 
+func (uc *QuestionUsecase) ListSummaries(ctx context.Context) ([]outputmodel.SummaryListItemOutput, error) {
+	const op = opQuestion + ".ListSummaries"
+	logutils.Debug(ctx, logutils.LayerUsecase, op, "処理開始")
+	summaries, err := uc.questionRepo.ListSummaries(ctx)
+	if err != nil {
+		usecase.LogRepoPropagation(ctx, op, "要約一覧取得失敗", err)
+		return nil, err
+	}
+	questionIDs := make([]uint, 0, len(summaries))
+	for _, s := range summaries {
+		questionIDs = append(questionIDs, s.QuestionID)
+	}
+	tagMap, err := uc.questionRepo.ListTagsByQuestionIDs(ctx, questionIDs)
+	if err != nil {
+		usecase.LogRepoPropagation(ctx, op, "タグ取得失敗", err)
+		return nil, err
+	}
+	out := make([]outputmodel.SummaryListItemOutput, 0, len(summaries))
+	for i := range summaries {
+		out = append(out, converter.QuestionSummaryToListItem(&summaries[i], tagMap[summaries[i].QuestionID]))
+	}
+	logutils.Debug(ctx, logutils.LayerUsecase, op, "処理完了", slog.Int("count", len(out)))
+	return out, nil
+}
+
+func (uc *QuestionUsecase) DeleteSummary(ctx context.Context, isAdmin bool, uuid string) error {
+	const op = opQuestion + ".DeleteSummary"
+	logutils.Debug(ctx, logutils.LayerUsecase, op, "処理開始", slog.String("summary_uuid", uuid))
+	if !isAdmin {
+		usecase.LogBusinessWarn(ctx, op, "権限なし", fmt.Errorf("権限がありません"), slog.String("summary_uuid", uuid))
+		return fmt.Errorf("権限がありません")
+	}
+	if err := uc.questionRepo.SoftDeleteSummaryByUUID(ctx, uuid); err != nil {
+		usecase.LogRepoPropagation(ctx, op, "要約削除失敗", err, slog.String("summary_uuid", uuid))
+		return err
+	}
+	logutils.Info(ctx, logutils.LayerUsecase, op, "要約削除成功", slog.String("summary_uuid", uuid))
+	return nil
+}
+
 func (uc *QuestionUsecase) Delete(ctx context.Context, isAdmin bool, uuid string) error {
 	const op = opQuestion + ".Delete"
 	logutils.Debug(ctx, logutils.LayerUsecase, op, "処理開始", slog.String("question_uuid", uuid))

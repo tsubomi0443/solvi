@@ -44,6 +44,7 @@ func (h *Handler) baseData(c *echo.Context, active string) map[string]interface{
 	claims := authctx.Claims(c)
 	nav := []NavItem{
 		{Href: "/", Label: navHomeLabel(claims.IsSupporter || claims.IsAdmin), Icon: "message-circle-question", Active: active == "home"},
+		{Href: "/faq", Label: "FAQ", Icon: "book-open", Active: active == "faq"},
 		{Href: "/setting", Label: "プロフィール", Icon: "user", Active: active == "setting"},
 	}
 	if claims.IsSupporter {
