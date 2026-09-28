@@ -15,12 +15,6 @@ function statusBadge(s) {
     );
 }
 
-const STATUS_OPTIONS = [
-    { value: "pending", label: "未対応" },
-    { value: "supporting", label: "対応中" },
-    { value: "done", label: "完了" },
-];
-
 document.addEventListener("alpine:init", () => {
     Alpine.data("solviDetail", () => ({
         question: {},
@@ -35,7 +29,6 @@ document.addEventListener("alpine:init", () => {
         editAnswerDue: "",
         editRequireHuman: false,
         newTag: "",
-        statusOptions: STATUS_OPTIONS,
         savingMeta: false,
         showScrollToBottom: false,
         chatAtBottom: true,
