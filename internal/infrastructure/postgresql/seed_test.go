@@ -32,8 +32,20 @@ func TestSeed_CreatesAndIdempotent(t *testing.T) {
 		t.Fatal("expected admin user to be created")
 	}
 
+	if err := db.Model(&entity.User{}).Where("email = ?", "admin@solvi.local").Update("is_admin", false).Error; err != nil {
+		t.Fatal(err)
+	}
+
 	// 2回目の実行（冪等性確認）
 	if err := postgresql.Seed(db); err != nil {
 		t.Fatalf("Second Seed run failed: %v", err)
+	}
+
+	var user entity.User
+	if err := db.Model(&entity.User{}).Where("email = ?", "admin@solvi.local").First(&user).Error; err != nil {
+		t.Fatal(err)
+	}
+	if user.IsAdmin != false {
+		t.Fatalf("Second Seed is_admin is not false")
 	}
 }

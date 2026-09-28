@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"solvi/internal/application/converter"
-	"solvi/internal/application/usecase"
 	outputmodel "solvi/internal/application/model/output_model"
+	"solvi/internal/application/usecase"
 	"solvi/internal/domain/entity"
 	ext "solvi/internal/domain/interface/external"
 	repo "solvi/internal/domain/interface/repository"
@@ -61,9 +61,6 @@ func (uc *AuthUsecase) LoginLDAP(ctx context.Context, email, password string) (s
 		}
 		logutils.Debug(ctx, logutils.LayerUsecase, op, "新規ユーザ作成", slog.String("email", ldapUser.Mail))
 		user = &entity.User{Name: ldapUser.Name, Email: ldapUser.Mail, DepartmentName: ldapUser.Department}
-		if shouldBeSupporter(ldapUser.Department) {
-			user.IsSupporter = true
-		}
 		if err := uc.userRepo.Create(ctx, user); err != nil {
 			usecase.LogRepoPropagation(ctx, op, "ユーザ作成失敗", err, slog.String("email", ldapUser.Mail))
 			return "", outputmodel.UserOutput{}, err
@@ -72,9 +69,6 @@ func (uc *AuthUsecase) LoginLDAP(ctx context.Context, email, password string) (s
 		logutils.Debug(ctx, logutils.LayerUsecase, op, "既存ユーザ更新", slog.Uint64("user_id", uint64(user.ID)))
 		user.Name = ldapUser.Name
 		user.DepartmentName = ldapUser.Department
-		if !user.IsSupporterOverridden && shouldBeSupporter(ldapUser.Department) {
-			user.IsSupporter = true
-		}
 		if err := uc.userRepo.Update(ctx, user); err != nil {
 			usecase.LogRepoPropagation(ctx, op, "ユーザ更新失敗", err, slog.Uint64("user_id", uint64(user.ID)))
 			return "", outputmodel.UserOutput{}, err

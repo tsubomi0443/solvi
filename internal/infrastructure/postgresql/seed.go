@@ -46,16 +46,5 @@ func Seed(db *gorm.DB) error {
 		slog.Info("seeded admin user", "email", adminEmail)
 	}
 
-	if err := db.Model(&entity.User{}).
-		Where("email = ? AND is_admin = ?", adminEmail, false).
-		Update("is_admin", true).Error; err != nil {
-		return err
-	}
-	if err := db.Model(&entity.User{}).
-		Where("password IS NOT NULL AND password <> '' AND is_admin = ?", false).
-		Update("is_admin", true).Error; err != nil {
-		return err
-	}
-
 	return nil
 }
