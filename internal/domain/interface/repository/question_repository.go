@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"solvi/internal/domain/entity"
+	"solvi/internal/domain/entity/lineworks"
 )
 
 //go:generate go tool mockgen -typed -source=$GOFILE -destination=mock/mock_$GOFILE -package=mock
@@ -28,4 +29,8 @@ type QuestionRepository interface {
 	ListSummaries(ctx context.Context) ([]entity.QuestionSummary, error)
 	ListTagsByQuestionIDs(ctx context.Context, questionIDs []uint) (map[uint][]string, error)
 	SoftDeleteSummaryByUUID(ctx context.Context, uuid string) error
+	CreateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error
+	UpdateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error
+	CompleteWithNotification(ctx context.Context, question *entity.Question, summaryTitle, summaryContent, summaryAnswer string, refs []entity.QuestionSummaryReference, notice *lineworks.Notification) error
+	AddContentWithReopenAggregate(ctx context.Context, content *entity.QuestionContent, followUp *lineworks.ReopenFollowUp) error
 }

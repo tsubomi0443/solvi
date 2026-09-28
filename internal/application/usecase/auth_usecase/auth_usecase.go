@@ -60,7 +60,7 @@ func (uc *AuthUsecase) LoginLDAP(ctx context.Context, email, password string) (s
 			return "", outputmodel.UserOutput{}, err
 		}
 		logutils.Debug(ctx, logutils.LayerUsecase, op, "新規ユーザ作成", slog.String("email", ldapUser.Mail))
-		user = &entity.User{Name: ldapUser.Name, Email: ldapUser.Mail, DepartmentName: ldapUser.Department}
+		user = &entity.User{Name: ldapUser.Name, Email: ldapUser.Mail, DepartmentName: ldapUser.Department, LineWorksLoginID: ldapUser.UserName}
 		if err := uc.userRepo.Create(ctx, user); err != nil {
 			usecase.LogRepoPropagation(ctx, op, "ユーザ作成失敗", err, slog.String("email", ldapUser.Mail))
 			return "", outputmodel.UserOutput{}, err
@@ -69,6 +69,9 @@ func (uc *AuthUsecase) LoginLDAP(ctx context.Context, email, password string) (s
 		logutils.Debug(ctx, logutils.LayerUsecase, op, "既存ユーザ更新", slog.Uint64("user_id", uint64(user.ID)))
 		user.Name = ldapUser.Name
 		user.DepartmentName = ldapUser.Department
+		if strings.TrimSpace(ldapUser.UserName) != "" {
+			user.LineWorksLoginID = ldapUser.UserName
+		}
 		if err := uc.userRepo.Update(ctx, user); err != nil {
 			usecase.LogRepoPropagation(ctx, op, "ユーザ更新失敗", err, slog.Uint64("user_id", uint64(user.ID)))
 			return "", outputmodel.UserOutput{}, err

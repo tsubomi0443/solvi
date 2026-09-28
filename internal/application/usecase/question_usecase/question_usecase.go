@@ -11,23 +11,48 @@ import (
 	"solvi/internal/application/converter"
 	outputmodel "solvi/internal/application/model/output_model"
 	"solvi/internal/application/usecase"
+	lwuc "solvi/internal/application/usecase/lineworks_usecase"
 	"solvi/internal/domain/entity"
+	"solvi/internal/domain/entity/lineworks"
 	ext "solvi/internal/domain/interface/external"
 	repo "solvi/internal/domain/interface/repository"
 	"solvi/internal/domain/valueobject"
 	"solvi/internal/shared/config"
 	logutils "solvi/internal/shared/logUtils"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 const opQuestion = "question_usecase"
+
+type LineWorksOptions struct {
+	Enabled    bool
+	AppBaseURL string
+	Debounce   time.Duration
+}
 
 type QuestionUsecase struct {
 	questionRepo repo.QuestionRepository
 	userRepo     repo.UserRepository
 	bedrock      ext.BedrockClient
 	onAIAnswer   func(questionUUID string)
+	lineWorks    LineWorksOptions
+}
+
+func (uc *QuestionUsecase) ConfigureLineWorks(opt LineWorksOptions) {
+	uc.lineWorks = opt
+}
+
+func (uc *QuestionUsecase) lineWorksOn() bool {
+	return uc.lineWorks.Enabled && strings.TrimSpace(uc.lineWorks.AppBaseURL) != ""
+}
+
+func (uc *QuestionUsecase) debounce() time.Duration {
+	if uc.lineWorks.Debounce <= 0 {
+		return 2 * time.Minute
+	}
+	return uc.lineWorks.Debounce
 }
 
 func NewQuestionUsecase(q repo.QuestionRepository, u repo.UserRepository, b ext.BedrockClient, onAIAnswer func(string)) *QuestionUsecase {
@@ -101,7 +126,20 @@ func (uc *QuestionUsecase) Create(ctx context.Context, actorID uint, title, cont
 			q.Tags = append(q.Tags, entity.QuestionTag{Name: s})
 		}
 	}
-	if err := uc.questionRepo.Create(ctx, q); err != nil {
+	if uc.lineWorksOn() {
+		asker, err := uc.userRepo.GetByID(ctx, actorID)
+		if err != nil {
+			usecase.LogRepoPropagation(ctx, op, "質問者取得失敗", err, slog.Uint64("actor_id", uint64(actorID)))
+			return nil, err
+		}
+		if q.UUID == uuid.Nil {
+			q.UUID = uuid.New()
+		}
+		if err := uc.questionRepo.CreateWithNotification(ctx, q, uc.receivedNotice(q, asker.Name, content)); err != nil {
+			usecase.LogRepoPropagation(ctx, op, "質問作成失敗", err, slog.Uint64("actor_id", uint64(actorID)))
+			return nil, err
+		}
+	} else if err := uc.questionRepo.Create(ctx, q); err != nil {
 		usecase.LogRepoPropagation(ctx, op, "質問作成失敗", err, slog.Uint64("actor_id", uint64(actorID)))
 		return nil, err
 	}
@@ -155,9 +193,16 @@ func (uc *QuestionUsecase) AppendContent(ctx context.Context, actorID uint, uuid
 		usecase.LogBusinessWarn(ctx, op, "権限なし", fmt.Errorf("権限がありません"), slog.String("question_uuid", uuid), slog.Uint64("actor_id", uint64(actorID)))
 		return fmt.Errorf("権限がありません")
 	}
-	if err := uc.questionRepo.AddContent(ctx, &entity.QuestionContent{Content: content, QuestionUserID: actorID, QuestionID: q.ID}); err != nil {
-		usecase.LogRepoPropagation(ctx, op, "追記失敗", err, slog.String("question_uuid", uuid))
-		return err
+	contentRow := &entity.QuestionContent{Content: content, QuestionUserID: actorID, QuestionID: q.ID}
+	var errAdd error
+	if uc.lineWorksOn() && q.SupportStatus == valueobject.SupportStatusSupporting {
+		errAdd = uc.questionRepo.AddContentWithReopenAggregate(ctx, contentRow, uc.reopenFollowUp(q, content))
+	} else {
+		errAdd = uc.questionRepo.AddContent(ctx, contentRow)
+	}
+	if errAdd != nil {
+		usecase.LogRepoPropagation(ctx, op, "追記失敗", errAdd, slog.String("question_uuid", uuid))
+		return errAdd
 	}
 	logutils.Info(ctx, logutils.LayerUsecase, op, "追記成功", slog.String("question_uuid", uuid), slog.Uint64("actor_id", uint64(actorID)))
 	return nil
@@ -427,6 +472,14 @@ func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, is
 	}
 	if complete {
 		if isSupporter || (!q.IsRequireHumanSupport && q.QuestionUserID == actorID) {
+			if uc.lineWorksOn() && q.SupportStatus != valueobject.SupportStatusDone {
+				if err := uc.completeWithNotice(ctx, q, summary); err != nil {
+					usecase.LogRepoPropagation(ctx, op, "完了更新失敗", err, slog.String("question_uuid", uuid))
+					return err
+				}
+				logutils.Info(ctx, logutils.LayerUsecase, op, "質問完了", slog.String("question_uuid", uuid))
+				return nil
+			}
 			q.SupportStatus = valueobject.SupportStatusDone
 			if err := uc.questionRepo.Update(ctx, q); err != nil {
 				usecase.LogRepoPropagation(ctx, op, "完了更新失敗", err, slog.String("question_uuid", uuid))
@@ -466,6 +519,14 @@ func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, is
 					return fmt.Errorf("権限がありません")
 				}
 				q.SupportStatus = parsed
+				if uc.lineWorksOn() {
+					if err := uc.questionRepo.UpdateWithNotification(ctx, q, uc.reopenNotice(q, latestContent(q))); err != nil {
+						usecase.LogRepoPropagation(ctx, op, "更新失敗", err, slog.String("question_uuid", uuid))
+						return err
+					}
+					logutils.Info(ctx, logutils.LayerUsecase, op, "質問更新成功", slog.String("question_uuid", uuid))
+					return nil
+				}
 				if err := uc.questionRepo.Update(ctx, q); err != nil {
 					usecase.LogRepoPropagation(ctx, op, "更新失敗", err, slog.String("question_uuid", uuid))
 					return err
@@ -517,7 +578,17 @@ func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, is
 				usecase.LogBusinessWarn(ctx, op, "引用未選択", fmt.Errorf("引用を1件以上選択してください"), slog.String("question_uuid", uuid))
 				return fmt.Errorf("引用を1件以上選択してください")
 			}
+			wasDone := q.SupportStatus == valueobject.SupportStatusDone
 			q.SupportStatus = parsed
+			if uc.lineWorksOn() && !wasDone {
+				refs := selectedSummaryRefs(q, summary.ReferUUIDs)
+				if err := uc.questionRepo.CompleteWithNotification(ctx, q, q.Title, strings.TrimSpace(summary.Content), strings.TrimSpace(summary.Answer), refs, uc.answeredNotice(q)); err != nil {
+					usecase.LogRepoPropagation(ctx, op, "更新失敗", err, slog.String("question_uuid", uuid))
+					return err
+				}
+				logutils.Info(ctx, logutils.LayerUsecase, op, "質問完了", slog.String("question_uuid", uuid))
+				return nil
+			}
 			if err := uc.questionRepo.Update(ctx, q); err != nil {
 				usecase.LogRepoPropagation(ctx, op, "更新失敗", err, slog.String("question_uuid", uuid))
 				return err
@@ -610,4 +681,132 @@ func (uc *QuestionUsecase) upsertSummary(ctx context.Context, q *entity.Question
 		}
 	}
 	return uc.questionRepo.UpsertSummary(ctx, full.ID, full.Title, strings.TrimSpace(input.Content), strings.TrimSpace(input.Answer), refs)
+}
+
+func (uc *QuestionUsecase) receivedNotice(q *entity.Question, askerName, content string) *lineworks.Notification {
+	name := strings.TrimSpace(askerName)
+	if name == "" {
+		name = "不明"
+	}
+	link := lwuc.QuestionLink(uc.lineWorks.AppBaseURL, q.UUID.String())
+	return &lineworks.Notification{
+		QuestionUUID:  q.UUID,
+		Event:         valueobject.LineWorksEventReceived,
+		Destination:   valueobject.LineWorksDestinationChannel,
+		Body:          lwuc.ReceivedMessage(q.UUID.String(), name, q.Title, lwuc.Summarize(content), link),
+		Status:        valueobject.LineWorksJobPending,
+		NextAttemptAt: time.Now(),
+	}
+}
+
+func (uc *QuestionUsecase) answeredNotice(q *entity.Question) *lineworks.Notification {
+	link := lwuc.QuestionLink(uc.lineWorks.AppBaseURL, q.UUID.String())
+	notice := &lineworks.Notification{
+		QuestionUUID:     q.UUID,
+		Event:            valueobject.LineWorksEventAnswered,
+		Destination:      valueobject.LineWorksDestinationUser,
+		RecipientLoginID: strings.TrimSpace(q.QuestionUser.LineWorksLoginID),
+		Body:             lwuc.AnsweredMessage(q.UUID.String(), link),
+		Status:           valueobject.LineWorksJobPending,
+		NextAttemptAt:    time.Now(),
+	}
+	if notice.RecipientLoginID == "" {
+		notice.Status = valueobject.LineWorksJobFailed
+		notice.ErrorKind = valueobject.LineWorksErrorRecipientUnresolved
+		notice.LastError = "質問者のLINE WORKSログインIDが未設定です"
+	}
+	return notice
+}
+
+func (uc *QuestionUsecase) reopenNotice(q *entity.Question, comment string) *lineworks.Notification {
+	link := lwuc.QuestionLink(uc.lineWorks.AppBaseURL, q.UUID.String())
+	return &lineworks.Notification{
+		QuestionUUID:  q.UUID,
+		Event:         valueobject.LineWorksEventReopened,
+		Destination:   valueobject.LineWorksDestinationChannel,
+		Body:          lwuc.ReopenedMessage(q.UUID.String(), comment, previousAssigneeName(q), link),
+		Status:        valueobject.LineWorksJobPending,
+		NextAttemptAt: time.Now(),
+	}
+}
+
+func (uc *QuestionUsecase) reopenFollowUp(q *entity.Question, comment string) *lineworks.ReopenFollowUp {
+	return &lineworks.ReopenFollowUp{
+		QuestionUUID: q.UUID,
+		Comment:      comment,
+		Debounce:     uc.debounce(),
+		Template:     *uc.reopenNotice(q, comment),
+	}
+}
+
+func (uc *QuestionUsecase) completeWithNotice(ctx context.Context, q *entity.Question, summary *QuestionSummaryInput) error {
+	q.SupportStatus = valueobject.SupportStatusDone
+	var content, answer string
+	var refs []entity.QuestionSummaryReference
+	if summary != nil {
+		content = strings.TrimSpace(summary.Content)
+		answer = strings.TrimSpace(summary.Answer)
+		refs = selectedSummaryRefs(q, summary.ReferUUIDs)
+	} else {
+		content, answer, refs = summaryFromLoadedQuestion(q)
+	}
+	return uc.questionRepo.CompleteWithNotification(ctx, q, q.Title, content, answer, refs, uc.answeredNotice(q))
+}
+
+func latestContent(q *entity.Question) string {
+	if len(q.Contents) == 0 {
+		return "（コメントなし）"
+	}
+	text := strings.TrimSpace(q.Contents[len(q.Contents)-1].Content)
+	if text == "" {
+		return "（コメントなし）"
+	}
+	return text
+}
+
+func previousAssigneeName(q *entity.Question) string {
+	sys := config.GetSystemUserEmail()
+	name := ""
+	for _, a := range q.Answers {
+		if strings.EqualFold(a.AnswerUser.Email, sys) {
+			continue
+		}
+		if strings.TrimSpace(a.AnswerUser.Name) != "" {
+			name = a.AnswerUser.Name
+		}
+	}
+	if name == "" {
+		return "なし"
+	}
+	return name
+}
+
+func summaryFromLoadedQuestion(q *entity.Question) (string, string, []entity.QuestionSummaryReference) {
+	body := ""
+	for _, c := range q.Contents {
+		body += c.Content + "\n"
+	}
+	answer := ""
+	for _, a := range q.Answers {
+		answer = a.Content
+	}
+	refs := make([]entity.QuestionSummaryReference, 0, len(q.Refers))
+	for _, r := range q.Refers {
+		refs = append(refs, entity.QuestionSummaryReference{Name: r.Name, URL: r.URL})
+	}
+	return strings.TrimSpace(body), strings.TrimSpace(answer), refs
+}
+
+func selectedSummaryRefs(q *entity.Question, referUUIDs []string) []entity.QuestionSummaryReference {
+	refMap := make(map[string]entity.QuestionRefer, len(q.Refers))
+	for _, r := range q.Refers {
+		refMap[r.UUID.String()] = r
+	}
+	refs := make([]entity.QuestionSummaryReference, 0, len(referUUIDs))
+	for _, uid := range referUUIDs {
+		if r, ok := refMap[uid]; ok {
+			refs = append(refs, entity.QuestionSummaryReference{Name: r.Name, URL: r.URL})
+		}
+	}
+	return refs
 }

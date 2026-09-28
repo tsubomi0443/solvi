@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"solvi/internal/domain/entity"
+	"solvi/internal/domain/entity/lineworks"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -42,5 +43,7 @@ func autoMigrateOnce(db *gorm.DB) error {
 		&entity.QuestionRefer{},
 		&entity.QuestionSummary{},
 		&entity.QuestionSummaryReference{},
+		&lineworks.Notification{},
+		&lineworks.NotificationAttempt{},
 	)
 }
