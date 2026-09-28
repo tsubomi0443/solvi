@@ -1,8 +1,44 @@
+{{ define "theme-swatch-svg" }}
+<svg class="h-5 w-5 shrink-0" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="1" y="1" width="18" height="18" rx="4" class="fill-base-100 stroke-base-content/30" stroke-width="1" />
+    <circle cx="6.5" cy="6.5" r="2.25" class="fill-primary" />
+    <circle cx="13.5" cy="6.5" r="2.25" class="fill-neutral" />
+    <circle cx="6.5" cy="13.5" r="2.25" class="fill-secondary" />
+    <circle cx="13.5" cy="13.5" r="2.25" class="fill-accent" />
+</svg>
+{{ end }}
+
 {{ define "theme-select" }}
-<select class="select select-bordered select-sm w-36" aria-label="テーマ"
-    :value="$store.ui.theme" @change="$store.ui.setTheme($event.target.value)">
-    {{ range themes }}
-    <option value="{{ .Value }}">{{ .Label }}</option>
-    {{ end }}
-</select>
+<div x-data="{ open: false }" @keydown.escape.window="open = false">
+    <button type="button" class="btn btn-ghost btn-sm gap-1 border border-base-300" @click="open = true"
+        aria-label="テーマを選択" :aria-expanded="open">
+        {{ template "theme-swatch-svg" . }}
+        <i data-lucide="chevron-down" class="h-4 w-4 opacity-60"></i>
+    </button>
+
+    <div class="modal backdrop-blur-sm" :class="{ 'modal-open': open }" role="dialog" aria-modal="true"
+        aria-labelledby="theme-modal-title">
+        <div class="modal-box relative flex max-h-[85vh] max-w-5xl flex-col rounded-2xl bg-base-100 shadow-2xl">
+            <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" @click="open = false"
+                aria-label="閉じる">✕</button>
+            <h3 id="theme-modal-title" class="pr-10 text-lg font-bold">テーマのリスト</h3>
+            <div
+                class="mt-4 grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 px-1 py-2">
+                {{ range themes }}
+                <button type="button" data-theme="{{ .Value }}"
+                    class="flex flex-col gap-2 rounded-box border border-base-300 bg-base-100 p-3 text-left text-base-content transition hover:border-base-content/20"
+                    :class="$store.ui.theme === '{{ .Value }}' ? 'outline outline-2 outline-offset-2 outline-base-content' : ''"
+                    @click="$store.ui.setTheme('{{ .Value }}')" aria-label="{{ .Label }}">
+                    <span class="text-sm font-medium capitalize">{{ .Label }}</span>
+                    {{ template "theme-swatch-svg" . }}
+                </button>
+                {{ end }}
+            </div>
+            <div class="modal-action mt-4 shrink-0">
+                <button type="button" class="btn" @click="open = false">閉じる</button>
+            </div>
+        </div>
+        <div class="modal-backdrop bg-opacity-100" @click="open = false"></div>
+    </div>
+</div>
 {{ end }}
