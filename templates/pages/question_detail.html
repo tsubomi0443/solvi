@@ -231,7 +231,7 @@
                                     <div tabindex="0" x-show="isDoneStatus()"
                                         class="dropdown-content z-20 mb-0 w-full rounded-xl border border-base-300 bg-base-100 p-4 shadow-lg x-transition">
                                         <p class="text-sm text-base-content/80">
-                                            お手数をおかけしますが、追加の質問は新規に質問を起票してください。
+                                            お手数をおかけしますが、追加の質問は新規に質問を作成してください。
                                         </p>
                                         <template x-if="isMyselfQuestion">
                                             <button type="button" class="btn btn-primary btn-sm mt-3"
@@ -535,9 +535,10 @@
 
     <div class="modal backdrop-blur-sm" :class="{'modal-open': showNewQuestionModal}">
         <div class="modal-box bg-white rounded-2xl shadow-2xl max-w-md">
-            <h3 class="font-bold text-lg mb-4 tracking-tight">別件での質問ですか？</h3>
+            <h3 class="font-bold text-lg mb-4 tracking-tight">問題は解決しましたか？</h3>
             <p class="text-xs text-base-content/60 mb-6">
-                同じ質問内容で解決しなかった場合は、「いいえ」を選択してください
+                別件での質問の場合は、「はい」を選択してください。<br />
+                回答を貰ったが解決しておらず再度問合せをしたい場合は、「いいえ」を選択してください。<br />
             </p>
             <div class="modal-action">
                 <button type="button" class="btn btn-outline font-bold" @click="confirmNewQuestionNo()"
