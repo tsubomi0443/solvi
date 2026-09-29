@@ -11,9 +11,8 @@ services:
         env_file:
             - .env
         volumes:
-            # 画像ファイルのみBindMountで管理する
             - /srv/solvi/uploads:/app/uploads
-            - logs_data:/app/logs
+            - /srv/solvi/logs:/app/logs
         depends_on:
             postgresql:
                 condition: service_healthy
@@ -60,5 +59,3 @@ services:
 volumes:
     postgres_data:
         name: solvi-postgresql-prod-volume
-    logs_data:
-        name: solvi-logs-prod-volume
