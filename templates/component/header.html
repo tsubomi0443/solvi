@@ -13,16 +13,18 @@
         {{ template "theme-select" }}
         <div class="dropdown dropdown-end">
             <button type="button" tabindex="0" class="btn btn-ghost btn-sm gap-2">
+                {{ if or (eq .User.Icon nil) (eq .User.Icon "") }}
                 <span
                     class="grid h-7 w-7 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-content">
-                    {{ if or (eq .User.Icon nil) (eq .User.Icon "") }}
                     {{ if .User.Name }}{{ printf "%.1s" .User.Name }}{{ else }}?{{ end }}
-                    {{ else }}
+                </span>
+                {{ else }}
+                <span class="h-7 w-7 place-items-center rounded-full text-xs font-semibold text-primary-content">
                     <div class="w-full h-full mask mask-circle">
                         <img src="{{ .User.IconBase64 }}" alt="{{ .User.Name }}" class="object-cover w-full h-full">
                     </div>
-                    {{ end }}
                 </span>
+                {{ end }}
                 <span class="hidden sm:inline">{{ .User.Name }}</span>
                 <i data-lucide="chevron-down" class="h-4 w-4 opacity-60"></i>
             </button>
