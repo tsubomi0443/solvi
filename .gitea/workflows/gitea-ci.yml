@@ -1,0 +1,109 @@
+name: Solvi CI/CD
+
+on:
+    push:
+        branches:
+            - "master"
+            - "develop"
+            - "feature/*"
+    pull_request:
+        branches:
+            - "master"
+            - "develop"
+            - "feature/*"
+
+env:
+    DEPLOY_HOST: 192.168.71.27
+    DEPLOY_USER: hr-admin
+    DEPLOY_PATH: /srv/solvi
+
+jobs:
+    # 1. テストフェーズ（Testcontainers 依存の repository / postgresql テストは除外）
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: "stable"
+                  cache: true
+
+            - name: Install dependencies
+              run: go mod download
+
+            - name: Run unit tests
+              run: |
+                  PKGS=$(go list ./... \
+                    | grep -v 'internal/infrastructure/repository' \
+                    | grep -v 'internal/infrastructure/postgresql')
+                  go test -v -race ${PKGS}
+
+    # 2. ビルドフェーズ（テストが成功した時のみ実行）
+    build:
+        runs-on: ubuntu-latest
+        needs: test
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: "stable"
+                  cache: true
+
+            - name: Build application
+              run: go build -v -o ./dist/app ./cmd/app/main.go
+
+    # 3. CD（デプロイ）フェーズ（master への push のみ）
+    deploy:
+        runs-on: ubuntu-latest
+        needs: build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up SSH key
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+                  chmod 600 ~/.ssh/deploy_key
+                  ssh-keyscan -H "${{ env.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+            - name: Sync application files
+              run: |
+                  RSYNC_SSH="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes"
+                  TARGET="${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_PATH }}"
+
+                  for dir in cmd docker frontend internal static templates; do
+                    if [ "$dir" = "frontend" ]; then
+                      rsync -avz --delete \
+                        --exclude 'node_modules' \
+                        -e "$RSYNC_SSH" \
+                        "$dir/" "${TARGET}/${dir}/"
+                    else
+                      rsync -avz --delete \
+                        -e "$RSYNC_SSH" \
+                        "$dir/" "${TARGET}/${dir}/"
+                    fi
+                  done
+
+                  rsync -avz -e "$RSYNC_SSH" \
+                    go.mod go.sum favicon.ico .dockerignore docker-compose.prod.yml \
+                    "${TARGET}/"
+
+            - name: Deploy with Docker Compose
+              run: |
+                  ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes \
+                    "${{ env.DEPLOY_USER }}@${{ env.DEPLOY_HOST }}" << 'EOF'
+                  set -eu
+                  cd /srv/solvi
+                  sudo docker compose -f docker-compose.prod.yml down
+                  sudo docker compose -f docker-compose.prod.yml up -d --build
+                  sudo docker compose -f docker-compose.prod.yml ps
+                  sudo docker compose -f docker-compose.prod.yml ps --status running | grep -q solvi-prod
+                  EOF
