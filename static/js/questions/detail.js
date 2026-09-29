@@ -3,7 +3,12 @@ import { User } from "../model/user.js";
 import { tagPickerState } from "./tag_picker.js";
 
 function statusLabel(s) {
-    return { pending: "未対応", supporting: "対応中", done: "完了" }[s] || s;
+    return {
+        pending: "未対応",
+        supporting: "対応中",
+        done: "完了",
+        not_required: "対応不要",
+    }[s] || s;
 }
 
 function statusBadge(s) {
@@ -12,6 +17,7 @@ function statusBadge(s) {
             pending: "badge-ghost",
             supporting: "badge-warning",
             done: "badge-success",
+            not_required: "badge-neutral",
         }[s] || "badge-ghost"
     );
 }
@@ -59,6 +65,14 @@ document.addEventListener("alpine:init", () => {
 
         isDoneStatus() {
             return this.question.supportStatus === "done";
+        },
+
+        isNotRequiredStatus() {
+            return this.question.supportStatus === "not_required";
+        },
+
+        isInputLocked() {
+            return this.isDoneStatus() || this.isNotRequiredStatus();
         },
 
         openNewQuestionModal() {
@@ -177,7 +191,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         tagPickerDisabled() {
-            return this.savingMeta;
+            return this.savingMeta || this.isNotRequiredStatus();
         },
 
         async applyTagSelection(tags) {
@@ -494,6 +508,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         async saveTitle() {
+            if (this.isNotRequiredStatus()) return;
             const title = this.editTitle.trim();
             if (!title || title === this.question.title) return;
             await this.updateQuestion({ title });
@@ -580,6 +595,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         async saveAnswerDue() {
+            if (this.isNotRequiredStatus()) return;
             const current = this.toDateInputValue(this.question.answerDue);
             if (this.editAnswerDue === current) return;
             if (!this.editAnswerDue) return;
@@ -598,6 +614,7 @@ document.addEventListener("alpine:init", () => {
         },
 
         async saveTags(tags) {
+            if (this.isNotRequiredStatus()) return false;
             return this.updateQuestion({ tags });
         },
 

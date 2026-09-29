@@ -207,13 +207,24 @@ func (h *Handler) UpdateQuestion(c *echo.Context) error {
 		}
 	}
 	uuid := c.Param("uuid")
+	var removedSummaryUUID string
+	if req.Status != nil && *req.Status == "not_required" {
+		before, err := h.deps.Question.Get(ctx, claims.UserID, claims.IsSupporter, claims.IsAdmin, uuid)
+		if err == nil && before.Summary != nil {
+			removedSummaryUUID = before.Summary.UUID
+		}
+	}
 	if err := h.deps.Question.Update(ctx, claims.UserID, claims.IsAdmin, claims.IsSupporter, uuid, req.Title, req.Status, due, req.Tags, req.IsRequireHumanSupport, req.Complete, summaryInput); err != nil {
 		logHandlerDebug(ctx, op, "質問更新失敗", http.StatusForbidden, append(handlerAttrs(c), slog.String("question_uuid", uuid))...)
 		return c.JSON(http.StatusForbidden, map[string]string{"error": err.Error()})
 	}
 	q, _ := h.deps.Question.Get(ctx, claims.UserID, claims.IsSupporter, claims.IsAdmin, uuid)
 	h.deps.Hub.SendToQuestion("update-question", q, q.QuestionUserID)
-	h.deps.Hub.SendToAll("update-faq", faqUpdateFromDetail(q))
+	if removedSummaryUUID != "" {
+		h.deps.Hub.SendToAll("update-faq", faqUpdateRemoved(removedSummaryUUID))
+	} else {
+		h.deps.Hub.SendToAll("update-faq", faqUpdateFromDetail(q))
+	}
 	return c.JSON(http.StatusOK, q)
 }
 

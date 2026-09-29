@@ -225,8 +225,8 @@
                                     <textarea tabindex="0"
                                         class="textarea textarea-bordered w-full text-sm placeholder-base-content/60"
                                         rows="3" x-model="composerText" placeholder="メッセージを入力..."
-                                        :disabled="isDoneStatus()"
-                                        :class="isDoneStatus() ? 'cursor-not-allowed opacity-60' : ''"></textarea>
+                                        :disabled="isInputLocked()"
+                                        :class="isInputLocked() ? 'cursor-not-allowed opacity-60' : ''"></textarea>
                                     <div x-show="isDoneStatus()" class="absolute inset-0" aria-hidden="true"></div>
                                     <div tabindex="0" x-show="isDoneStatus()"
                                         class="dropdown-content z-20 mb-0 w-full rounded-xl border border-base-300 bg-base-100 p-4 shadow-lg x-transition">
@@ -248,7 +248,7 @@
                             <div class="flex flex-wrap justify-between gap-2">
                                 <template x-if="isSupporter">
                                     <button type="button" class="btn btn-sm btn-outline gap-1"
-                                        @click="openReferModal()">
+                                        @click="openReferModal()" :disabled="isNotRequiredStatus()">
                                         <i data-lucide="plus" class="h-4 w-4"></i>
                                         引用情報の追加
                                     </button>
@@ -256,16 +256,16 @@
                                 <div>
                                     <template x-if="isMyselfQuestion">
                                         <button type="button" class="btn btn-sm btn-outline" @click="appendContent()"
-                                            :disabled="!composerText.trim() || isDoneStatus()">追記</button>
+                                            :disabled="!composerText.trim() || isInputLocked()">追記</button>
                                     </template>
                                     <template x-if="!isMyselfQuestion && isSupporter">
                                         <div class="flex flex-col">
                                             <div class="flex gap-2">
                                                 <button type="button" class="btn btn-sm btn-outline" @click="addMemo()"
-                                                    :disabled="!composerText.trim() || isDoneStatus()">メモ登録</button>
+                                                    :disabled="!composerText.trim() || isInputLocked()">メモ登録</button>
                                                 <button type="button" class="btn btn-primary btn-sm"
                                                     @click="addAnswer()"
-                                                    :disabled="!composerText.trim() || isDoneStatus()">回答送信</button>
+                                                    :disabled="!composerText.trim() || isInputLocked()">回答送信</button>
                                             </div>
                                             <p class="text-xs text-base-content/60 mb-6">
                                                 【注意】回答とメモについて<br />
@@ -323,7 +323,8 @@
                                             <span
                                                 class="label-text text-xs font-semibold text-base-content/60">タイトル</span>
                                             <input type="text" class="input input-bordered input-sm w-full"
-                                                x-model="editTitle" @change="saveTitle()" :disabled="savingMeta">
+                                                x-model="editTitle" @change="saveTitle()"
+                                                :disabled="savingMeta || isNotRequiredStatus()">
                                         </label>
                                         <label class="form-control w-full">
                                             <span
@@ -333,6 +334,7 @@
                                                 <option value="pending">未対応</option>
                                                 <option value="supporting">対応中</option>
                                                 <option value="done">完了</option>
+                                                <option value="not_required">対応不要</option>
                                             </select>
                                         </label>
                                     </div>
@@ -372,7 +374,8 @@
                                     <label class="form-control w-full">
                                         <span class="label-text text-xs font-semibold text-base-content/60">回答期日</span>
                                         <input type="date" class="input input-bordered input-sm w-full"
-                                            x-model="editAnswerDue" @change="saveAnswerDue()" :disabled="savingMeta">
+                                            x-model="editAnswerDue" @change="saveAnswerDue()"
+                                            :disabled="savingMeta || isNotRequiredStatus()">
                                     </label>
                                 </template>
                                 <template x-if="(!isSupporter && !isAdmin) && question.answerDue">

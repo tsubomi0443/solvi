@@ -194,6 +194,10 @@ func (uc *QuestionUsecase) AppendContent(ctx context.Context, actorID uint, uuid
 		usecase.LogBusinessWarn(ctx, op, "権限なし", fmt.Errorf("権限がありません"), slog.String("question_uuid", uuid), slog.Uint64("actor_id", uint64(actorID)))
 		return fmt.Errorf("権限がありません")
 	}
+	if q.SupportStatus == valueobject.SupportStatusNotRequired {
+		usecase.LogBusinessWarn(ctx, op, "追記不可", fmt.Errorf("対応不要の質問には追記できません"), slog.String("question_uuid", uuid))
+		return fmt.Errorf("対応不要の質問には追記できません")
+	}
 	contentRow := &entity.QuestionContent{Content: content, QuestionUserID: actorID, QuestionID: q.ID}
 	var errAdd error
 	if uc.lineWorksOn() && q.SupportStatus == valueobject.SupportStatusSupporting {
@@ -216,6 +220,10 @@ func (uc *QuestionUsecase) AddAnswer(ctx context.Context, actorID uint, uuid, co
 	if err != nil {
 		usecase.LogRepoPropagation(ctx, op, "質問取得失敗", err, slog.String("question_uuid", uuid))
 		return err
+	}
+	if q.SupportStatus == valueobject.SupportStatusNotRequired {
+		usecase.LogBusinessWarn(ctx, op, "回答不可", fmt.Errorf("対応不要の質問には回答できません"), slog.String("question_uuid", uuid))
+		return fmt.Errorf("対応不要の質問には回答できません")
 	}
 	if err := uc.questionRepo.AddAnswer(ctx, &entity.QuestionAnswer{Content: content, AnswerUserID: actorID, QuestionID: q.ID}); err != nil {
 		usecase.LogRepoPropagation(ctx, op, "回答追加失敗", err, slog.String("question_uuid", uuid))
@@ -247,6 +255,10 @@ func (uc *QuestionUsecase) AddRefers(ctx context.Context, actorID uint, uuid str
 	if err != nil {
 		usecase.LogRepoPropagation(ctx, op, "質問取得失敗", err, slog.String("question_uuid", uuid))
 		return err
+	}
+	if q.SupportStatus == valueobject.SupportStatusNotRequired {
+		usecase.LogBusinessWarn(ctx, op, "引用不可", fmt.Errorf("対応不要の質問には引用情報を追加できません"), slog.String("question_uuid", uuid))
+		return fmt.Errorf("対応不要の質問には引用情報を追加できません")
 	}
 	valid := make([]outputmodel.ReferOutput, 0, len(refers))
 	for _, r := range refers {
@@ -284,6 +296,10 @@ func (uc *QuestionUsecase) AddMemo(ctx context.Context, actorID uint, uuid, cont
 	if err != nil {
 		usecase.LogRepoPropagation(ctx, op, "質問取得失敗", err, slog.String("question_uuid", uuid))
 		return err
+	}
+	if q.SupportStatus == valueobject.SupportStatusNotRequired {
+		usecase.LogBusinessWarn(ctx, op, "メモ不可", fmt.Errorf("対応不要の質問にはメモを追加できません"), slog.String("question_uuid", uuid))
+		return fmt.Errorf("対応不要の質問にはメモを追加できません")
 	}
 	if err := uc.questionRepo.AddMemo(ctx, &entity.QuestionMemo{Content: content, QuestionID: q.ID, MemoUserID: actorID}); err != nil {
 		usecase.LogRepoPropagation(ctx, op, "メモ追加失敗", err, slog.String("question_uuid", uuid))
@@ -552,6 +568,43 @@ func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, is
 		logutils.Info(ctx, logutils.LayerUsecase, op, "質問更新成功", slog.String("question_uuid", uuid))
 		return nil
 	}
+	if status != nil {
+		parsed, err := valueobject.ParseSupportStatus(supportStatusToInt(*status))
+		if err != nil {
+			usecase.LogBusinessWarn(ctx, op, "ステータス不正", err, slog.String("question_uuid", uuid))
+			return err
+		}
+		if parsed == valueobject.SupportStatusNotRequired {
+			if err := rejectNotRequiredCompanionFields(title, due, tags, requireHuman, summary); err != nil {
+				usecase.LogBusinessWarn(ctx, op, "対応不要更新不可", err, slog.String("question_uuid", uuid))
+				return err
+			}
+			q.SupportStatus = parsed
+			q.AnswerDue = nil
+			if q.Summary != nil {
+				if err := uc.questionRepo.SoftDeleteSummaryByUUID(ctx, q.Summary.UUID.String()); err != nil {
+					usecase.LogRepoPropagation(ctx, op, "要約削除失敗", err, slog.String("question_uuid", uuid))
+					return err
+				}
+			}
+			if err := uc.questionRepo.Update(ctx, q); err != nil {
+				usecase.LogRepoPropagation(ctx, op, "更新失敗", err, slog.String("question_uuid", uuid))
+				return err
+			}
+			logutils.Info(ctx, logutils.LayerUsecase, op, "質問更新成功", slog.String("question_uuid", uuid))
+			return nil
+		}
+	}
+	if q.SupportStatus == valueobject.SupportStatusNotRequired {
+		if status == nil || supportStatusToInt(*status) == int(valueobject.SupportStatusNotRequired) {
+			if err := rejectNotRequiredCompanionFields(title, due, tags, requireHuman, summary); err != nil {
+				usecase.LogBusinessWarn(ctx, op, "対応不要更新不可", err, slog.String("question_uuid", uuid))
+				return err
+			}
+			logutils.Info(ctx, logutils.LayerUsecase, op, "質問更新成功", slog.String("question_uuid", uuid))
+			return nil
+		}
+	}
 	if title != nil {
 		trimmed := strings.TrimSpace(*title)
 		if trimmed == "" {
@@ -637,9 +690,18 @@ func supportStatusToInt(s string) int {
 		return 2
 	case "done":
 		return 3
+	case "not_required":
+		return 4
 	default:
 		return 0
 	}
+}
+
+func rejectNotRequiredCompanionFields(title *string, due *time.Time, tags *[]string, requireHuman *bool, summary *QuestionSummaryInput) error {
+	if title != nil || due != nil || tags != nil || requireHuman != nil || summary != nil {
+		return fmt.Errorf("対応不要の質問はステータスのみ変更できます")
+	}
+	return nil
 }
 
 func (uc *QuestionUsecase) createSummary(ctx context.Context, q *entity.Question) error {

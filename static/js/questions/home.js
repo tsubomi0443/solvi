@@ -9,7 +9,12 @@ const STATUS_OPTIONS = [
 ];
 
 function statusLabel(s) {
-    return { pending: "未対応", supporting: "対応中", done: "完了" }[s] || s;
+    return {
+        pending: "未対応",
+        supporting: "対応中",
+        done: "完了",
+        not_required: "対応不要",
+    }[s] || s;
 }
 
 function statusBadge(s) {
@@ -18,8 +23,21 @@ function statusBadge(s) {
             pending: "badge-ghost",
             supporting: "badge-warning",
             done: "badge-success",
+            not_required: "badge-neutral",
         }[s] || "badge-ghost"
     );
+}
+
+function rowClass(supportStatus) {
+    return supportStatus === "not_required"
+        ? "bg-base-300 hover:bg-base-300/80"
+        : "hover:bg-base-200/60";
+}
+
+function cardClass(supportStatus) {
+    return supportStatus === "not_required"
+        ? "bg-base-300"
+        : "bg-base-100";
 }
 
 function toListItem(dto) {
@@ -37,6 +55,7 @@ document.addEventListener("alpine:init", () => {
         selectedTags: [],
         selectedStatuses: [],
         supportKind: "all",
+        showNotRequired: false,
         isSupporter: window.solviIsSupporter === "true",
         isAdmin: window.solviIsAdmin === "true",
         canViewAll: window.solviCanViewAll === "true",
@@ -71,6 +90,7 @@ document.addEventListener("alpine:init", () => {
                 "filter",
                 "sortDir",
                 "supportKind",
+                "showNotRequired",
                 "selectedDues",
                 "selectedTags",
                 "selectedStatuses",
@@ -80,9 +100,12 @@ document.addEventListener("alpine:init", () => {
         upsertQuestion(detail) {
             if (!detail?.uuid) return;
             const idx = this.questions.findIndex((q) => q.uuid === detail.uuid);
-            const item = toListItem(
-                idx >= 0 ? { ...this.questions[idx], ...detail } : detail,
-            );
+            const merged =
+                idx >= 0 ? { ...this.questions[idx], ...detail } : detail;
+            if (!merged.answerDue) {
+                merged.answerDueDate = "";
+            }
+            const item = toListItem(merged);
             if (idx >= 0) {
                 this.questions = [
                     ...this.questions.slice(0, idx),
@@ -172,6 +195,12 @@ document.addEventListener("alpine:init", () => {
 
         visibleQuestions() {
             let items = [...this.questions];
+
+            if (!this.showNotRequired) {
+                items = items.filter(
+                    (item) => item.supportStatus !== "not_required",
+                );
+            }
 
             const keyword = this.filter.trim().toLowerCase();
             if (keyword) {
@@ -289,5 +318,7 @@ document.addEventListener("alpine:init", () => {
 
         statusLabel,
         statusBadge,
+        rowClass,
+        cardClass,
     }));
 });

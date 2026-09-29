@@ -1083,3 +1083,111 @@ func TestDeleteSummary_AllowsAdmin(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestUpdate_SetNotRequiredClearsDueAndDeletesSummary(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	summaryUUID := uuid.New()
+	due := time.Date(2026, 9, 20, 12, 0, 0, 0, time.UTC)
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusSupporting,
+		AnswerDue:     &due,
+		Summary:       &entity.QuestionSummary{UUID: summaryUUID},
+	}
+	qRepo.EXPECT().GetByUUID(gomock.Any(), qid.String()).Return(q, nil)
+	qRepo.EXPECT().SoftDeleteSummaryByUUID(gomock.Any(), summaryUUID.String()).Return(nil)
+	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, updated *entity.Question) error {
+		if updated.SupportStatus != valueobject.SupportStatusNotRequired {
+			t.Fatalf("status=%v", updated.SupportStatus)
+		}
+		if updated.AnswerDue != nil {
+			t.Fatalf("due=%v", updated.AnswerDue)
+		}
+		return nil
+	})
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	status := "not_required"
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false, nil); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdate_SetNotRequiredRejectsCompanionFields(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusSupporting,
+	}
+	qRepo.EXPECT().GetByUUID(gomock.Any(), qid.String()).Return(q, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	status := "not_required"
+	title := "changed"
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), &title, &status, nil, nil, nil, false, nil); err == nil {
+		t.Fatal("expected error when title is sent with not_required")
+	}
+}
+
+func TestUpdate_AlreadyNotRequiredRejectsNonStatusUpdate(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusNotRequired,
+	}
+	qRepo.EXPECT().GetByUUID(gomock.Any(), qid.String()).Return(q, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	title := "changed"
+	if err := uc.Update(context.Background(), 1, true, true, qid.String(), &title, nil, nil, nil, nil, false, nil); err == nil {
+		t.Fatal("expected error when updating title on not_required question")
+	}
+}
+
+func TestAppendContent_RejectsNotRequired(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusNotRequired,
+	}
+	qRepo.EXPECT().GetByUUID(gomock.Any(), qid.String()).Return(q, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.AppendContent(context.Background(), 5, qid.String(), "追加"); err == nil {
+		t.Fatal("expected error when appending to not_required question")
+	}
+}
+
+func TestAddAnswer_RejectsNotRequired(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	qid := uuid.New()
+	q := &entity.Question{
+		Model: gorm.Model{ID: 1}, UUID: qid, QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusNotRequired,
+	}
+	qRepo.EXPECT().GetByUUID(gomock.Any(), qid.String()).Return(q, nil)
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
+	if err := uc.AddAnswer(context.Background(), 1, qid.String(), "回答", nil); err == nil {
+		t.Fatal("expected error when answering not_required question")
+	}
+}

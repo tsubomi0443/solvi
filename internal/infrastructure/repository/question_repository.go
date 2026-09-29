@@ -107,6 +107,12 @@ func (r *QuestionRepository) Update(ctx context.Context, question *entity.Questi
 		logutils.Error(ctx, logutils.LayerRepository, op, "DB更新失敗", slog.String("question_uuid", question.UUID.String()), slog.String("err", err.Error()))
 		return err
 	}
+	if question.AnswerDue == nil {
+		if err := r.db.WithContext(ctx).Model(question).Update("answer_due", nil).Error; err != nil {
+			logutils.Error(ctx, logutils.LayerRepository, op, "DB更新失敗", slog.String("question_uuid", question.UUID.String()), slog.String("err", err.Error()))
+			return err
+		}
+	}
 	return nil
 }
 
