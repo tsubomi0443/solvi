@@ -3,8 +3,10 @@ package setting_usecase_test
 import (
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	setuc "solvi/internal/application/usecase/setting_usecase"
@@ -15,6 +17,36 @@ import (
 	"go.uber.org/mock/gomock"
 	"gorm.io/gorm"
 )
+
+// passthroughFileRepo はアイコンの作成・削除を実ファイルで行い、リサイズは入力をそのまま返す。
+// 画像デコードは FileRepository 側の責務なので、ユースケースのテストではバイト列を透過させる。
+type passthroughFileRepo struct {
+	uploadDir string
+}
+
+func (r passthroughFileRepo) CreateFile(_ context.Context, path string) (io.ReadWriteCloser, error) {
+	return os.Create(path)
+}
+
+func (r passthroughFileRepo) ResizeImage(_ context.Context, _ uint, reader io.Reader) (io.Reader, error) {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(data), nil
+}
+
+func (r passthroughFileRepo) DeleteFile(_ context.Context, iconName string) error {
+	name := strings.TrimSpace(iconName)
+	if name == "" {
+		return nil
+	}
+	return os.Remove(filepath.Join(r.uploadDir, name))
+}
+
+func newTestUsecase(userRepo *repomock.MockUserRepository, uploadDir string) *setuc.SettingUsecase {
+	return setuc.NewSettingUsecase(userRepo, passthroughFileRepo{uploadDir: uploadDir}, uploadDir)
+}
 
 func TestUploadIcon_ReplacesOldIcon(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -40,7 +72,7 @@ func TestUploadIcon_ReplacesOldIcon(t *testing.T) {
 		return nil
 	})
 
-	uc := setuc.NewSettingUsecase(userRepo, uploadDir)
+	uc := newTestUsecase(userRepo, uploadDir)
 	newContent := []byte("new-icon-content")
 	if err := uc.UploadIcon(context.Background(), 1, "avatar.png", bytes.NewReader(newContent)); err != nil {
 		t.Fatal(err)
@@ -76,7 +108,7 @@ func TestUploadIcon_WithoutExistingIcon(t *testing.T) {
 	userRepo.EXPECT().GetByID(gomock.Any(), uint(1)).Return(user, nil)
 	userRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
 
-	uc := setuc.NewSettingUsecase(userRepo, uploadDir)
+	uc := newTestUsecase(userRepo, uploadDir)
 	if err := uc.UploadIcon(context.Background(), 1, "first.png", bytes.NewReader([]byte("first"))); err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +145,7 @@ func TestDeleteIcon_RemovesExistingFile(t *testing.T) {
 		return nil
 	})
 
-	uc := setuc.NewSettingUsecase(userRepo, uploadDir)
+	uc := newTestUsecase(userRepo, uploadDir)
 	if err := uc.DeleteIcon(context.Background(), 1); err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +174,7 @@ func TestDeleteIcon_MissingFileClearsDB(t *testing.T) {
 		return nil
 	})
 
-	uc := setuc.NewSettingUsecase(userRepo, uploadDir)
+	uc := newTestUsecase(userRepo, uploadDir)
 	if err := uc.DeleteIcon(context.Background(), 1); err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +193,7 @@ func TestDeleteIcon_RejectsPathTraversal(t *testing.T) {
 
 	userRepo.EXPECT().GetByID(gomock.Any(), uint(1)).Return(user, nil)
 
-	uc := setuc.NewSettingUsecase(userRepo, uploadDir)
+	uc := newTestUsecase(userRepo, uploadDir)
 	err := uc.DeleteIcon(context.Background(), 1)
 	if err == nil {
 		t.Fatal("expected error for path traversal icon name")
@@ -182,7 +214,7 @@ func TestDeleteIcon_WithoutExistingIconClearsSilently(t *testing.T) {
 	userRepo.EXPECT().GetByID(gomock.Any(), uint(1)).Return(user, nil)
 	userRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
 
-	uc := setuc.NewSettingUsecase(userRepo, uploadDir)
+	uc := newTestUsecase(userRepo, uploadDir)
 	if err := uc.DeleteIcon(context.Background(), 1); err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +242,7 @@ func TestUpdateProfile_Success(t *testing.T) {
 		return nil
 	})
 
-	uc := setuc.NewSettingUsecase(userRepo, t.TempDir())
+	uc := newTestUsecase(userRepo, t.TempDir())
 	out, err := uc.UpdateProfile(context.Background(), 10, "New Name", "new@example.com")
 	if err != nil {
 		t.Fatal(err)
@@ -235,7 +267,7 @@ func TestGetProfile_SuccessAndNotFound(t *testing.T) {
 	userRepo.EXPECT().GetByID(gomock.Any(), uint(2)).Return(user, nil)
 	userRepo.EXPECT().GetByID(gomock.Any(), uint(99)).Return(nil, gorm.ErrRecordNotFound)
 
-	uc := setuc.NewSettingUsecase(userRepo, t.TempDir())
+	uc := newTestUsecase(userRepo, t.TempDir())
 	out, err := uc.GetProfile(context.Background(), 2)
 	if err != nil {
 		t.Fatal(err)
@@ -264,7 +296,7 @@ func TestGetProfileByUUID_SuccessAndNotFound(t *testing.T) {
 	userRepo.EXPECT().GetByUUID(gomock.Any(), targetUUID.String()).Return(user, nil)
 	userRepo.EXPECT().GetByUUID(gomock.Any(), "missing").Return(nil, gorm.ErrRecordNotFound)
 
-	uc := setuc.NewSettingUsecase(userRepo, t.TempDir())
+	uc := newTestUsecase(userRepo, t.TempDir())
 	out, err := uc.GetProfileByUUID(context.Background(), targetUUID.String())
 	if err != nil {
 		t.Fatal(err)

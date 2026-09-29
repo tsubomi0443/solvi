@@ -85,6 +85,7 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	questionRepo := repository.NewQuestionRepository(db)
 	tagRepo := repository.NewTagRepository(db)
+	fileRepo := repository.NewFileRepository(config.GetUploadDir())
 	logRepo, err := repository.NewLogRepository(logDir)
 	if err != nil {
 		slog.Error("failed to open log directory", "err", err)
@@ -147,7 +148,7 @@ func main() {
 	deps := handler.Deps{
 		Auth:       authuc.NewAuthUsecase(ldapClient, userRepo),
 		Question:   questionUC,
-		Setting:    setuc.NewSettingUsecase(userRepo, config.GetUploadDir()),
+		Setting:    setuc.NewSettingUsecase(userRepo, fileRepo, config.GetUploadDir()),
 		Management: mnguc.NewManagementUsecase(userRepo),
 		Tag:        taguc.NewTagUsecase(tagRepo),
 		Log:        loguc.NewLogUsecase(logRepo),

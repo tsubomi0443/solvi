@@ -1,8 +1,12 @@
 package repository
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 type FileRepository interface {
-	CreateFile(writer io.Writer) error
-	DeleteFile(name string) error
+	CreateFile(ctx context.Context, path string) (io.ReadWriteCloser, error)
+	ResizeImage(ctx context.Context, userID uint, reader io.Reader) (io.Reader, error)
+	DeleteFile(ctx context.Context, iconName string) error
 }

@@ -3,15 +3,15 @@ package setting_usecase
 import (
 	"context"
 	"fmt"
+	_ "image/jpeg"
 	"io"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"solvi/internal/application/converter"
-	"solvi/internal/application/usecase"
 	outputmodel "solvi/internal/application/model/output_model"
+	"solvi/internal/application/usecase"
 	repo "solvi/internal/domain/interface/repository"
 	logutils "solvi/internal/shared/logUtils"
 
@@ -22,13 +22,15 @@ const opSetting = "setting_usecase"
 
 type SettingUsecase struct {
 	userRepo  repo.UserRepository
+	fileRepo  repo.FileRepository
 	uploadDir string
 }
 
-func NewSettingUsecase(userRepo repo.UserRepository, uploadDir string) *SettingUsecase {
+func NewSettingUsecase(userRepo repo.UserRepository, fileRepo repo.FileRepository, uploadDir string) *SettingUsecase {
 	return &SettingUsecase{
 		userRepo:  userRepo,
 		uploadDir: uploadDir,
+		fileRepo:  fileRepo,
 	}
 }
 
@@ -66,14 +68,22 @@ func (uc *SettingUsecase) UploadIcon(ctx context.Context, userID uint, filename 
 
 	iconName := uuid.NewString() + filepath.Ext(filename)
 	path := filepath.Join(uc.uploadDir, iconName)
-	f, err := os.Create(path)
+
+	logutils.Info(ctx, "ユーザ取得成功", "path", path)
+	f, err := uc.fileRepo.CreateFile(ctx, path)
 	if err != nil {
 		logutils.Error(ctx, logutils.LayerUsecase, op, "アイコンファイル作成失敗", slog.Uint64("user_id", uint64(userID)), slog.String("err", err.Error()))
 		return err
 	}
 
+	resizedIcon, err := uc.fileRepo.ResizeImage(ctx, userID, r)
+	if err != nil {
+		logutils.Error(ctx, logutils.LayerUsecase, op, "アイコンファイルリサイズ失敗", slog.Uint64("user_id", uint64(userID)), slog.String("err", err.Error()))
+		return err
+	}
+
 	var writeErr error
-	if _, err := io.Copy(f, r); err != nil {
+	if _, err := io.Copy(f, resizedIcon); err != nil {
 		writeErr = err
 	}
 	if closeErr := f.Close(); closeErr != nil && writeErr == nil {
@@ -82,19 +92,19 @@ func (uc *SettingUsecase) UploadIcon(ctx context.Context, userID uint, filename 
 
 	if writeErr != nil {
 		logutils.Error(ctx, logutils.LayerUsecase, op, "アイコンファイル書き込み失敗", slog.Uint64("user_id", uint64(userID)), slog.String("err", writeErr.Error()))
-		_ = uc.safeRemoveIconFile(ctx, iconName)
+		_ = uc.fileRepo.DeleteFile(ctx, iconName)
 		return writeErr
 	}
 
 	user.Icon = &iconName
 	if err := uc.userRepo.Update(ctx, user); err != nil {
 		usecase.LogRepoPropagation(ctx, op, "アイコン更新失敗", err, slog.Uint64("user_id", uint64(userID)))
-		_ = uc.safeRemoveIconFile(ctx, iconName)
+		_ = uc.fileRepo.DeleteFile(ctx, iconName)
 		return err
 	}
 
 	if oldIcon != "" && oldIcon != iconName {
-		if err := uc.safeRemoveIconFile(ctx, oldIcon); err != nil {
+		if err := uc.fileRepo.DeleteFile(ctx, oldIcon); err != nil {
 			logutils.Error(ctx, logutils.LayerUsecase, op, "旧アイコンファイル削除失敗", slog.Uint64("user_id", uint64(userID)), slog.String("old_icon", oldIcon), slog.String("err", err.Error()))
 			return err
 		}
@@ -113,7 +123,7 @@ func (uc *SettingUsecase) DeleteIcon(ctx context.Context, userID uint) error {
 		return err
 	}
 	if user.Icon != nil && strings.TrimSpace(*user.Icon) != "" {
-		if err := uc.safeRemoveIconFile(ctx, *user.Icon); err != nil {
+		if err := uc.fileRepo.DeleteFile(ctx, *user.Icon); err != nil {
 			logutils.Error(ctx, logutils.LayerUsecase, op, "アイコンファイル削除失敗", slog.Uint64("user_id", uint64(userID)), slog.String("icon", *user.Icon), slog.String("err", err.Error()))
 			return err
 		}
@@ -124,58 +134,6 @@ func (uc *SettingUsecase) DeleteIcon(ctx context.Context, userID uint) error {
 		return err
 	}
 	logutils.Info(ctx, logutils.LayerUsecase, op, "アイコン削除成功", slog.Uint64("user_id", uint64(userID)))
-	return nil
-}
-
-func (uc *SettingUsecase) safeRemoveIconFile(ctx context.Context, iconName string) error {
-	const op = opSetting + ".safeRemoveIconFile"
-	trimmed := strings.TrimSpace(iconName)
-	if trimmed == "" {
-		return nil
-	}
-	base := filepath.Base(trimmed)
-	if base == "." || base == ".." || base != trimmed {
-		err := fmt.Errorf("不正なアイコンファイル名です: %s", iconName)
-		logutils.Error(ctx, logutils.LayerUsecase, op, "パストラバーサル検知", slog.String("icon_name", iconName), slog.String("err", err.Error()))
-		return err
-	}
-
-	cleanUploadDir := filepath.Clean(uc.uploadDir)
-	targetPath := filepath.Clean(filepath.Join(cleanUploadDir, base))
-
-	rel, err := filepath.Rel(cleanUploadDir, targetPath)
-	if err != nil || strings.HasPrefix(rel, "..") || rel == "." {
-		err := fmt.Errorf("無効なアイコンパスです: %s", iconName)
-		logutils.Error(ctx, logutils.LayerUsecase, op, "不正なパス", slog.String("icon_name", iconName), slog.String("err", err.Error()))
-		return err
-	}
-
-	info, err := os.Lstat(targetPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			logutils.Debug(ctx, logutils.LayerUsecase, op, "削除対象ファイルが存在しないためスキップ", slog.String("path", targetPath))
-			return nil
-		}
-		logutils.Error(ctx, logutils.LayerUsecase, op, "アイコンファイル状態確認失敗", slog.String("path", targetPath), slog.String("err", err.Error()))
-		return fmt.Errorf("アイコンファイル状態確認失敗: %w", err)
-	}
-
-	if !info.Mode().IsRegular() {
-		err := fmt.Errorf("削除対象が通常ファイルではありません: %s (mode: %v)", targetPath, info.Mode())
-		logutils.Error(ctx, logutils.LayerUsecase, op, "通常ファイル外検出", slog.String("path", targetPath), slog.String("err", err.Error()))
-		return err
-	}
-
-	if err := os.Remove(targetPath); err != nil {
-		if os.IsNotExist(err) {
-			logutils.Debug(ctx, logutils.LayerUsecase, op, "削除時にファイルが存在しなくなっていたためスキップ", slog.String("path", targetPath))
-			return nil
-		}
-		logutils.Error(ctx, logutils.LayerUsecase, op, "アイコンファイル削除失敗", slog.String("path", targetPath), slog.String("err", err.Error()))
-		return fmt.Errorf("アイコンファイル削除失敗: %w", err)
-	}
-
-	logutils.Info(ctx, logutils.LayerUsecase, op, "アイコンファイル削除完了", slog.String("path", targetPath))
 	return nil
 }
 

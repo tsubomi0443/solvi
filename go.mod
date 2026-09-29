@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.33.4
 	github.com/aws/aws-sdk-go-v2/service/bedrockagentruntime v1.63.0
 	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.62.0
+	github.com/disintegration/imaging v1.6.2
 	github.com/go-ldap/ldap/v3 v3.4.14
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
@@ -18,6 +19,8 @@ require (
 	github.com/yeka/zip v0.0.0-20231116150916-03d6312748a9
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.57.0
+	golang.org/x/sync v0.23.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )
@@ -90,10 +93,9 @@ require (
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/image v0.46.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
