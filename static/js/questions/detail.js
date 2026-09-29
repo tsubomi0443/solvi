@@ -553,10 +553,6 @@ document.addEventListener("alpine:init", () => {
             if (this.submittingDone) return false;
             if (!this.doneSummaryContent.trim()) return false;
             if (!this.doneSummaryAnswer.trim()) return false;
-            const refers = this.question.refers || [];
-            if (refers.length > 0 && this.doneSelectedReferUuids.length === 0) {
-                return false;
-            }
             return true;
         },
 

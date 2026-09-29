@@ -523,7 +523,7 @@
             <div class="modal-action">
                 <button type="button" class="btn btn-ghost font-bold" @click="closeDoneModal()"
                     :disabled="submittingDone">キャンセル</button>
-                <button type="button" class="btn btn-primary font-bold text-base-content" @click="submitDone()"
+                <button type="button" class="btn btn-primary font-bold" @click="submitDone()"
                     :disabled="!canSubmitDone()">
                     <span class="loading loading-spinner loading-sm" x-show="submittingDone"></span>
                     完了へと変更
