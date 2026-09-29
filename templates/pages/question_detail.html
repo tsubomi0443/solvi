@@ -246,21 +246,32 @@
                                 </div>
                             </template>
                             <div class="flex flex-wrap justify-between gap-2">
-                                <button type="button" class="btn btn-sm btn-outline gap-1" x-show="isSupporter"
-                                    @click="openReferModal()">
-                                    <i data-lucide="plus" class="h-4 w-4"></i>
-                                    引用情報の追加
-                                </button>
+                                <template x-if="isSupporter">
+                                    <button type="button" class="btn btn-sm btn-outline gap-1"
+                                        @click="openReferModal()">
+                                        <i data-lucide="plus" class="h-4 w-4"></i>
+                                        引用情報の追加
+                                    </button>
+                                </template>
                                 <div>
-                                    <button type="button" class="btn btn-sm btn-outline"
-                                        x-show="!isSupporter && !isAdmin" @click="appendContent()"
-                                        :disabled="!composerText.trim() || isDoneStatus()">追記</button>
-                                    <template x-if="isSupporter">
-                                        <div class="flex gap-2">
-                                            <button type="button" class="btn btn-sm btn-outline" @click="addMemo()"
-                                                :disabled="!composerText.trim() || isDoneStatus()">メモ登録</button>
-                                            <button type="button" class="btn btn-primary btn-sm" @click="addAnswer()"
-                                                :disabled="!composerText.trim() || isDoneStatus()">回答送信</button>
+                                    <template x-if="isMyselfQuestion">
+                                        <button type="button" class="btn btn-sm btn-outline" @click="appendContent()"
+                                            :disabled="!composerText.trim() || isDoneStatus()">追記</button>
+                                    </template>
+                                    <template x-if="!isMyselfQuestion && isSupporter">
+                                        <div class="flex flex-col">
+                                            <div class="flex gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline" @click="addMemo()"
+                                                    :disabled="!composerText.trim() || isDoneStatus()">メモ登録</button>
+                                                <button type="button" class="btn btn-primary btn-sm"
+                                                    @click="addAnswer()"
+                                                    :disabled="!composerText.trim() || isDoneStatus()">回答送信</button>
+                                            </div>
+                                            <p class="text-xs text-base-content/60 mb-6">
+                                                【注意】回答とメモについて<br />
+                                                「メモ」は質問者に見えません。やり取りの中でのメモや引き継ぎのために利用する想定です。<br />
+                                                「回答」は質問者にも見えます。
+                                            </p>
                                         </div>
                                     </template>
                                 </div>
