@@ -48,8 +48,8 @@ func NewClient(cfg config.LineWorksSetting) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) SendChannelMessage(ctx context.Context, text string) (int, error) {
-	path := fmt.Sprintf("%s/v1.0/bots/%s/channels/%s/messages", c.cfg.APIBase, url.PathEscape(c.cfg.BotID), url.PathEscape(c.cfg.ChannelID))
+func (c *Client) SendChannelMessage(ctx context.Context, channelID, text string) (int, error) {
+	path := fmt.Sprintf("%s/v1.0/bots/%s/channels/%s/messages", c.cfg.APIBase, url.PathEscape(c.cfg.BotID), url.PathEscape(channelID))
 	return c.send(ctx, path, text)
 }
 

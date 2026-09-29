@@ -17,6 +17,7 @@ type Notification struct {
 	Event            valueobject.LineWorksEvent       `gorm:"type:smallint;not null;uniqueIndex:ux_lineworks_notice"`
 	StatusRevision   int                              `gorm:"not null;uniqueIndex:ux_lineworks_notice"`
 	Burst            int                              `gorm:"not null;default:0;uniqueIndex:ux_lineworks_notice"`
+	ChannelID        string                           `gorm:"type:text;not null;default:'';uniqueIndex:ux_lineworks_notice"`
 	Destination      valueobject.LineWorksDestination `gorm:"type:smallint;not null"`
 	RecipientLoginID string                           `gorm:"type:text"`
 	Body             string                           `gorm:"type:text;not null"`
@@ -61,5 +62,6 @@ type ReopenFollowUp struct {
 	QuestionUUID uuid.UUID
 	Comment      string
 	Debounce     time.Duration
+	ChannelIDs   []string
 	Template     Notification
 }

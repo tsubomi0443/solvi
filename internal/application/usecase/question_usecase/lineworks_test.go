@@ -17,10 +17,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func enableLineWorks(uc *quc.QuestionUsecase) {
+func enableLineWorks(uc *quc.QuestionUsecase, channelIDs ...string) {
 	uc.ConfigureLineWorks(quc.LineWorksOptions{
 		Enabled:    true,
 		AppBaseURL: "https://solvi.example",
+		ChannelIDs: channelIDs,
 		Debounce:   time.Minute,
 	})
 }
@@ -33,10 +34,17 @@ func TestCreate_EnqueuesReceivedNotice(t *testing.T) {
 
 	uRepo.EXPECT().GetByID(gomock.Any(), uint(5)).Return(&entity.User{Name: "田中"}, nil)
 	qRepo.EXPECT().CreateWithNotification(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ context.Context, q *entity.Question, n *lineworks.Notification) error {
+		func(_ context.Context, q *entity.Question, notices []*lineworks.Notification) error {
 			q.ID = 9
+			if len(notices) != 1 {
+				t.Fatalf("notices=%+v", notices)
+			}
+			n := notices[0]
 			if n.Event != valueobject.LineWorksEventReceived || n.Destination != valueobject.LineWorksDestinationChannel {
 				t.Fatalf("notice=%+v", n)
+			}
+			if n.ChannelID != "room-a" {
+				t.Fatalf("channel=%s", n.ChannelID)
 			}
 			if !strings.Contains(n.Body, "【新規受付 #"+q.UUID.String()+"】") {
 				t.Fatalf("body=%s", n.Body)
@@ -52,6 +60,68 @@ func TestCreate_EnqueuesReceivedNotice(t *testing.T) {
 	)
 	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
 		Model: gorm.Model{ID: 9}, UUID: qid, Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusPending,
+		Contents:      []entity.QuestionContent{{Content: "body"}},
+	}, nil).AnyTimes()
+	uRepo.EXPECT().GetByEmail(gomock.Any(), gomock.Any()).Return(nil, gorm.ErrRecordNotFound).AnyTimes()
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, stubBedrock{}, nil)
+	enableLineWorks(uc, "room-a")
+	if _, err := uc.Create(context.Background(), 5, "title", "body", nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCreate_FansOutToMultipleChannels(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	uRepo.EXPECT().GetByID(gomock.Any(), uint(5)).Return(&entity.User{Name: "田中"}, nil)
+	qRepo.EXPECT().CreateWithNotification(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ *entity.Question, notices []*lineworks.Notification) error {
+			if len(notices) != 2 {
+				t.Fatalf("notices=%+v", notices)
+			}
+			if notices[0].ChannelID != "room-a" || notices[1].ChannelID != "room-b" {
+				t.Fatalf("channels=%s %s", notices[0].ChannelID, notices[1].ChannelID)
+			}
+			if notices[0].Body != notices[1].Body {
+				t.Fatal("body should match across channels")
+			}
+			return nil
+		},
+	)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
+		UUID: uuid.New(), Title: "title", QuestionUserID: 5,
+		SupportStatus: valueobject.SupportStatusPending,
+		Contents:      []entity.QuestionContent{{Content: "body"}},
+	}, nil).AnyTimes()
+	uRepo.EXPECT().GetByEmail(gomock.Any(), gomock.Any()).Return(nil, gorm.ErrRecordNotFound).AnyTimes()
+
+	uc := quc.NewQuestionUsecase(qRepo, uRepo, stubBedrock{}, nil)
+	enableLineWorks(uc, "room-a", "room-b")
+	if _, err := uc.Create(context.Background(), 5, "title", "body", nil, nil, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCreate_WithoutChannelIDsDoesNotEnqueueChannelNotice(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	qRepo := repomock.NewMockQuestionRepository(ctrl)
+	uRepo := repomock.NewMockUserRepository(ctrl)
+
+	uRepo.EXPECT().GetByID(gomock.Any(), uint(5)).Return(&entity.User{Name: "田中"}, nil)
+	qRepo.EXPECT().CreateWithNotification(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, _ *entity.Question, notices []*lineworks.Notification) error {
+			if len(notices) != 0 {
+				t.Fatalf("notices=%+v", notices)
+			}
+			return nil
+		},
+	)
+	qRepo.EXPECT().GetByUUID(gomock.Any(), gomock.Any()).Return(&entity.Question{
+		UUID: uuid.New(), Title: "title", QuestionUserID: 5,
 		SupportStatus: valueobject.SupportStatusPending,
 		Contents:      []entity.QuestionContent{{Content: "body"}},
 	}, nil).AnyTimes()
@@ -142,10 +212,14 @@ func TestUpdate_QuestionerReopenNotifiesChannel(t *testing.T) {
 		}},
 	}, nil)
 	qRepo.EXPECT().UpdateWithNotification(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-		func(_ context.Context, q *entity.Question, n *lineworks.Notification) error {
+		func(_ context.Context, q *entity.Question, notices []*lineworks.Notification) error {
 			if q.SupportStatus != valueobject.SupportStatusSupporting {
 				t.Fatalf("status=%v", q.SupportStatus)
 			}
+			if len(notices) != 1 {
+				t.Fatalf("notices=%+v", notices)
+			}
+			n := notices[0]
 			if n.Event != valueobject.LineWorksEventReopened || n.Destination != valueobject.LineWorksDestinationChannel {
 				t.Fatalf("notice=%+v", n)
 			}
@@ -160,7 +234,7 @@ func TestUpdate_QuestionerReopenNotifiesChannel(t *testing.T) {
 	)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	enableLineWorks(uc)
+	enableLineWorks(uc, "room-a")
 	status := "supporting"
 	if err := uc.Update(context.Background(), 5, false, false, qid.String(), nil, &status, nil, nil, nil, false, nil); err != nil {
 		t.Fatal(err)
@@ -178,7 +252,7 @@ func TestUpdate_SupporterReopenDoesNotNotify(t *testing.T) {
 	qRepo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	enableLineWorks(uc)
+	enableLineWorks(uc, "room-a")
 	status := "pending"
 	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false, nil); err != nil {
 		t.Fatal(err)
@@ -201,6 +275,9 @@ func TestAppendContent_AggregatesWhileSupporting(t *testing.T) {
 			if follow.Debounce != time.Minute || follow.Template.Event != valueobject.LineWorksEventReopened {
 				t.Fatalf("follow=%+v", follow)
 			}
+			if !reflectDeepEqual(follow.ChannelIDs, []string{"room-a", "room-b"}) {
+				t.Fatalf("channel ids=%v", follow.ChannelIDs)
+			}
 			if !strings.Contains(follow.Template.Body, "/questions/"+qid.String()) {
 				t.Fatalf("body=%s", follow.Template.Body)
 			}
@@ -209,7 +286,7 @@ func TestAppendContent_AggregatesWhileSupporting(t *testing.T) {
 	)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	enableLineWorks(uc)
+	enableLineWorks(uc, "room-a", "room-b")
 	if err := uc.AppendContent(context.Background(), 5, qid.String(), "続けて確認です"); err != nil {
 		t.Fatal(err)
 	}
@@ -229,10 +306,22 @@ func TestUpdate_SecondDoneDoesNotEnqueue(t *testing.T) {
 	qRepo.EXPECT().UpsertSummary(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 	uc := quc.NewQuestionUsecase(qRepo, uRepo, nil, nil)
-	enableLineWorks(uc)
+	enableLineWorks(uc, "room-a")
 	status := "done"
 	summary := &quc.QuestionSummaryInput{Content: "質問要約", Answer: "対応要約"}
 	if err := uc.Update(context.Background(), 1, true, true, qid.String(), nil, &status, nil, nil, nil, false, summary); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func reflectDeepEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

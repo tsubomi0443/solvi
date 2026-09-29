@@ -92,7 +92,7 @@ func runListen() error {
 		}
 		if evt.Source.ChannelID != "" {
 			fmt.Printf(" channelId=%s", evt.Source.ChannelID)
-			if evt.Source.ChannelID == cfg.ChannelID {
+			if channelConfigured(cfg, evt.Source.ChannelID) {
 				fmt.Print(" (matches LINEWORKS_CHANNEL_ID)")
 			}
 		}
@@ -104,8 +104,8 @@ func runListen() error {
 		}
 		fmt.Println()
 
-		if evt.Source.ChannelID != "" && evt.Source.ChannelID != cfg.ChannelID {
-			fmt.Printf("  hint: set LINEWORKS_CHANNEL_ID=%s\n", evt.Source.ChannelID)
+		if evt.Source.ChannelID != "" && !channelConfigured(cfg, evt.Source.ChannelID) {
+			fmt.Printf("  hint: add to LINEWORKS_CHANNEL_ID=%s\n", evt.Source.ChannelID)
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -166,35 +166,17 @@ func runCheck() error {
 		token:      token,
 	}
 
-	channel, status, err := client.getChannel(ctx, cfg.BotID, cfg.ChannelID)
-	if err != nil {
-		return fmt.Errorf("トークルーム取得失敗 (HTTP %d): %w", status, err)
-	}
-	fmt.Println("--- トークルーム ---")
-	fmt.Printf("domainId=%d\n", channel.DomainID)
-	fmt.Printf("channelId=%s\n", channel.ChannelID)
-	fmt.Printf("title=%s\n", channel.Title)
-	fmt.Printf("channelType=%s\n", channel.ChannelType.Type)
-	if channel.ChannelType.OrgUnitID != "" {
-		fmt.Printf("orgUnitId=%s\n", channel.ChannelType.OrgUnitID)
-	}
-	if channel.ChannelType.GroupID != "" {
-		fmt.Printf("groupId=%s\n", channel.ChannelType.GroupID)
-	}
-	if channel.ChannelID == cfg.ChannelID {
-		fmt.Println("ok: channelId が LINEWORKS_CHANNEL_ID と一致")
+	if len(cfg.ChannelIDs) == 0 {
+		fmt.Println("skip: LINEWORKS_CHANNEL_ID 未設定のためトークルーム確認を省略")
 	} else {
-		fmt.Printf("warning: 応答 channelId=%s が LINEWORKS_CHANNEL_ID=%s と不一致\n", channel.ChannelID, cfg.ChannelID)
-	}
-
-	members, err := client.listAllMembers(ctx, cfg.BotID, cfg.ChannelID)
-	if err != nil {
-		return fmt.Errorf("メンバー一覧取得失敗: %w", err)
-	}
-	fmt.Println("--- メンバー ---")
-	fmt.Printf("count=%d\n", len(members))
-	for _, m := range members {
-		fmt.Printf("  %s\n", m)
+		for i, chID := range cfg.ChannelIDs {
+			if i > 0 {
+				fmt.Println()
+			}
+			if err := checkChannel(ctx, client, cfg, chID); err != nil {
+				return err
+			}
+		}
 	}
 
 	bot, status, err := client.getBot(ctx, cfg.BotID)
@@ -229,7 +211,6 @@ func missingLineWorksEnv() string {
 		{config.LINEWORKS_SERVICE_ACCOUNT, func() bool { return strings.TrimSpace(os.Getenv(config.LINEWORKS_SERVICE_ACCOUNT)) != "" }},
 		{config.LINEWORKS_PRIVATE_KEY, func() bool { return strings.TrimSpace(os.Getenv(config.LINEWORKS_PRIVATE_KEY)) != "" }},
 		{config.LINEWORKS_BOT_ID, func() bool { return strings.TrimSpace(os.Getenv(config.LINEWORKS_BOT_ID)) != "" }},
-		{config.LINEWORKS_CHANNEL_ID, func() bool { return strings.TrimSpace(os.Getenv(config.LINEWORKS_CHANNEL_ID)) != "" }},
 		{config.APP_BASE_URL, func() bool { return strings.TrimSpace(os.Getenv(config.APP_BASE_URL)) != "" }},
 	}
 	var missing []string
@@ -241,12 +222,60 @@ func missingLineWorksEnv() string {
 	return strings.Join(missing, ", ")
 }
 
+func channelConfigured(cfg config.LineWorksSetting, channelID string) bool {
+	for _, id := range cfg.ChannelIDs {
+		if id == channelID {
+			return true
+		}
+	}
+	return false
+}
+
+func checkChannel(ctx context.Context, client *apiClient, cfg config.LineWorksSetting, chID string) error {
+	channel, status, err := client.getChannel(ctx, cfg.BotID, chID)
+	if err != nil {
+		return fmt.Errorf("トークルーム取得失敗 channelId=%s (HTTP %d): %w", chID, status, err)
+	}
+	fmt.Println("--- トークルーム ---")
+	fmt.Printf("configuredChannelId=%s\n", chID)
+	fmt.Printf("domainId=%d\n", channel.DomainID)
+	fmt.Printf("channelId=%s\n", channel.ChannelID)
+	fmt.Printf("title=%s\n", channel.Title)
+	fmt.Printf("channelType=%s\n", channel.ChannelType.Type)
+	if channel.ChannelType.OrgUnitID != "" {
+		fmt.Printf("orgUnitId=%s\n", channel.ChannelType.OrgUnitID)
+	}
+	if channel.ChannelType.GroupID != "" {
+		fmt.Printf("groupId=%s\n", channel.ChannelType.GroupID)
+	}
+	if channel.ChannelID == chID {
+		fmt.Println("ok: channelId が LINEWORKS_CHANNEL_ID と一致")
+	} else {
+		fmt.Printf("warning: 応答 channelId=%s が LINEWORKS_CHANNEL_ID=%s と不一致\n", channel.ChannelID, chID)
+	}
+
+	members, err := client.listAllMembers(ctx, cfg.BotID, chID)
+	if err != nil {
+		return fmt.Errorf("メンバー一覧取得失敗 channelId=%s: %w", chID, err)
+	}
+	fmt.Println("--- メンバー ---")
+	fmt.Printf("count=%d\n", len(members))
+	for _, m := range members {
+		fmt.Printf("  %s\n", m)
+	}
+	return nil
+}
+
 func printConfigSummary(cfg config.LineWorksSetting) {
 	fmt.Println("--- 設定 ---")
 	fmt.Printf("clientId=%s\n", cfg.ClientID)
 	fmt.Printf("serviceAccount=%s\n", cfg.ServiceAccount)
 	fmt.Printf("botId=%s\n", cfg.BotID)
-	fmt.Printf("channelId=%s\n", cfg.ChannelID)
+	if len(cfg.ChannelIDs) == 0 {
+		fmt.Println("channelIds=(none)")
+	} else {
+		fmt.Printf("channelIds=%s\n", strings.Join(cfg.ChannelIDs, ", "))
+	}
 	fmt.Printf("apiBase=%s\n", cfg.APIBase)
 	fmt.Printf("tokenUrl=%s\n", cfg.TokenURL)
 	fmt.Printf("scope=%s\n", cfg.Scope)

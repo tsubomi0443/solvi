@@ -29,8 +29,8 @@ type QuestionRepository interface {
 	ListSummaries(ctx context.Context) ([]entity.QuestionSummary, error)
 	ListTagsByQuestionIDs(ctx context.Context, questionIDs []uint) (map[uint][]string, error)
 	SoftDeleteSummaryByUUID(ctx context.Context, uuid string) error
-	CreateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error
-	UpdateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error
+	CreateWithNotification(ctx context.Context, question *entity.Question, notices []*lineworks.Notification) error
+	UpdateWithNotification(ctx context.Context, question *entity.Question, notices []*lineworks.Notification) error
 	CompleteWithNotification(ctx context.Context, question *entity.Question, summaryTitle, summaryContent, summaryAnswer string, refs []entity.QuestionSummaryReference, notice *lineworks.Notification) error
 	AddContentWithReopenAggregate(ctx context.Context, content *entity.QuestionContent, followUp *lineworks.ReopenFollowUp) error
 }

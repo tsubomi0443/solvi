@@ -66,25 +66,49 @@ func insertNotice(ctx context.Context, tx *gorm.DB, notice *lineworks.Notificati
 			{Name: "event"},
 			{Name: "status_revision"},
 			{Name: "burst"},
+			{Name: "channel_id"},
 		},
 		DoNothing: true,
 	}).Create(ctx, notice)
 }
 
-func (r *QuestionRepository) CreateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error {
+func insertNotices(ctx context.Context, tx *gorm.DB, notices []*lineworks.Notification) error {
+	if len(notices) == 0 {
+		return nil
+	}
+	rev := notices[0].StatusRevision
+	if rev == 0 {
+		nextRev, err := nextStatusRevision(ctx, tx, notices[0].QuestionUUID)
+		if err != nil {
+			return err
+		}
+		rev = nextRev
+	}
+	for _, notice := range notices {
+		notice.StatusRevision = rev
+		if err := insertNotice(ctx, tx, notice); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *QuestionRepository) CreateWithNotification(ctx context.Context, question *entity.Question, notices []*lineworks.Notification) error {
 	const op = opQuestionRepo + ".CreateWithNotification"
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := gorm.G[entity.Question](tx).Create(ctx, question); err != nil {
 			logutils.Error(ctx, logutils.LayerRepository, op, "DB更新失敗", "err", err.Error())
 			return err
 		}
-		if notice == nil {
-			return nil
+		for _, notice := range notices {
+			if notice == nil {
+				continue
+			}
+			notice.QuestionUUID = question.UUID
+			notice.Burst = 0
+			notice.StatusRevision = 0
 		}
-		notice.QuestionUUID = question.UUID
-		notice.Burst = 0
-		notice.StatusRevision = 0
-		if err := insertNotice(ctx, tx, notice); err != nil {
+		if err := insertNotices(ctx, tx, notices); err != nil {
 			logutils.Error(ctx, logutils.LayerRepository, op, "DB更新失敗", "err", err.Error())
 			return err
 		}
@@ -92,7 +116,7 @@ func (r *QuestionRepository) CreateWithNotification(ctx context.Context, questio
 	})
 }
 
-func (r *QuestionRepository) UpdateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error {
+func (r *QuestionRepository) UpdateWithNotification(ctx context.Context, question *entity.Question, notices []*lineworks.Notification) error {
 	const op = opQuestionRepo + ".UpdateWithNotification"
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := lockQuestion(ctx, tx, question.UUID); err != nil {
@@ -103,13 +127,15 @@ func (r *QuestionRepository) UpdateWithNotification(ctx context.Context, questio
 			logutils.Error(ctx, logutils.LayerRepository, op, "DB更新失敗", "err", err.Error())
 			return err
 		}
-		if notice == nil {
-			return nil
+		for _, notice := range notices {
+			if notice == nil {
+				continue
+			}
+			notice.QuestionUUID = question.UUID
+			notice.StatusRevision = 0
+			notice.Burst = 0
 		}
-		notice.QuestionUUID = question.UUID
-		notice.StatusRevision = 0
-		notice.Burst = 0
-		if err := insertNotice(ctx, tx, notice); err != nil {
+		if err := insertNotices(ctx, tx, notices); err != nil {
 			logutils.Error(ctx, logutils.LayerRepository, op, "DB更新失敗", "err", err.Error())
 			return err
 		}
@@ -171,63 +197,104 @@ func (r *QuestionRepository) AddContentWithReopenAggregate(ctx context.Context, 
 }
 
 func aggregateReopen(ctx context.Context, tx *gorm.DB, followUp *lineworks.ReopenFollowUp) error {
-	pending, err := gorm.G[lineworks.Notification](tx).
-		Where("question_uuid = ? AND event = ? AND status = ?", followUp.QuestionUUID, valueobject.LineWorksEventReopened, valueobject.LineWorksJobPending).
-		Order("status_revision DESC, burst DESC").
-		First(ctx)
-	if err == nil {
-		pending.Body = appendReopenComment(pending.Body, followUp.Comment)
-		pending.NextAttemptAt = time.Now().Add(followUp.Debounce)
-		return tx.Save(&pending).Error
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+	channelIDs := followUp.ChannelIDs
+	if len(channelIDs) == 0 {
+		return nil
 	}
 
-	latest, err := gorm.G[lineworks.Notification](tx).
-		Where("question_uuid = ? AND event = ?", followUp.QuestionUUID, valueobject.LineWorksEventReopened).
-		Order("status_revision DESC, burst DESC").
-		First(ctx)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		rev, revErr := currentStatusRevision(ctx, tx, followUp.QuestionUUID)
-		if revErr != nil {
-			return revErr
-		}
-		notice := followUp.Template
-		notice.ID = 0
-		notice.QuestionUUID = followUp.QuestionUUID
-		notice.Event = valueobject.LineWorksEventReopened
-		notice.StatusRevision = rev
-		notice.Burst = 0
-		notice.Status = valueobject.LineWorksJobPending
-		notice.NextAttemptAt = time.Now().Add(followUp.Debounce)
-		return insertNotice(ctx, tx, &notice)
-	}
+	pendingRows, err := gorm.G[lineworks.Notification](tx).
+		Where("question_uuid = ? AND event = ? AND status = ?", followUp.QuestionUUID, valueobject.LineWorksEventReopened, valueobject.LineWorksJobPending).
+		Find(ctx)
 	if err != nil {
 		return err
 	}
-	if latest.Status == valueobject.LineWorksJobSending {
+
+	if len(pendingRows) > 0 {
+		pendingChannels := make(map[string]struct{}, len(pendingRows))
+		for i := range pendingRows {
+			pendingRows[i].Body = appendReopenComment(pendingRows[i].Body, followUp.Comment)
+			pendingRows[i].NextAttemptAt = time.Now().Add(followUp.Debounce)
+			if err := tx.Save(&pendingRows[i]).Error; err != nil {
+				return err
+			}
+			pendingChannels[pendingRows[i].ChannelID] = struct{}{}
+		}
+		rev := pendingRows[0].StatusRevision
+		for _, chID := range channelIDs {
+			if _, ok := pendingChannels[chID]; ok {
+				continue
+			}
+			notice := followUp.Template
+			notice.ID = 0
+			notice.UUID = uuid.Nil
+			notice.QuestionUUID = followUp.QuestionUUID
+			notice.Event = valueobject.LineWorksEventReopened
+			notice.ChannelID = chID
+			notice.StatusRevision = rev
+			notice.Burst = pendingRows[0].Burst
+			notice.Status = valueobject.LineWorksJobPending
+			notice.NextAttemptAt = time.Now().Add(followUp.Debounce)
+			if err := insertNotice(ctx, tx, &notice); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
-	if latest.Status == valueobject.LineWorksJobSent {
-		sentAt := latest.UpdatedAt
-		if latest.SentAt != nil {
-			sentAt = *latest.SentAt
+
+	for _, chID := range channelIDs {
+		latest, err := gorm.G[lineworks.Notification](tx).
+			Where("question_uuid = ? AND event = ? AND channel_id = ?", followUp.QuestionUUID, valueobject.LineWorksEventReopened, chID).
+			Order("status_revision DESC, burst DESC").
+			First(ctx)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			rev, revErr := currentStatusRevision(ctx, tx, followUp.QuestionUUID)
+			if revErr != nil {
+				return revErr
+			}
+			notice := followUp.Template
+			notice.ID = 0
+			notice.QuestionUUID = followUp.QuestionUUID
+			notice.Event = valueobject.LineWorksEventReopened
+			notice.ChannelID = chID
+			notice.StatusRevision = rev
+			notice.Burst = 0
+			notice.Status = valueobject.LineWorksJobPending
+			notice.NextAttemptAt = time.Now().Add(followUp.Debounce)
+			if err := insertNotice(ctx, tx, &notice); err != nil {
+				return err
+			}
+			continue
 		}
-		if time.Since(sentAt) < followUp.Debounce {
-			return nil
+		if err != nil {
+			return err
+		}
+		if latest.Status == valueobject.LineWorksJobSending {
+			continue
+		}
+		if latest.Status == valueobject.LineWorksJobSent {
+			sentAt := latest.UpdatedAt
+			if latest.SentAt != nil {
+				sentAt = *latest.SentAt
+			}
+			if time.Since(sentAt) < followUp.Debounce {
+				continue
+			}
+		}
+		notice := followUp.Template
+		notice.ID = 0
+		notice.UUID = uuid.Nil
+		notice.QuestionUUID = followUp.QuestionUUID
+		notice.Event = valueobject.LineWorksEventReopened
+		notice.ChannelID = chID
+		notice.StatusRevision = latest.StatusRevision
+		notice.Burst = latest.Burst + 1
+		notice.Status = valueobject.LineWorksJobPending
+		notice.NextAttemptAt = time.Now().Add(followUp.Debounce)
+		if err := insertNotice(ctx, tx, &notice); err != nil {
+			return err
 		}
 	}
-	notice := followUp.Template
-	notice.ID = 0
-	notice.UUID = uuid.Nil
-	notice.QuestionUUID = followUp.QuestionUUID
-	notice.Event = valueobject.LineWorksEventReopened
-	notice.StatusRevision = latest.StatusRevision
-	notice.Burst = latest.Burst + 1
-	notice.Status = valueobject.LineWorksJobPending
-	notice.NextAttemptAt = time.Now().Add(followUp.Debounce)
-	return insertNotice(ctx, tx, &notice)
+	return nil
 }
 
 func appendReopenComment(body, comment string) string {

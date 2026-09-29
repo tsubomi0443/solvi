@@ -22,6 +22,6 @@ func (e *LineWorksSendError) Error() string {
 }
 
 type LineWorksClient interface {
-	SendChannelMessage(ctx context.Context, text string) (int, error)
+	SendChannelMessage(ctx context.Context, channelID, text string) (int, error)
 	SendUserMessage(ctx context.Context, userID, text string) (int, error)
 }

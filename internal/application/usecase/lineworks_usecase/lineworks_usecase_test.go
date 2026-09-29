@@ -61,7 +61,7 @@ func TestApplyResultSuccessAndFailures(t *testing.T) {
 	})
 }
 
-func TestProcessDueSendsChannelMessage(t *testing.T) {
+func TestProcessDueFailsPermanentWhenChannelIDMissing(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	noticeRepo := repomock.NewMockLineWorksNotificationRepository(ctrl)
 	client := extmock.NewMockLineWorksClient(ctrl)
@@ -76,7 +76,40 @@ func TestProcessDueSendsChannelMessage(t *testing.T) {
 	}
 	noticeRepo.EXPECT().RecoverStale(gomock.Any(), gomock.Any(), valueobject.LineWorksMaxSendAttempts).Return(0, nil)
 	noticeRepo.EXPECT().ClaimDue(gomock.Any(), gomock.Any(), 20).Return([]lineworks.Notification{job}, nil)
-	client.EXPECT().SendChannelMessage(gomock.Any(), job.Body).Return(200, nil)
+	noticeRepo.EXPECT().SaveResult(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, n *lineworks.Notification, attempt *lineworks.NotificationAttempt) error {
+			if n.Status != valueobject.LineWorksJobFailed || n.ErrorKind != valueobject.LineWorksErrorInvalidDestination {
+				t.Fatalf("notice=%+v", n)
+			}
+			if attempt.Outcome != valueobject.LineWorksAttemptPermanent {
+				t.Fatalf("attempt=%+v", attempt)
+			}
+			return nil
+		},
+	)
+
+	if err := New(noticeRepo, client).ProcessDue(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestProcessDueSendsChannelMessage(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	noticeRepo := repomock.NewMockLineWorksNotificationRepository(ctrl)
+	client := extmock.NewMockLineWorksClient(ctrl)
+
+	job := lineworks.Notification{
+		UUID:         uuid.New(),
+		QuestionUUID: uuid.New(),
+		Event:        valueobject.LineWorksEventReceived,
+		Destination:  valueobject.LineWorksDestinationChannel,
+		ChannelID:    "room-a",
+		Body:         "【新規受付】",
+		Status:       valueobject.LineWorksJobSending,
+	}
+	noticeRepo.EXPECT().RecoverStale(gomock.Any(), gomock.Any(), valueobject.LineWorksMaxSendAttempts).Return(0, nil)
+	noticeRepo.EXPECT().ClaimDue(gomock.Any(), gomock.Any(), 20).Return([]lineworks.Notification{job}, nil)
+	client.EXPECT().SendChannelMessage(gomock.Any(), job.ChannelID, job.Body).Return(200, nil)
 	noticeRepo.EXPECT().SaveResult(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, n *lineworks.Notification, attempt *lineworks.NotificationAttempt) error {
 			if n.Status != valueobject.LineWorksJobSent || attempt.Outcome != valueobject.LineWorksAttemptSuccess {

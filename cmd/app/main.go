@@ -128,6 +128,7 @@ func main() {
 			questionUC.ConfigureLineWorks(quc.LineWorksOptions{
 				Enabled:    true,
 				AppBaseURL: lwSetting.AppBaseURL,
+				ChannelIDs: lwSetting.ChannelIDs,
 				Debounce:   lwSetting.CommentDebounce,
 			})
 			worker := lwuc.New(repository.NewLineWorksNotificationRepository(db), lwClient)

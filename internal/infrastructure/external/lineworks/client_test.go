@@ -54,7 +54,6 @@ func TestClientTokenRefreshIsSingleFlightAndSecretsStayOutOfErrors(t *testing.T)
 		ServiceAccount: "sa",
 		PrivateKey:     testKey(t),
 		BotID:          "bot",
-		ChannelID:      "room",
 		APIBase:        srv.URL,
 		TokenURL:       srv.URL + "/token",
 		Scope:          "bot.message",
@@ -69,7 +68,7 @@ func TestClientTokenRefreshIsSingleFlightAndSecretsStayOutOfErrors(t *testing.T)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, err := client.SendChannelMessage(context.Background(), "hello")
+			_, err := client.SendChannelMessage(context.Background(), "room", "hello")
 			errCh <- err
 		}()
 	}
@@ -103,13 +102,13 @@ func TestClientRateLimitAndPermanentErrors(t *testing.T) {
 
 	client, err := NewClient(config.LineWorksSetting{
 		ClientID: "cid", ClientSecret: secret, ServiceAccount: "sa", PrivateKey: testKey(t),
-		BotID: "bot", ChannelID: "room", APIBase: srv.URL, TokenURL: srv.URL + "/token", Scope: "bot.message",
+		BotID: "bot", APIBase: srv.URL, TokenURL: srv.URL + "/token", Scope: "bot.message",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = client.SendChannelMessage(context.Background(), "hello")
+	_, err = client.SendChannelMessage(context.Background(), "room", "hello")
 	sendErr, ok := err.(*ext.LineWorksSendError)
 	if !ok || sendErr.Kind != valueobject.LineWorksErrorRateLimited || sendErr.RetryAfter != 30*time.Second {
 		t.Fatalf("err=%v", err)

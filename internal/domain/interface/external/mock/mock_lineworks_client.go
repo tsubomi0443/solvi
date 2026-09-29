@@ -27,17 +27,17 @@ func (m *MockLineWorksClient) EXPECT() *MockLineWorksClientMockRecorder {
 	return m.recorder
 }
 
-func (m *MockLineWorksClient) SendChannelMessage(ctx context.Context, text string) (int, error) {
+func (m *MockLineWorksClient) SendChannelMessage(ctx context.Context, channelID, text string) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendChannelMessage", ctx, text)
+	ret := m.ctrl.Call(m, "SendChannelMessage", ctx, channelID, text)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (mr *MockLineWorksClientMockRecorder) SendChannelMessage(ctx, text any) *MockLineWorksClientSendChannelMessageCall {
+func (mr *MockLineWorksClientMockRecorder) SendChannelMessage(ctx, channelID, text any) *MockLineWorksClientSendChannelMessageCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendChannelMessage", reflect.TypeOf((*MockLineWorksClient)(nil).SendChannelMessage), ctx, text)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendChannelMessage", reflect.TypeOf((*MockLineWorksClient)(nil).SendChannelMessage), ctx, channelID, text)
 	return &MockLineWorksClientSendChannelMessageCall{Call: call}
 }
 

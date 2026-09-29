@@ -10,7 +10,7 @@ import (
 type AutoMigrator struct{}
 
 func (AutoMigrator) Apply(db *gorm.DB) error {
-	return db.AutoMigrate(
+	if err := db.AutoMigrate(
 		&entity.User{},
 		&entity.Question{},
 		&entity.QuestionContent{},
@@ -22,5 +22,14 @@ func (AutoMigrator) Apply(db *gorm.DB) error {
 		&entity.QuestionSummaryReference{},
 		&lineworks.Notification{},
 		&lineworks.NotificationAttempt{},
-	)
+	); err != nil {
+		return err
+	}
+	notice := &lineworks.Notification{}
+	if db.Migrator().HasIndex(notice, "ux_lineworks_notice") {
+		if err := db.Migrator().DropIndex(notice, "ux_lineworks_notice"); err != nil {
+			return err
+		}
+	}
+	return db.AutoMigrate(notice)
 }

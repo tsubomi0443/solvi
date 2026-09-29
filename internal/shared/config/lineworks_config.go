@@ -34,7 +34,7 @@ type LineWorksSetting struct {
 	ServiceAccount  string
 	PrivateKey      string
 	BotID           string
-	ChannelID       string
+	ChannelIDs      []string
 	APIBase         string
 	TokenURL        string
 	Scope           string
@@ -50,9 +50,9 @@ func LoadLineWorks() (LineWorksSetting, bool) {
 	serviceAccount := strings.TrimSpace(os.Getenv(LINEWORKS_SERVICE_ACCOUNT))
 	privateKey := normalizePEM(os.Getenv(LINEWORKS_PRIVATE_KEY))
 	botID := strings.TrimSpace(os.Getenv(LINEWORKS_BOT_ID))
-	channelID := strings.TrimSpace(os.Getenv(LINEWORKS_CHANNEL_ID))
+	channelIDs := parseChannelIDs(os.Getenv(LINEWORKS_CHANNEL_ID))
 	appBase := strings.TrimRight(strings.TrimSpace(os.Getenv(APP_BASE_URL)), "/")
-	if clientID == "" || strings.TrimSpace(clientSecret) == "" || serviceAccount == "" || privateKey == "" || botID == "" || channelID == "" || appBase == "" {
+	if clientID == "" || strings.TrimSpace(clientSecret) == "" || serviceAccount == "" || privateKey == "" || botID == "" || appBase == "" {
 		return LineWorksSetting{}, false
 	}
 
@@ -76,7 +76,7 @@ func LoadLineWorks() (LineWorksSetting, bool) {
 		ServiceAccount:  serviceAccount,
 		PrivateKey:      privateKey,
 		BotID:           botID,
-		ChannelID:       channelID,
+		ChannelIDs:      channelIDs,
 		APIBase:         apiBase,
 		TokenURL:        tokenURL,
 		Scope:           scope,
@@ -101,4 +101,29 @@ func normalizePEM(raw string) string {
 	raw = strings.TrimSpace(raw)
 	raw = strings.Trim(raw, `"`)
 	return strings.ReplaceAll(raw, `\n`, "\n")
+}
+
+// parseChannelIDs は LINEWORKS_CHANNEL_ID の CSV を trim し、空要素と重複を除いて返す。
+func parseChannelIDs(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	seen := make(map[string]struct{})
+	out := make([]string, 0)
+	for _, part := range strings.Split(raw, ",") {
+		id := strings.TrimSpace(part)
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }

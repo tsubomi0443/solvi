@@ -29,6 +29,7 @@ const opQuestion = "question_usecase"
 type LineWorksOptions struct {
 	Enabled    bool
 	AppBaseURL string
+	ChannelIDs []string
 	Debounce   time.Duration
 }
 
@@ -135,7 +136,7 @@ func (uc *QuestionUsecase) Create(ctx context.Context, actorID uint, title, cont
 		if q.UUID == uuid.Nil {
 			q.UUID = uuid.New()
 		}
-		if err := uc.questionRepo.CreateWithNotification(ctx, q, uc.receivedNotice(q, asker.Name, content)); err != nil {
+		if err := uc.questionRepo.CreateWithNotification(ctx, q, uc.receivedNotices(q, asker.Name, content)); err != nil {
 			usecase.LogRepoPropagation(ctx, op, "質問作成失敗", err, slog.Uint64("actor_id", uint64(actorID)))
 			return nil, err
 		}
@@ -520,7 +521,7 @@ func (uc *QuestionUsecase) Update(ctx context.Context, actorID uint, isAdmin, is
 				}
 				q.SupportStatus = parsed
 				if uc.lineWorksOn() {
-					if err := uc.questionRepo.UpdateWithNotification(ctx, q, uc.reopenNotice(q, latestContent(q))); err != nil {
+					if err := uc.questionRepo.UpdateWithNotification(ctx, q, uc.reopenNotices(q, latestContent(q))); err != nil {
 						usecase.LogRepoPropagation(ctx, op, "更新失敗", err, slog.String("question_uuid", uuid))
 						return err
 					}
@@ -683,6 +684,19 @@ func (uc *QuestionUsecase) upsertSummary(ctx context.Context, q *entity.Question
 	return uc.questionRepo.UpsertSummary(ctx, full.ID, full.Title, strings.TrimSpace(input.Content), strings.TrimSpace(input.Answer), refs)
 }
 
+func (uc *QuestionUsecase) channelNotices(template *lineworks.Notification) []*lineworks.Notification {
+	if template == nil || len(uc.lineWorks.ChannelIDs) == 0 {
+		return nil
+	}
+	notices := make([]*lineworks.Notification, 0, len(uc.lineWorks.ChannelIDs))
+	for _, chID := range uc.lineWorks.ChannelIDs {
+		n := *template
+		n.ChannelID = chID
+		notices = append(notices, &n)
+	}
+	return notices
+}
+
 func (uc *QuestionUsecase) receivedNotice(q *entity.Question, askerName, content string) *lineworks.Notification {
 	name := strings.TrimSpace(askerName)
 	if name == "" {
@@ -697,6 +711,10 @@ func (uc *QuestionUsecase) receivedNotice(q *entity.Question, askerName, content
 		Status:        valueobject.LineWorksJobPending,
 		NextAttemptAt: time.Now(),
 	}
+}
+
+func (uc *QuestionUsecase) receivedNotices(q *entity.Question, askerName, content string) []*lineworks.Notification {
+	return uc.channelNotices(uc.receivedNotice(q, askerName, content))
 }
 
 func (uc *QuestionUsecase) answeredNotice(q *entity.Question) *lineworks.Notification {
@@ -730,11 +748,16 @@ func (uc *QuestionUsecase) reopenNotice(q *entity.Question, comment string) *lin
 	}
 }
 
+func (uc *QuestionUsecase) reopenNotices(q *entity.Question, comment string) []*lineworks.Notification {
+	return uc.channelNotices(uc.reopenNotice(q, comment))
+}
+
 func (uc *QuestionUsecase) reopenFollowUp(q *entity.Question, comment string) *lineworks.ReopenFollowUp {
 	return &lineworks.ReopenFollowUp{
 		QuestionUUID: q.UUID,
 		Comment:      comment,
 		Debounce:     uc.debounce(),
+		ChannelIDs:   uc.lineWorks.ChannelIDs,
 		Template:     *uc.reopenNotice(q, comment),
 	}
 }

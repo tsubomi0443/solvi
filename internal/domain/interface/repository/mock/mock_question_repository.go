@@ -769,16 +769,16 @@ func (c *MockQuestionRepositorySoftDeleteSummaryByUUIDCall) DoAndReturn(f func(c
 	return c
 }
 
-func (m *MockQuestionRepository) CreateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error {
+func (m *MockQuestionRepository) CreateWithNotification(ctx context.Context, question *entity.Question, notices []*lineworks.Notification) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateWithNotification", ctx, question, notice)
+	ret := m.ctrl.Call(m, "CreateWithNotification", ctx, question, notices)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (mr *MockQuestionRepositoryMockRecorder) CreateWithNotification(ctx, question, notice any) *MockQuestionRepositoryCreateWithNotificationCall {
+func (mr *MockQuestionRepositoryMockRecorder) CreateWithNotification(ctx, question, notices any) *MockQuestionRepositoryCreateWithNotificationCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithNotification", reflect.TypeOf((*MockQuestionRepository)(nil).CreateWithNotification), ctx, question, notice)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateWithNotification", reflect.TypeOf((*MockQuestionRepository)(nil).CreateWithNotification), ctx, question, notices)
 	return &MockQuestionRepositoryCreateWithNotificationCall{Call: call}
 }
 
@@ -791,26 +791,26 @@ func (c *MockQuestionRepositoryCreateWithNotificationCall) Return(arg0 error) *M
 	return c
 }
 
-func (c *MockQuestionRepositoryCreateWithNotificationCall) Do(f func(context.Context, *entity.Question, *lineworks.Notification) error) *MockQuestionRepositoryCreateWithNotificationCall {
+func (c *MockQuestionRepositoryCreateWithNotificationCall) Do(f func(context.Context, *entity.Question, []*lineworks.Notification) error) *MockQuestionRepositoryCreateWithNotificationCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
-func (c *MockQuestionRepositoryCreateWithNotificationCall) DoAndReturn(f func(context.Context, *entity.Question, *lineworks.Notification) error) *MockQuestionRepositoryCreateWithNotificationCall {
+func (c *MockQuestionRepositoryCreateWithNotificationCall) DoAndReturn(f func(context.Context, *entity.Question, []*lineworks.Notification) error) *MockQuestionRepositoryCreateWithNotificationCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
 
-func (m *MockQuestionRepository) UpdateWithNotification(ctx context.Context, question *entity.Question, notice *lineworks.Notification) error {
+func (m *MockQuestionRepository) UpdateWithNotification(ctx context.Context, question *entity.Question, notices []*lineworks.Notification) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateWithNotification", ctx, question, notice)
+	ret := m.ctrl.Call(m, "UpdateWithNotification", ctx, question, notices)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (mr *MockQuestionRepositoryMockRecorder) UpdateWithNotification(ctx, question, notice any) *MockQuestionRepositoryUpdateWithNotificationCall {
+func (mr *MockQuestionRepositoryMockRecorder) UpdateWithNotification(ctx, question, notices any) *MockQuestionRepositoryUpdateWithNotificationCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateWithNotification", reflect.TypeOf((*MockQuestionRepository)(nil).UpdateWithNotification), ctx, question, notice)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateWithNotification", reflect.TypeOf((*MockQuestionRepository)(nil).UpdateWithNotification), ctx, question, notices)
 	return &MockQuestionRepositoryUpdateWithNotificationCall{Call: call}
 }
 
@@ -823,12 +823,12 @@ func (c *MockQuestionRepositoryUpdateWithNotificationCall) Return(arg0 error) *M
 	return c
 }
 
-func (c *MockQuestionRepositoryUpdateWithNotificationCall) Do(f func(context.Context, *entity.Question, *lineworks.Notification) error) *MockQuestionRepositoryUpdateWithNotificationCall {
+func (c *MockQuestionRepositoryUpdateWithNotificationCall) Do(f func(context.Context, *entity.Question, []*lineworks.Notification) error) *MockQuestionRepositoryUpdateWithNotificationCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
-func (c *MockQuestionRepositoryUpdateWithNotificationCall) DoAndReturn(f func(context.Context, *entity.Question, *lineworks.Notification) error) *MockQuestionRepositoryUpdateWithNotificationCall {
+func (c *MockQuestionRepositoryUpdateWithNotificationCall) DoAndReturn(f func(context.Context, *entity.Question, []*lineworks.Notification) error) *MockQuestionRepositoryUpdateWithNotificationCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

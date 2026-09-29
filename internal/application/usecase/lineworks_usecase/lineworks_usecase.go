@@ -66,7 +66,22 @@ func (uc *Usecase) dispatch(ctx context.Context, n *lineworks.Notification) {
 		}
 		status, err = uc.client.SendUserMessage(ctx, n.RecipientLoginID, n.Body)
 	default:
-		status, err = uc.client.SendChannelMessage(ctx, n.Body)
+		channelID := strings.TrimSpace(n.ChannelID)
+		if channelID == "" {
+			n.Status = valueobject.LineWorksJobFailed
+			n.ErrorKind = valueobject.LineWorksErrorInvalidDestination
+			n.LastError = safeMessage(valueobject.LineWorksErrorInvalidDestination)
+			attempt := &lineworks.NotificationAttempt{
+				NotificationUUID: n.UUID,
+				Outcome:          valueobject.LineWorksAttemptPermanent,
+				AttemptedAt:      time.Now(),
+			}
+			if saveErr := uc.repo.SaveResult(ctx, n, attempt); saveErr != nil {
+				logutils.Error(ctx, logutils.LayerUsecase, op, "送信結果の保存失敗", slog.String("question_uuid", n.QuestionUUID.String()), slog.String("err", saveErr.Error()))
+			}
+			return
+		}
+		status, err = uc.client.SendChannelMessage(ctx, channelID, n.Body)
 	}
 	attempt := applyResult(n, status, err)
 	if saveErr := uc.repo.SaveResult(ctx, n, attempt); saveErr != nil {

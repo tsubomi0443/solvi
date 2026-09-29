@@ -35,32 +35,51 @@ func TestLineWorksNotificationRepository_Integration(t *testing.T) {
 		SupportStatus:  valueobject.SupportStatusPending,
 		Contents:       []entity.QuestionContent{{Content: "本文", QuestionUserID: asker.ID}},
 	}
-	notice := &lineworks.Notification{
-		Event:         valueobject.LineWorksEventReceived,
-		Destination:   valueobject.LineWorksDestinationChannel,
-		Body:          "【新規受付】",
-		Status:        valueobject.LineWorksJobPending,
-		NextAttemptAt: time.Now().Add(-time.Second),
+	notices := []*lineworks.Notification{
+		{
+			Event:         valueobject.LineWorksEventReceived,
+			Destination:   valueobject.LineWorksDestinationChannel,
+			ChannelID:     "room-a",
+			Body:          "【新規受付】",
+			Status:        valueobject.LineWorksJobPending,
+			NextAttemptAt: time.Now().Add(-time.Second),
+		},
+		{
+			Event:         valueobject.LineWorksEventReceived,
+			Destination:   valueobject.LineWorksDestinationChannel,
+			ChannelID:     "room-b",
+			Body:          "【新規受付】",
+			Status:        valueobject.LineWorksJobPending,
+			NextAttemptAt: time.Now().Add(-time.Second),
+		},
 	}
-	if err := qRepo.CreateWithNotification(ctx, question, notice); err != nil {
+	if err := qRepo.CreateWithNotification(ctx, question, notices); err != nil {
 		t.Fatal(err)
 	}
 
-	count, err := gorm.G[lineworks.Notification](db).
+	rows, err := gorm.G[lineworks.Notification](db).
 		Where("question_uuid = ? AND event = ?", question.UUID, valueobject.LineWorksEventReceived).
-		Count(ctx, "*")
+		Find(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if count != 1 || notice.StatusRevision != 1 {
-		t.Fatalf("count=%d revision=%d", count, notice.StatusRevision)
+	if len(rows) != 2 {
+		t.Fatalf("count=%d", len(rows))
+	}
+	if rows[0].StatusRevision != rows[1].StatusRevision {
+		t.Fatalf("revisions=%d %d", rows[0].StatusRevision, rows[1].StatusRevision)
+	}
+	channels := map[string]bool{rows[0].ChannelID: true, rows[1].ChannelID: true}
+	if !channels["room-a"] || !channels["room-b"] {
+		t.Fatalf("channels=%v", channels)
 	}
 
 	dup := &lineworks.Notification{
 		QuestionUUID:   question.UUID,
 		Event:          valueobject.LineWorksEventReceived,
-		StatusRevision: 1,
+		StatusRevision: rows[0].StatusRevision,
 		Burst:          0,
+		ChannelID:      "room-a",
 		Destination:    valueobject.LineWorksDestinationChannel,
 		Body:           "duplicate",
 		Status:         valueobject.LineWorksJobPending,
@@ -71,24 +90,33 @@ func TestLineWorksNotificationRepository_Integration(t *testing.T) {
 	}
 
 	question.SupportStatus = valueobject.SupportStatusSupporting
-	reopen := &lineworks.Notification{
+	reopenNotices := []*lineworks.Notification{{
 		Event:         valueobject.LineWorksEventReopened,
 		Destination:   valueobject.LineWorksDestinationChannel,
+		ChannelID:     "room-a",
 		Body:          "【再対応依頼】\n追加コメント: 初回\nhttps://solvi.example/questions/" + question.UUID.String(),
 		Status:        valueobject.LineWorksJobPending,
 		NextAttemptAt: time.Now(),
-	}
-	if err := qRepo.UpdateWithNotification(ctx, question, reopen); err != nil {
+	}, {
+		Event:         valueobject.LineWorksEventReopened,
+		Destination:   valueobject.LineWorksDestinationChannel,
+		ChannelID:     "room-b",
+		Body:          "【再対応依頼】\n追加コメント: 初回\nhttps://solvi.example/questions/" + question.UUID.String(),
+		Status:        valueobject.LineWorksJobPending,
+		NextAttemptAt: time.Now(),
+	}}
+	if err := qRepo.UpdateWithNotification(ctx, question, reopenNotices); err != nil {
 		t.Fatal(err)
 	}
-	if reopen.StatusRevision != 2 {
-		t.Fatalf("reopen revision=%d", reopen.StatusRevision)
+	if reopenNotices[0].StatusRevision != 2 || reopenNotices[1].StatusRevision != 2 {
+		t.Fatalf("reopen revisions=%d %d", reopenNotices[0].StatusRevision, reopenNotices[1].StatusRevision)
 	}
 
 	follow := &lineworks.ReopenFollowUp{
 		QuestionUUID: question.UUID,
 		Comment:      "続き",
 		Debounce:     time.Minute,
+		ChannelIDs:   []string{"room-a", "room-b"},
 		Template: lineworks.Notification{
 			Destination: valueobject.LineWorksDestinationChannel,
 			Body:        "fresh",
@@ -100,23 +128,29 @@ func TestLineWorksNotificationRepository_Integration(t *testing.T) {
 	}, follow); err != nil {
 		t.Fatal(err)
 	}
-	pending, err := gorm.G[lineworks.Notification](db).
+	pendingRows, err := gorm.G[lineworks.Notification](db).
 		Where("question_uuid = ? AND event = ? AND status = ?", question.UUID, valueobject.LineWorksEventReopened, valueobject.LineWorksJobPending).
-		First(ctx)
+		Find(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(pending.Body, "追加コメント: 続き") {
-		t.Fatalf("body=%s", pending.Body)
+	if len(pendingRows) != 2 {
+		t.Fatalf("pending count=%d", len(pendingRows))
 	}
-	count, err = gorm.G[lineworks.Notification](db).
+	for _, pending := range pendingRows {
+		if !strings.Contains(pending.Body, "追加コメント: 続き") {
+			t.Fatalf("body=%s", pending.Body)
+		}
+	}
+
+	reopenCount, err := gorm.G[lineworks.Notification](db).
 		Where("question_uuid = ? AND event = ?", question.UUID, valueobject.LineWorksEventReopened).
 		Count(ctx, "*")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if count != 1 {
-		t.Fatalf("reopen count=%d", count)
+	if reopenCount != 2 {
+		t.Fatalf("reopen count=%d", reopenCount)
 	}
 
 	noticeRepo := repository.NewLineWorksNotificationRepository(db)
@@ -124,16 +158,16 @@ func TestLineWorksNotificationRepository_Integration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var found bool
+	var found int
 	for _, c := range claimed {
 		if c.QuestionUUID == question.UUID && c.Event == valueobject.LineWorksEventReceived {
-			found = true
+			found++
 			if c.Status != valueobject.LineWorksJobSending {
 				t.Fatalf("status=%v", c.Status)
 			}
 		}
 	}
-	if !found {
-		t.Fatal("received notice was not claimed")
+	if found != 2 {
+		t.Fatalf("received notices claimed=%d", found)
 	}
 }
