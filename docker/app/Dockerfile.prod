@@ -1,0 +1,63 @@
+# --- frontend build ---
+FROM oven/bun:1 AS frontend
+WORKDIR /app/frontend
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY frontend/package.json frontend/bun.lock ./
+RUN bun install --frozen-lockfile
+
+COPY frontend/ ./
+COPY static/js/ ../static/js/
+COPY templates/ ../templates/
+COPY internal/ ../internal/
+
+RUN mkdir -p ../static/vendor ../static/css \
+    && bun run build
+
+# --- Go build ---
+FROM golang:1.26.1-alpine AS builder
+WORKDIR /app
+
+RUN apk add --no-cache git ca-certificates tzdata
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+COPY --from=frontend /app/static/css/output.css ./static/css/output.css
+COPY --from=frontend /app/static/vendor/ ./static/vendor/
+
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /solvi ./cmd/app
+
+# --- runtime ---
+FROM alpine:3.21
+LABEL MAINTAINER="ryota.kashio"
+
+RUN apk add --no-cache ca-certificates tzdata wget su-exec \
+    && addgroup -g 1000 solvi \
+    && adduser -D -u 1000 -G solvi solvi
+
+ENV TZ=Asia/Tokyo
+
+WORKDIR /app
+
+COPY --from=builder /solvi /usr/local/bin/solvi
+COPY --from=builder /app/templates ./templates
+COPY --from=builder /app/static ./static
+COPY --from=builder /app/favicon.ico ./favicon.ico
+
+RUN mkdir -p /app/uploads /app/logs \
+    && chown -R solvi:solvi /app
+
+COPY docker/app/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 1323
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD wget -qO- http://127.0.0.1:1323/login > /dev/null || exit 1
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["solvi"]
