@@ -152,7 +152,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="q in visibleQuestions()" :key="q.uuid">
+                            <template x-for="q in pagedItems()" :key="q.uuid">
                                 <tr class="cursor-pointer hover:bg-base-200/60"
                                     @click="location.href = '/questions/' + q.uuid">
                                     <td class="whitespace-nowrap text-sm" x-text="q.createdDate + ' ' + q.createdTime">
@@ -208,7 +208,7 @@
                 </div>
 
                 <div x-show="viewMode === 'card'" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    <template x-for="q in visibleQuestions()" :key="q.uuid">
+                    <template x-for="q in pagedItems()" :key="q.uuid">
                         <a :href="'/questions/' + q.uuid"
                             class="card min-w-0 border border-base-300 bg-base-100 shadow-sm transition hover:shadow-md">
                             <div class="card-body gap-3">
@@ -264,6 +264,7 @@
                         </a>
                     </template>
                 </div>
+                {{template "pagination"}}
                 <p class="mt-8 text-center text-sm text-base-content/50" x-show="visibleQuestions().length === 0">
                     質問がありません</p>
             </main>

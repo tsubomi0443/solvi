@@ -1,0 +1,14 @@
+{{define "pagination"}}
+<div class="mt-4 flex justify-center" x-show="totalPages() > 1">
+    <div class="join">
+        <button type="button" class="join-item btn btn-sm" :disabled="page <= 1" @click="setPage(page - 1)">«</button>
+        <template x-for="item in pageItems()" :key="item.key">
+            <button type="button" class="join-item btn btn-sm"
+                :class="!item.ellipsis && item.page === page ? 'btn-active' : ''" :disabled="item.ellipsis"
+                @click="setPage(item.page)" x-text="item.label"></button>
+        </template>
+        <button type="button" class="join-item btn btn-sm" :disabled="page >= totalPages()"
+            @click="setPage(page + 1)">»</button>
+    </div>
+</div>
+{{end}}

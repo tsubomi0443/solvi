@@ -28,7 +28,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="tag in filteredTags()" :key="tag.name">
+                            <template x-for="tag in pagedItems()" :key="tag.name">
                                 <tr>
                                     <td>
                                         <template x-if="editing === tag.name">
@@ -62,6 +62,7 @@
                         </tbody>
                     </table>
                 </div>
+                {{template "pagination"}}
                 <p class="mt-6 text-center text-sm text-base-content/50" x-show="filteredTags().length === 0">タグがありません
                 </p>
             </main>

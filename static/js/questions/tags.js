@@ -1,4 +1,5 @@
 import { Tag } from '../model/tag.js';
+import { pagerMethods } from '../pagination.js';
 
 document.addEventListener('alpine:init', () => {
   Alpine.data('solviTags', () => ({
@@ -6,11 +7,13 @@ document.addEventListener('alpine:init', () => {
     filter: '',
     editing: '',
     editName: '',
+    ...pagerMethods('filteredTags'),
 
     init() {
       const el = document.getElementById('tags-json');
       if (el) this.tags = JSON.parse(el.textContent || '[]').map((dto) => Tag.fromJSON(dto));
       if (typeof lucide !== 'undefined') lucide.createIcons();
+      this.bindPager(['filter']);
     },
 
     filteredTags() {

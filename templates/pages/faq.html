@@ -72,7 +72,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="item in visibleSummaries()" :key="item.uuid">
+                            <template x-for="item in pagedItems()" :key="item.uuid">
                                 <tr class="cursor-pointer hover:bg-base-200/60" @click="openDetail(item)">
                                     <td class="whitespace-nowrap text-sm"
                                         x-text="item.createdDate + ' ' + item.createdTime"></td>
@@ -108,7 +108,7 @@
                 </div>
 
                 <div x-show="viewMode === 'card'" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    <template x-for="item in visibleSummaries()" :key="item.uuid">
+                    <template x-for="item in pagedItems()" :key="item.uuid">
                         <div class="card min-w-0 cursor-pointer border border-base-300 bg-base-100 shadow-sm transition hover:shadow-md"
                             @click="openDetail(item)">
                             <div class="card-body gap-3">
@@ -156,6 +156,7 @@
                     </template>
                 </div>
 
+                {{template "pagination"}}
                 <p class="mt-8 text-center text-sm text-base-content/50" x-show="visibleSummaries().length === 0">
                     FAQがありません</p>
             </main>

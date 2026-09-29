@@ -1,4 +1,5 @@
 import { QuestionListItem } from "../model/question.js";
+import { pagerMethods } from "../pagination.js";
 
 const VIEW_MODE_KEY = "solvi.home.viewMode";
 const STATUS_OPTIONS = [
@@ -41,6 +42,7 @@ document.addEventListener("alpine:init", () => {
         canViewAll: window.solviCanViewAll === "true",
         statusOptions: STATUS_OPTIONS,
         userIconMap: {},
+        ...pagerMethods("visibleQuestions"),
 
         init() {
             const savedView = localStorage.getItem(VIEW_MODE_KEY);
@@ -65,6 +67,14 @@ document.addEventListener("alpine:init", () => {
             document.addEventListener("delete-question", (e) => {
                 this.deleteQuestion(e.detail);
             });
+            this.bindPager([
+                "filter",
+                "sortDir",
+                "supportKind",
+                "selectedDues",
+                "selectedTags",
+                "selectedStatuses",
+            ]);
         },
 
         upsertQuestion(detail) {

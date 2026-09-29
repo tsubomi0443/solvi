@@ -1,4 +1,5 @@
 import { SummaryListItem } from "../model/question.js";
+import { pagerMethods } from "../pagination.js";
 
 const VIEW_MODE_KEY = "solvi.faq.viewMode";
 
@@ -19,6 +20,7 @@ document.addEventListener("alpine:init", () => {
         showDetailModal: false,
         showDeleteModal: false,
         deleting: false,
+        ...pagerMethods("visibleSummaries"),
 
         init() {
             const savedView = localStorage.getItem(VIEW_MODE_KEY);
@@ -43,6 +45,7 @@ document.addEventListener("alpine:init", () => {
                     if (typeof lucide !== "undefined") lucide.createIcons();
                 });
             });
+            this.bindPager(["filter", "selectedTags"]);
         },
 
         applyFAQUpdate(detail) {
