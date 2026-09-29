@@ -1,0 +1,64 @@
+services:
+    app:
+        container_name: solvi-prod
+        build:
+            context: .
+            dockerfile: docker/app/Dockerfile.prod
+        restart: unless-stopped
+        stop_grace_period: 30s
+        ports:
+            - "${PORT}:1323"
+        env_file:
+            - .env
+        volumes:
+            - uploads_data:/app/uploads
+            - logs_data:/app/logs
+        depends_on:
+            postgresql:
+                condition: service_healthy
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "5"
+        healthcheck:
+            test: ["CMD", "wget", "-qO-", "http://127.0.0.1:1323/login"]
+            interval: 30s
+            timeout: 5s
+            start_period: 30s
+            retries: 3
+
+    postgresql:
+        container_name: solvi-db-prod
+        build:
+            context: .
+            dockerfile: docker/database/postgresql/Dockerfile.prod
+        restart: unless-stopped
+        stop_grace_period: 30s
+        ports:
+            - "127.0.0.1:${PSQL_PUBLISH_PORT:-5432}:5432"
+        environment:
+            POSTGRES_DB: ${PSQL_DB_NAME:?PSQL_DB_NAME is required}
+            POSTGRES_USER: ${PSQL_USER:?PSQL_USER is required}
+            POSTGRES_PASSWORD: ${PSQL_PASSWORD:?PSQL_PASSWORD is required}
+        volumes:
+            - postgres_data:/var/lib/postgresql
+        logging:
+            driver: json-file
+            options:
+                max-size: "10m"
+                max-file: "5"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+            interval: 10s
+            timeout: 5s
+            start_period: 30s
+            retries: 5
+
+volumes:
+    postgres_data:
+        name: solvi-postgresql-prod-volume
+    uploads_data:
+        name: solvi-uploads-prod-volume
+    logs_data:
+        name: solvi-logs-prod-volume

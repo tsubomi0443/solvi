@@ -1,0 +1,15 @@
+.git
+.gitignore
+.cursor
+doc
+scripts/tmp
+tmp
+uploads/*
+!uploads/.gitkeep
+*.log
+.env
+.env.*
+docker/database/dynamodb/dynamodb_data
+frontend/node_modules
+static/css/output.css
+static/vendor
