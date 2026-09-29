@@ -127,3 +127,32 @@ func (r *LineWorksNotificationRepository) SaveResult(ctx context.Context, notice
 	}
 	return err
 }
+
+func (r *LineWorksNotificationRepository) EnqueueDueDigests(ctx context.Context, notices []lineworks.Notification) error {
+	const op = opLineWorksRepo + ".EnqueueDueDigests"
+	if len(notices) == 0 {
+		return nil
+	}
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for i := range notices {
+			n := notices[i]
+			if err := gorm.G[lineworks.Notification](tx, clause.OnConflict{
+				Columns: []clause.Column{
+					{Name: "question_uuid"},
+					{Name: "event"},
+					{Name: "status_revision"},
+					{Name: "burst"},
+					{Name: "channel_id"},
+				},
+				DoNothing: true,
+			}).Create(ctx, &n); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		logutils.Error(ctx, logutils.LayerRepository, op, "期日通知の登録失敗", "err", err.Error())
+	}
+	return err
+}

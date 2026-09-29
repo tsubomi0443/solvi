@@ -17,12 +17,22 @@ import (
 const opLineWorks = "lineworks_usecase"
 
 type Usecase struct {
-	repo   repo.LineWorksNotificationRepository
-	client ext.LineWorksClient
+	repo         repo.LineWorksNotificationRepository
+	questionRepo repo.QuestionRepository
+	client       ext.LineWorksClient
+	schedule     DueDigestSchedule
+	jst          *time.Location
 }
 
-func New(noticeRepo repo.LineWorksNotificationRepository, client ext.LineWorksClient) *Usecase {
-	return &Usecase{repo: noticeRepo, client: client}
+func New(noticeRepo repo.LineWorksNotificationRepository, questionRepo repo.QuestionRepository, client ext.LineWorksClient, schedule DueDigestSchedule) *Usecase {
+	jst, _ := time.LoadLocation("Asia/Tokyo")
+	return &Usecase{
+		repo:         noticeRepo,
+		questionRepo: questionRepo,
+		client:       client,
+		schedule:     schedule,
+		jst:          jst,
+	}
 }
 
 func (uc *Usecase) ProcessDue(ctx context.Context) error {

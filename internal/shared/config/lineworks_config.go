@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,6 +19,7 @@ const (
 	LINEWORKS_TOKEN_URL        = "LINEWORKS_TOKEN_URL"
 	LINEWORKS_SCOPE            = "LINEWORKS_SCOPE"
 	LINEWORKS_COMMENT_DEBOUNCE = "LINEWORKS_COMMENT_DEBOUNCE"
+	NOTICE_DATE                = "NOTICE_DATE"
 	APP_BASE_URL               = "APP_BASE_URL"
 
 	defaultLineWorksAPIBase  = "https://www.worksapis.com"
@@ -40,6 +42,26 @@ type LineWorksSetting struct {
 	Scope           string
 	AppBaseURL      string
 	CommentDebounce time.Duration
+	NoticeTimes     []NoticeTime
+}
+
+// NoticeTime は NOTICE_DATE の hh:mm（ゼロ埋め2桁）を表す。
+type NoticeTime struct {
+	Hour   int
+	Minute int
+}
+
+func (t NoticeTime) String() string {
+	return formatNoticeTime(t.Hour, t.Minute)
+}
+
+func (t NoticeTime) Matches(now time.Time, loc *time.Location) bool {
+	in := now.In(loc)
+	return in.Hour() == t.Hour && in.Minute() == t.Minute
+}
+
+func (t NoticeTime) Burst() int {
+	return t.Hour*60 + t.Minute
 }
 
 // LoadLineWorks は通知に必要な環境変数が揃っているときだけ設定を返す。
@@ -82,6 +104,7 @@ func LoadLineWorks() (LineWorksSetting, bool) {
 		Scope:           scope,
 		AppBaseURL:      appBase,
 		CommentDebounce: commentDebounce(),
+		NoticeTimes:     parseNoticeTimes(os.Getenv(NOTICE_DATE)),
 	}, true
 }
 
@@ -126,4 +149,56 @@ func parseChannelIDs(raw string) []string {
 		return nil
 	}
 	return out
+}
+
+// parseNoticeTimes は NOTICE_DATE の CSV を hh:mm（ゼロ埋め2桁）として解釈する。
+func parseNoticeTimes(raw string) []NoticeTime {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	seen := make(map[int]struct{})
+	out := make([]NoticeTime, 0)
+	for _, part := range strings.Split(raw, ",") {
+		t, ok := parseNoticeTime(strings.TrimSpace(part))
+		if !ok {
+			continue
+		}
+		key := t.Burst()
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, t)
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func parseNoticeTime(raw string) (NoticeTime, bool) {
+	if len(raw) != 5 || raw[2] != ':' {
+		return NoticeTime{}, false
+	}
+	h, err := strconv.Atoi(raw[:2])
+	if err != nil || h < 0 || h > 23 {
+		return NoticeTime{}, false
+	}
+	m, err := strconv.Atoi(raw[3:])
+	if err != nil || m < 0 || m > 59 {
+		return NoticeTime{}, false
+	}
+	return NoticeTime{Hour: h, Minute: m}, true
+}
+
+func formatNoticeTime(hour, minute int) string {
+	return pad2(hour) + ":" + pad2(minute)
+}
+
+func pad2(v int) string {
+	if v < 10 {
+		return "0" + strconv.Itoa(v)
+	}
+	return strconv.Itoa(v)
 }

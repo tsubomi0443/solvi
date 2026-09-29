@@ -131,12 +131,25 @@ func main() {
 				ChannelIDs: lwSetting.ChannelIDs,
 				Debounce:   lwSetting.CommentDebounce,
 			})
-			worker := lwuc.New(repository.NewLineWorksNotificationRepository(db), lwClient)
+			worker := lwuc.New(
+				repository.NewLineWorksNotificationRepository(db),
+				questionRepo,
+				lwClient,
+				lwuc.DueDigestSchedule{
+					NoticeTimes: lwSetting.NoticeTimes,
+					ChannelIDs:  lwSetting.ChannelIDs,
+					AppBaseURL:  lwSetting.AppBaseURL,
+				},
+			)
 			go func() {
 				ticker := time.NewTicker(5 * time.Second)
 				defer ticker.Stop()
 				for range ticker.C {
-					if err := worker.ProcessDue(context.Background()); err != nil {
+					ctx := context.Background()
+					if err := worker.EnqueueDueDigestIfScheduled(ctx, time.Now()); err != nil {
+						slog.Error("LINE WORKS期日通知の登録に失敗しました", "err", err)
+					}
+					if err := worker.ProcessDue(ctx); err != nil {
 						slog.Error("LINE WORKS通知の送信に失敗しました", "err", err)
 					}
 				}

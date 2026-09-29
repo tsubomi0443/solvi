@@ -13,4 +13,5 @@ type LineWorksNotificationRepository interface {
 	ClaimDue(ctx context.Context, now time.Time, limit int) ([]lineworks.Notification, error)
 	RecoverStale(ctx context.Context, staleBefore time.Time, maxAttempts int) (int, error)
 	SaveResult(ctx context.Context, notice *lineworks.Notification, attempt *lineworks.NotificationAttempt) error
+	EnqueueDueDigests(ctx context.Context, notices []lineworks.Notification) error
 }

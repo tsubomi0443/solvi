@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 	entity "solvi/internal/domain/entity"
 	lineworks "solvi/internal/domain/entity/lineworks"
+	time "time"
 
 	gomock "go.uber.org/mock/gomock"
 )
@@ -893,6 +894,37 @@ func (c *MockQuestionRepositoryAddContentWithReopenAggregateCall) Do(f func(cont
 }
 
 func (c *MockQuestionRepositoryAddContentWithReopenAggregateCall) DoAndReturn(f func(context.Context, *entity.QuestionContent, *lineworks.ReopenFollowUp) error) *MockQuestionRepositoryAddContentWithReopenAggregateCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+func (m *MockQuestionRepository) ListIncompleteDueOnDates(ctx context.Context, dates ...time.Time) ([]entity.Question, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range dates {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListIncompleteDueOnDates", varargs...)
+	ret0, _ := ret[0].([]entity.Question)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+func (mr *MockQuestionRepositoryMockRecorder) ListIncompleteDueOnDates(ctx any, dates ...any) *MockQuestionRepositoryListIncompleteDueOnDatesCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, dates...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListIncompleteDueOnDates", reflect.TypeOf((*MockQuestionRepository)(nil).ListIncompleteDueOnDates), varargs...)
+	return &MockQuestionRepositoryListIncompleteDueOnDatesCall{Call: call}
+}
+
+type MockQuestionRepositoryListIncompleteDueOnDatesCall struct{ *gomock.Call }
+
+func (c *MockQuestionRepositoryListIncompleteDueOnDatesCall) Return(arg0 []entity.Question, arg1 error) *MockQuestionRepositoryListIncompleteDueOnDatesCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+func (c *MockQuestionRepositoryListIncompleteDueOnDatesCall) DoAndReturn(f func(context.Context, ...time.Time) ([]entity.Question, error)) *MockQuestionRepositoryListIncompleteDueOnDatesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

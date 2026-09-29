@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"solvi/internal/domain/entity"
 	"solvi/internal/domain/entity/lineworks"
@@ -33,4 +34,5 @@ type QuestionRepository interface {
 	UpdateWithNotification(ctx context.Context, question *entity.Question, notices []*lineworks.Notification) error
 	CompleteWithNotification(ctx context.Context, question *entity.Question, summaryTitle, summaryContent, summaryAnswer string, refs []entity.QuestionSummaryReference, notice *lineworks.Notification) error
 	AddContentWithReopenAggregate(ctx context.Context, content *entity.QuestionContent, followUp *lineworks.ReopenFollowUp) error
+	ListIncompleteDueOnDates(ctx context.Context, dates ...time.Time) ([]entity.Question, error)
 }

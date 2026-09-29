@@ -3,9 +3,10 @@ package valueobject
 type LineWorksEvent int
 
 const (
-	LineWorksEventReceived LineWorksEvent = 1
-	LineWorksEventAnswered LineWorksEvent = 2
-	LineWorksEventReopened LineWorksEvent = 3
+	LineWorksEventReceived   LineWorksEvent = 1
+	LineWorksEventAnswered   LineWorksEvent = 2
+	LineWorksEventReopened   LineWorksEvent = 3
+	LineWorksEventDueDigest  LineWorksEvent = 4
 )
 
 type LineWorksDestination int

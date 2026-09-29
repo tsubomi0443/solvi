@@ -88,7 +88,7 @@ func TestProcessDueFailsPermanentWhenChannelIDMissing(t *testing.T) {
 		},
 	)
 
-	if err := New(noticeRepo, client).ProcessDue(context.Background()); err != nil {
+	if err := New(noticeRepo, repomock.NewMockQuestionRepository(ctrl), client, DueDigestSchedule{}).ProcessDue(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -119,7 +119,7 @@ func TestProcessDueSendsChannelMessage(t *testing.T) {
 		},
 	)
 
-	if err := New(noticeRepo, client).ProcessDue(context.Background()); err != nil {
+	if err := New(noticeRepo, repomock.NewMockQuestionRepository(ctrl), client, DueDigestSchedule{}).ProcessDue(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 }

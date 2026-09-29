@@ -63,6 +63,14 @@ func TestLoadLineWorksParsesChannelCSV(t *testing.T) {
 	}
 }
 
+func TestParseNoticeTimes(t *testing.T) {
+	got := parseNoticeTimes("09:00, 9:00, 18:30")
+	want := []NoticeTime{{Hour: 9, Minute: 0}, {Hour: 18, Minute: 30}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("parseNoticeTimes=%v want=%v", got, want)
+	}
+}
+
 func TestLoadLineWorksStillRequiresCoreEnv(t *testing.T) {
 	for _, key := range []string{
 		LINEWORKS_CLIENT_ID,

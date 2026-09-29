@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
+
 	"solvi/internal/domain/entity"
 	"solvi/internal/domain/valueobject"
 	logutils "solvi/internal/shared/logUtils"
@@ -344,4 +346,31 @@ func (r *QuestionRepository) SoftDeleteSummaryByUUID(ctx context.Context, uuid s
 		logutils.Error(ctx, logutils.LayerRepository, op, "DB削除失敗", slog.String("summary_uuid", uuid), slog.String("err", err.Error()))
 	}
 	return err
+}
+
+func (r *QuestionRepository) ListIncompleteDueOnDates(ctx context.Context, dates ...time.Time) ([]entity.Question, error) {
+	const op = opQuestionRepo + ".ListIncompleteDueOnDates"
+	if len(dates) == 0 {
+		return nil, nil
+	}
+	dateStrings := make([]string, 0, len(dates))
+	for _, d := range dates {
+		y, m, day := d.Date()
+		dateStrings = append(dateStrings, fmt.Sprintf("%04d-%02d-%02d", y, int(m), day))
+	}
+	qs, err := gorm.G[entity.Question](r.db.WithContext(ctx)).
+		Preload("QuestionUser", noopPreload).
+		Where("support_status IN ?", []valueobject.SupportStatus{
+			valueobject.SupportStatusPending,
+			valueobject.SupportStatusSupporting,
+		}).
+		Where("answer_due IS NOT NULL").
+		Where("DATE(timezone('Asia/Tokyo', answer_due)) IN ?", dateStrings).
+		Order("answer_due ASC, title ASC").
+		Find(ctx)
+	if err != nil {
+		logutils.Error(ctx, logutils.LayerRepository, op, "DB検索失敗", slog.String("err", err.Error()))
+		return nil, err
+	}
+	return qs, nil
 }

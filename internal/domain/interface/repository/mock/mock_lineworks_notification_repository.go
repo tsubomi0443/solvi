@@ -100,3 +100,28 @@ func (c *MockLineWorksNotificationRepositorySaveResultCall) DoAndReturn(f func(c
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
+
+func (m *MockLineWorksNotificationRepository) EnqueueDueDigests(ctx context.Context, notices []lineworks.Notification) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnqueueDueDigests", ctx, notices)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+func (mr *MockLineWorksNotificationRepositoryMockRecorder) EnqueueDueDigests(ctx, notices any) *MockLineWorksNotificationRepositoryEnqueueDueDigestsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnqueueDueDigests", reflect.TypeOf((*MockLineWorksNotificationRepository)(nil).EnqueueDueDigests), ctx, notices)
+	return &MockLineWorksNotificationRepositoryEnqueueDueDigestsCall{Call: call}
+}
+
+type MockLineWorksNotificationRepositoryEnqueueDueDigestsCall struct{ *gomock.Call }
+
+func (c *MockLineWorksNotificationRepositoryEnqueueDueDigestsCall) Return(arg0 error) *MockLineWorksNotificationRepositoryEnqueueDueDigestsCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+func (c *MockLineWorksNotificationRepositoryEnqueueDueDigestsCall) DoAndReturn(f func(context.Context, []lineworks.Notification) error) *MockLineWorksNotificationRepositoryEnqueueDueDigestsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
