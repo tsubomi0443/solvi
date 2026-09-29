@@ -74,7 +74,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ec := handler.NewEcho(logs.Access)
+	ec := handler.NewEcho(logs.Access, logs.Panic)
 
 	db, err := postgresql.NewPostgresqlDB(config.GetPostgresqlDSN())
 	if err != nil {

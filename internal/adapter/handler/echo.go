@@ -5,13 +5,14 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 )
 
-func NewEcho(accessLogger *slog.Logger) *echo.Echo {
+func NewEcho(accessLogger, panicLogger *slog.Logger) *echo.Echo {
 	ec := echo.New()
 
 	tmpl := template.New("")
@@ -43,6 +44,34 @@ func NewEcho(accessLogger *slog.Logger) *echo.Echo {
 		ec.Logger = accessLogger
 	}
 
-	ec.Use(RequestID(), middleware.Recover(), middleware.RequestLogger())
+	recover := newRecoverMiddleware(panicLogger)
+	ec.Use(RequestID(), middleware.RequestLogger(), recover.middleware)
 	return ec
+}
+
+type recoverMiddleware struct {
+	panicLogger *slog.Logger
+}
+
+func newRecoverMiddleware(panicLogger *slog.Logger) *recoverMiddleware {
+	return &recoverMiddleware{
+		panicLogger: panicLogger,
+	}
+}
+
+func (rm *recoverMiddleware) middleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c *echo.Context) error {
+		defer func() {
+			if r := recover(); r != nil {
+				stack := debug.Stack()
+				rm.panicLogger.Error(
+					"Unhandled panic occurred",
+					slog.Any("panic", r),
+					slog.String("stacktrace", string(stack)),
+				)
+			}
+		}()
+
+		return next(c)
+	}
 }

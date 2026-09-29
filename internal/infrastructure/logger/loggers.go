@@ -18,6 +18,7 @@ type Loggers struct {
 	App    *slog.Logger
 	Access *slog.Logger
 	Audit  *slog.Logger
+	Panic  *slog.Logger
 
 	closers []io.Closer
 }
@@ -33,6 +34,7 @@ func New(opts Options) (*Loggers, error) {
 	appW := newDailyWriter(opts.Dir, PrefixApplication)
 	accessW := newDailyWriter(opts.Dir, PrefixAccess)
 	auditW := newDailyWriter(opts.Dir, PrefixAudit)
+	panicW := newDailyWriter(opts.Dir, PrefixPanic)
 
 	handlerOpts := &slog.HandlerOptions{Level: opts.Level}
 
@@ -45,7 +47,8 @@ func New(opts Options) (*Loggers, error) {
 		App:     slog.New(slog.NewJSONHandler(appW, handlerOpts)),
 		Access:  slog.New(slog.NewJSONHandler(accessOut, &slog.HandlerOptions{Level: slog.LevelInfo})),
 		Audit:   slog.New(slog.NewJSONHandler(auditW, &slog.HandlerOptions{Level: slog.LevelInfo})),
-		closers: []io.Closer{appW, accessW, auditW},
+		Panic:   slog.New(slog.NewJSONHandler(panicW, &slog.HandlerOptions{Level: slog.LevelInfo})),
+		closers: []io.Closer{appW, accessW, auditW, panicW},
 	}, nil
 }
 

@@ -12,6 +12,7 @@ const (
 	PrefixApplication = "application"
 	PrefixAccess      = "access"
 	PrefixAudit       = "audit"
+	PrefixPanic       = "panic"
 
 	dateLayout       = "20060102"
 	defaultMaxSizeMB = 100
